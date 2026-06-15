@@ -1,0 +1,27 @@
+{
+  "name": "مدیریت مالی شخصی",
+  "short_name": "PFM",
+  "description": "Personal Finance Manager — Seyed Sadegh Majedi",
+  "start_url": "/PFM/",
+  "scope": "/PFM/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FF7F7F",
+  "theme_color": "#FF7F7F",
+  "lang": "fa",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
