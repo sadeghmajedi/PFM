@@ -1663,55 +1663,58 @@ function updateDateHeader() {
 }
 
 // ═══════════════════════════════════════
-// UPDATE CHECK
+// UPDATE CHECK (version.json)
 // ═══════════════════════════════════════
-var UPDATE_URL = 'https://sadeghmajedi.github.io/PFM/';
-var updateAvailable = false;
+var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
+var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
+var CURRENT_VERSION = '1.0.1';
 
 function checkForUpdate() {
   if (!navigator.onLine) return;
-  fetch(UPDATE_URL + '?t=' + Date.now(), {cache: 'no-store', method: 'HEAD'})
-    .then(function(r) {
-      var serverDate = r.headers.get('last-modified') || r.headers.get('date');
-      var stored = localStorage.getItem('pfm_build_date');
-      if (serverDate && stored && serverDate !== stored) {
-        updateAvailable = true;
-        showUpdateBadge();
-      } else if (serverDate && !stored) {
-        localStorage.setItem('pfm_build_date', serverDate);
+  fetch(VERSION_URL + '?t=' + Date.now(), {cache: 'no-store'})
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var serverVer = data && data.version ? data.version : null;
+      if (!serverVer) return;
+      var stored = localStorage.getItem('pfm_version');
+      // First run: just store current
+      if (!stored) { localStorage.setItem('pfm_version', CURRENT_VERSION); return; }
+      // If server has newer version than what we have stored
+      if (serverVer !== stored) {
+        showUpdateBadge(data.date || '');
       }
     })
-    .catch(function() {}); // silently fail if offline
+    .catch(function() {});
 }
 
-function showUpdateBadge() {
+function showUpdateBadge(date) {
   var fab = document.getElementById('updateFab');
-  if (fab) fab.style.display = 'flex';
+  if (fab) {
+    fab.style.display = 'flex';
+    fab.title = 'نسخه جدید ' + (date ? '(' + date + ')' : '') + ' موجود است — برای به‌روزرسانی بزنید';
+  }
 }
 
 function doUpdate() {
-  if (!confirm('اپ به‌روزرسانی شود؟ داده‌های شما حفظ می‌مانند.')) return;
-  // Save DB before reload
+  if (!confirm('نسخه جدید دانلود و نصب شود؟\nداده‌های شما حفظ می‌مانند.')) return;
   saveDB();
-  // Clear page cache and reload
-  if ('caches' in window) {
-    caches.keys().then(function(names) {
-      names.forEach(function(name) { caches.delete(name); });
-    });
-  }
+  var dbBackup = localStorage.getItem('pfm_db_v3');
   fetch(UPDATE_URL + '?t=' + Date.now(), {cache: 'no-store'})
     .then(function(r) { return r.text(); })
     .then(function(newHtml) {
-      // Store new build date
-      var parser = new DOMParser();
-      var doc = parser.parseFromString(newHtml, 'text/html');
-      // Open in same window
+      // Restore DB after page rewrite
       document.open();
       document.write(newHtml);
       document.close();
+      if (dbBackup) localStorage.setItem('pfm_db_v3', dbBackup);
+      // Mark new version as installed
+      fetch(VERSION_URL + '?t=' + Date.now(), {cache:'no-store'})
+        .then(function(r){ return r.json(); })
+        .then(function(d){ if(d && d.version) localStorage.setItem('pfm_version', d.version); })
+        .catch(function(){});
     })
     .catch(function() {
-      alert('خطا در دانلود به‌روزرسانی. لطفاً اتصال اینترنت را بررسی کنید.');
+      alert('خطا در دانلود. لطفاً اتصال اینترنت را بررسی کنید.');
     });
 }
 
@@ -1728,6 +1731,10 @@ setTimeout(function() {
     splash.style.display = 'none';
     showLock();
     // Check for updates after app loads
+    // Store current version if not set
+    if (!localStorage.getItem('pfm_version')) {
+      localStorage.setItem('pfm_version', CURRENT_VERSION);
+    }
     setTimeout(checkForUpdate, 3000);
   }, 600);
 }, 2500);
