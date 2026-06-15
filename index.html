@@ -43,7 +43,7 @@
 
 body {
   font-family:'Vazirmatn',sans-serif;
-  background: linear-gradient(160deg, #FF7F7F 0%, #D94F4F 40%, #B83030 100%);
+  background: linear-gradient(160deg, #FFB0B0 0%, #F07070 40%, #D85050 100%);
   min-height:100vh;
   min-height:-webkit-fill-available;
   padding-bottom:calc(var(--nav-h) + var(--safe-bottom) + 12px);
@@ -55,12 +55,12 @@ body::before {
   content:'';
   position:fixed;
   inset:0;
-  background: linear-gradient(160deg, #FF7F7F 0%, #D94F4F 40%, #B83030 100%);
+  background: linear-gradient(160deg, #FFB0B0 0%, #F07070 40%, #D85050 100%);
   z-index:-1;
 }
 
 /* ── SPLASH ── */
-#splash { position:fixed; inset:0; background:linear-gradient(160deg,#FF7F7F,#B83030); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; transition:opacity 0.7s,transform 0.7s; }
+#splash { position:fixed; inset:0; background:linear-gradient(160deg,#FFB0B0,#D85050); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; transition:opacity 0.7s,transform 0.7s; }
 #splash.out { opacity:0; transform:scale(1.05); pointer-events:none; }
 .sp-ring { position:absolute; border-radius:50%; border:1.5px solid rgba(253,238,0,0.18); animation:rp 2.5s ease-in-out infinite; }
 .sp-ring:nth-child(1){width:200px;height:200px;animation-delay:0s}
@@ -75,7 +75,7 @@ body::before {
 @keyframes pulse-green{0%,100%{box-shadow:0 4px 12px rgba(46,204,113,0.4),0 0 0 3px rgba(46,204,113,0.2)}50%{box-shadow:0 4px 16px rgba(46,204,113,0.6),0 0 0 6px rgba(46,204,113,0.1)}}
 
 /* ── LOCK ── */
-#lockScreen { display:none; position:fixed; inset:0; background:linear-gradient(160deg,#FF7F7F,#B83030); z-index:8000; flex-direction:column; align-items:center; justify-content:center; padding:30px 28px; }
+#lockScreen { display:none; position:fixed; inset:0; background:linear-gradient(160deg,#FFB0B0,#D85050); z-index:8000; flex-direction:column; align-items:center; justify-content:center; padding:30px 28px; }
 #lockScreen.vis { display:flex; }
 .lock-app-name { font-size:26px; font-weight:700; color:white; margin-top:16px; margin-bottom:5px; text-align:center; text-shadow:0 2px 10px rgba(0,0,0,0.15); }
 .lock-sub { font-size:13px; color:rgba(255,255,255,0.75); margin-bottom:24px; text-align:center; }
@@ -85,11 +85,11 @@ body::before {
 .pkeypad { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; width:252px; }
 .pkey {
   height:60px; border-radius:14px; border:none; cursor:pointer; font-family:'Vazirmatn',sans-serif; font-size:22px; font-weight:600;
-  background:rgba(255,255,255,0.15);
+  background:rgba(255,255,255,0.2);
   backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-  border:1px solid rgba(255,255,255,0.25);
-  color:white;
-  box-shadow:0 4px 16px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.2);
+  border:1px solid rgba(255,255,255,0.35);
+  color:#2C1010;
+  box-shadow:0 4px 16px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.3);
   transition:all 0.15s;
 }
 .pkey:active { background:rgba(255,255,255,0.28); transform:scale(0.93); }
@@ -100,9 +100,9 @@ body::before {
 
 /* ── TOP BAR ── */
 .top-bar {
-  background:rgba(0,0,0,0.15);
+  background:rgba(0,0,0,0.1);
   backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
-  border-bottom:1px solid rgba(255,255,255,0.15);
+  border-bottom:1px solid rgba(255,255,255,0.2);
   padding:12px 14px 10px;
   padding-top:calc(12px + var(--safe-top));
   display:flex; align-items:center; justify-content:space-between;
@@ -112,7 +112,7 @@ body::before {
 .top-logo-wrap { width:34px; height:34px; border-radius:50%; overflow:hidden; flex-shrink:0; border:2px solid rgba(253,238,0,0.7); box-shadow:0 2px 8px rgba(0,0,0,0.2); }
 .top-logo-wrap img { width:100%; height:100%; object-fit:cover; object-position:center 10%; }
 .top-bar h1 { font-size:14px; font-weight:700; color:white; text-shadow:0 1px 4px rgba(0,0,0,0.15); }
-.top-date { font-size:10px; color:rgba(255,255,255,0.7); }
+.top-date { font-size:12px; font-weight:700; color:rgba(255,255,255,0.95); }
 .export-fab {
   background:rgba(253,238,0,0.9); border:none; border-radius:10px; width:36px; height:36px;
   display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:16px;
@@ -126,15 +126,15 @@ body::before {
 /* ── BOTTOM NAV ── */
 .bottom-nav {
   position:fixed; bottom:0; left:0; right:0;
-  background:rgba(0,0,0,0.25);
+  background:rgba(255,255,255,0.15);
   backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
-  border-top:1px solid rgba(255,255,255,0.15);
+  border-top:1px solid rgba(255,255,255,0.3);
   display:flex; padding-bottom:var(--safe-bottom); z-index:200;
 }
-.nav-item { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:9px 4px 7px; cursor:pointer; color:rgba(255,255,255,0.45); font-size:9px; font-weight:500; gap:3px; border:none; background:none; font-family:inherit; transition:color 0.2s; }
+.nav-item { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:9px 4px 7px; cursor:pointer; color:rgba(44,16,16,0.7); font-size:9px; font-weight:500; gap:3px; border:none; background:none; font-family:inherit; transition:color 0.2s; }
 .nav-item svg { width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:1.8; }
-.nav-item.active { color:var(--lemon); }
-.nav-item.active svg { stroke:var(--lemon); }
+.nav-item.active { color:#2C1010; }
+.nav-item.active svg { stroke:#2C1010; }
 
 /* ── GLASS CARD ── */
 .card {
@@ -272,7 +272,7 @@ body::before {
 .modal-overlay { display:none; position:fixed; inset:0; background:rgba(80,0,0,0.5); backdrop-filter:blur(4px); z-index:500; align-items:flex-end; }
 .modal-overlay.open { display:flex; }
 .modal-sheet {
-  background:linear-gradient(160deg,rgba(255,100,100,0.95),rgba(180,40,40,0.97));
+  background:linear-gradient(160deg,rgba(255,160,160,0.97),rgba(210,80,80,0.98));
   backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
   border:1px solid rgba(255,255,255,0.2);
   border-radius:22px 22px 0 0;
@@ -326,8 +326,8 @@ body::before {
 .ptabs { display:flex; gap:5px; margin-bottom:10px; overflow-x:auto; }
 .ptab {
   flex-shrink:0; padding:6px 12px; border-radius:99px; font-size:11px; font-weight:600;
-  background:rgba(255,255,255,0.12); color:rgba(255,255,255,0.7);
-  border:1px solid rgba(255,255,255,0.2); cursor:pointer; font-family:inherit;
+  background:rgba(255,255,255,0.25); color:rgba(44,16,16,0.8);
+  border:1px solid rgba(255,255,255,0.35); cursor:pointer; font-family:inherit;
   backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
 }
 .ptab.active {
@@ -721,6 +721,10 @@ var J = {
   currentMonth: function() {
     var t = this.today();
     return t.jy + '-' + String(t.jm).padStart(2,'0');
+  },
+  dayName: function(date) {
+    var days = ['یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنج‌شنبه','جمعه','شنبه'];
+    return days[date.getDay()];
   },
   toGregorian: function(jy, jm, jd) {
     // Convert Jalali to Gregorian for date input
@@ -1202,11 +1206,19 @@ function renderAccounts() {
         '<div style="display:flex;align-items:center;gap:9px;">' + logoHtml +
         '<div><div style="font-weight:600;font-size:13px;">' + a.name + '</div>' +
         '<div style="font-size:11px;color:rgba(255,255,255,0.5);">' + a.currency + ' · ' + toCurrency(a.balance,a.currency) + '</div></div></div>' +
-        '<button class="icon-btn danger" data-id="' + a.id + '" data-action="da">🗑</button></div>';
+        '<div class="li-actions">' +
+        '<button class="icon-btn" data-id="' + a.id + '" data-action="ea" title="ویرایش">✏️</button>' +
+        '<button class="icon-btn danger" data-id="' + a.id + '" data-action="da" title="حذف">🗑️</button>' +
+        '</div></div>';
     });
     html += '</div></div>';
     list.innerHTML = html;
-    list.querySelectorAll('[data-action="da"]').forEach(function(btn){ btn.addEventListener('click', function(){ deleteAccount(this.dataset.id); }); });
+    list.onclick = function(e) {
+      var btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      if (btn.dataset.action === 'da') deleteAccount(btn.dataset.id);
+      else if (btn.dataset.action === 'ea') openEditAccount(btn.dataset.id);
+    };
   }
 
   var fList = document.getElementById('fundsList');
@@ -1221,14 +1233,18 @@ function renderAccounts() {
         '<div style="font-size:11px;color:rgba(255,255,255,0.5);">' + f.pct + '٪ · ' + g + '</div>' +
         '<div style="font-size:12px;color:var(--lemon);font-weight:600;">' + toFa(addCommas(Math.round(f.balance))) + ' ریال</div></div>' +
         '<div class="li-actions">' +
-        '<button class="icon-btn" data-id="' + f.id + '" data-action="pf">💸</button>' +
-        '<button class="icon-btn danger" data-id="' + f.id + '" data-action="df">🗑</button>' +
+        '<button class="icon-btn" data-id="' + f.id + '" data-action="ef" title="ویرایش">✏️</button>' +
+        '<button class="icon-btn danger" data-id="' + f.id + '" data-action="df" title="حذف">🗑️</button>' +
         '</div></div>';
     });
     fHtml += '</div></div>';
     fList.innerHTML = fHtml;
-    fList.querySelectorAll('[data-action="pf"]').forEach(function(btn){ btn.addEventListener('click', function(){ openFundPayment(this.dataset.id); }); });
-    fList.querySelectorAll('[data-action="df"]').forEach(function(btn){ btn.addEventListener('click', function(){ deleteFund(this.dataset.id); }); });
+    fList.onclick = function(e) {
+      var btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      if (btn.dataset.action === 'df') deleteFund(btn.dataset.id);
+      else if (btn.dataset.action === 'ef') openEditFund(btn.dataset.id);
+    };
   }
 }
 
@@ -1373,7 +1389,56 @@ function renderSettings() {
 // ═══════════════════════════════════════
 // DELETE
 // ═══════════════════════════════════════
-function deleteAccount(id) { if (!confirm('حذف شود؟')) return; DB.accounts=DB.accounts.filter(function(a){return a.id!==id;}); saveDB(); renderAll(); }
+function deleteAccount(id) {
+  if (!confirm('این حساب حذف شود؟')) return;
+  DB.accounts = DB.accounts.filter(function(a){ return a.id !== id; });
+  saveDB(); renderAll();
+}
+
+function openEditAccount(id) {
+  var acc = DB.accounts.find(function(a){ return a.id === id; });
+  if (!acc) return;
+  document.getElementById('edit-acc-id').value = id;
+  document.getElementById('edit-acc-name').value = acc.name;
+  document.getElementById('edit-acc-balance').value = acc.balance;
+  document.getElementById('edit-acc-currency').value = acc.currency;
+  openModal('modal-edit-account');
+}
+
+function submitEditAccount() {
+  var id = document.getElementById('edit-acc-id').value;
+  var name = document.getElementById('edit-acc-name').value.trim();
+  var balance = parseFloat(document.getElementById('edit-acc-balance').value) || 0;
+  if (!name) { alert('نام حساب را وارد کنید'); return; }
+  var acc = DB.accounts.find(function(a){ return a.id === id; });
+  if (!acc) return;
+  acc.name = name;
+  acc.balance = balance;
+  saveDB(); closeModal('modal-edit-account'); renderAll();
+}
+
+function openEditFund(id) {
+  var f = DB.funds.find(function(f){ return f.id === id; });
+  if (!f) return;
+  document.getElementById('edit-fund-id').value = id;
+  document.getElementById('edit-fund-name').value = f.name;
+  document.getElementById('edit-fund-pct').value = f.pct;
+  document.getElementById('edit-fund-pct-val').textContent = f.pct;
+  document.getElementById('edit-fund-group').value = f.incomeGroup;
+  openModal('modal-edit-fund');
+}
+
+function submitEditFund() {
+  var id = document.getElementById('edit-fund-id').value;
+  var name = document.getElementById('edit-fund-name').value.trim();
+  var pct = parseFloat(document.getElementById('edit-fund-pct').value) || 0;
+  var incomeGroup = document.getElementById('edit-fund-group').value;
+  if (!name) { alert('نام صندوق را وارد کنید'); return; }
+  var f = DB.funds.find(function(f){ return f.id === id; });
+  if (!f) return;
+  f.name = name; f.pct = pct; f.incomeGroup = incomeGroup;
+  saveDB(); closeModal('modal-edit-fund'); renderAll();
+}
 function deleteFund(id) { if (!confirm('حذف شود؟')) return; DB.funds=DB.funds.filter(function(f){return f.id!==id;}); saveDB(); renderAll(); }
 function deleteCat(id) { if (!confirm('حذف شود؟')) return; DB.categories=DB.categories.filter(function(c){return c.id!==id;}); saveDB(); renderAll(); }
 function deleteTx(id) {
@@ -1658,8 +1723,11 @@ function confirmClear() {
 // DATE HEADER
 // ═══════════════════════════════════════
 function updateDateHeader() {
+  var now = new Date();
   var j = J.today();
-  document.getElementById('todayDate').textContent = toFa(j.jd) + ' ' + J.monthName(j.jm) + ' ' + toFa(j.jy);
+  var dayName = J.dayName(now);
+  var dateStr = dayName + ' · ' + toFa(j.jd) + ' ' + J.monthName(j.jm) + ' ' + toFa(j.jy);
+  document.getElementById('todayDate').textContent = dateStr;
 }
 
 // ═══════════════════════════════════════
@@ -1667,7 +1735,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.0.1';
+var CURRENT_VERSION = '1.0.2';
 
 function checkForUpdate() {
   if (!navigator.onLine) return;
@@ -1755,6 +1823,35 @@ setTimeout(function() {
     <input type="hidden" id="edit-tx-type">
     <button class="btn-primary" onclick="submitEditTx()">ذخیره تغییرات</button>
     <button class="btn-secondary" onclick="closeModal('modal-edit-tx')">انصراف</button>
+  </div>
+</div>
+
+<!-- Edit Account Modal -->
+<div class="modal-overlay" id="modal-edit-account" onclick="closeModalOutside(event,'modal-edit-account')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">✏️ ویرایش حساب</div>
+    <div class="form-group"><label class="form-label">نام حساب</label><input type="text" class="form-input" id="edit-acc-name"></div>
+    <div class="form-group"><label class="form-label">موجودی فعلی</label><input type="number" class="form-input" id="edit-acc-balance"></div>
+    <div class="form-group"><label class="form-label">ارز</label><select class="form-select" id="edit-acc-currency"><option value="IRR">ریال (IRR)</option><option value="USD">دلار (USD)</option><option value="AED">درهم (AED)</option></select></div>
+    <input type="hidden" id="edit-acc-id">
+    <div class="hint-box">⚠️ تغییر موجودی مستقیم است و تاریخچه تراکنش تغییر نمی‌کند.</div>
+    <button class="btn-primary" onclick="submitEditAccount()">ذخیره</button>
+    <button class="btn-secondary" onclick="closeModal('modal-edit-account')">انصراف</button>
+  </div>
+</div>
+
+<!-- Edit Fund Modal -->
+<div class="modal-overlay" id="modal-edit-fund" onclick="closeModalOutside(event,'modal-edit-fund')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">✏️ ویرایش صندوق</div>
+    <div class="form-group"><label class="form-label">نام صندوق</label><input type="text" class="form-input" id="edit-fund-name"></div>
+    <div class="form-group"><label class="form-label">گروه درآمدی</label><select class="form-select" id="edit-fund-group"><option value="monthly">درآمد ماهیانه</option><option value="extra">درآمد اضافی</option><option value="all">همه</option></select></div>
+    <div class="form-group"><label class="form-label">درصد: <span id="edit-fund-pct-val">0</span>٪</label><input type="range" min="0" max="50" step="0.5" value="0" id="edit-fund-pct" oninput="document.getElementById('edit-fund-pct-val').textContent=this.value" style="width:100%;accent-color:var(--lemon);"></div>
+    <input type="hidden" id="edit-fund-id">
+    <button class="btn-primary" onclick="submitEditFund()">ذخیره</button>
+    <button class="btn-secondary" onclick="closeModal('modal-edit-fund')">انصراف</button>
   </div>
 </div>
 </body>
