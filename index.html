@@ -1651,7 +1651,22 @@ setTimeout(function() {
   }, 600);
 }, 2500);
 </script>
-lass="modal-overlay" id="modal-edit-fund" onclick="closeModalOutside(event,'modal-edit-fund')">
+<!-- Edit Account Modal -->
+<div class="modal-overlay" id="modal-edit-account" onclick="closeModalOutside(event,'modal-edit-account')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">✏️ ویرایش حساب</div>
+    <div class="form-group"><label class="form-label">نام حساب</label><input type="text" class="form-input" id="edit-acc-name"></div>
+    <div class="form-group"><label class="form-label">موجودی فعلی</label><input type="number" class="form-input" id="edit-acc-balance"></div>
+    <div class="form-group"><label class="form-label">ارز</label><select class="form-select" id="edit-acc-currency"><option value="IRR">ریال</option><option value="USD">دلار</option><option value="AED">درهم</option></select></div>
+    <input type="hidden" id="edit-acc-id">
+    <button class="btn-primary" onclick="submitEditAccount()">ذخیره</button>
+    <button class="btn-secondary" onclick="closeModal('modal-edit-account')">انصراف</button>
+  </div>
+</div>
+
+<!-- Edit Fund Modal -->
+<div class="modal-overlay" id="modal-edit-fund" onclick="closeModalOutside(event,'modal-edit-fund')">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-title">✏️ ویرایش صندوق</div>
@@ -1663,5 +1678,6 @@ lass="modal-overlay" id="modal-edit-fund" onclick="closeModalOutside(event,'moda
     <button class="btn-secondary" onclick="closeModal('modal-edit-fund')">انصراف</button>
   </div>
 </div>
+
 </body>
 </html>
