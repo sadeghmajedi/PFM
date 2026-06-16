@@ -276,10 +276,7 @@ body::before { content:''; position:fixed; inset:0; background:var(--bg); z-inde
       <h1>مدیریت مالی شخصی</h1>
     </div>
   </div>
-  <div style="display:flex;gap:7px;align-items:center;">
-    <div id="updateFab" onclick="doUpdate()" title="به‌روزرسانی" style="display:none;width:36px;height:36px;background:rgba(46,204,113,0.9);border-radius:10px;align-items:center;justify-content:center;cursor:pointer;font-size:16px;box-shadow:0 4px 12px rgba(46,204,113,0.4),0 0 0 3px rgba(46,204,113,0.2);animation:pulse-green 2s infinite;">🔄 آپدیت</div>
-    <button class="export-fab" onclick="openModal('modal-export')" title="خروجی">📤</button>
-  </div>
+  <button class="export-fab" onclick="openModal('modal-export')" title="خروجی">📤</button>
 </div>
 
 <!-- PAGE: DASHBOARD -->
@@ -397,6 +394,9 @@ body::before { content:''; position:fixed; inset:0; background:var(--bg); z-inde
   <button class="nav-item" onclick="navigate('transactions',this)">
     <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>تراکنش‌ها
   </button>
+  <button class="nav-item" onclick="openTransfer()">
+    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>انتقال
+  </button>
   <button class="nav-item" onclick="navigate('reports',this)">
     <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>گزارش
   </button>
@@ -507,10 +507,14 @@ body::before { content:''; position:fixed; inset:0; background:var(--bg); z-inde
     <div class="modal-handle"></div>
     <div class="modal-title">💼 افزودن صندوق</div>
     <div class="form-group"><label class="form-label">نام صندوق</label><input type="text" class="form-input" id="fund-name" placeholder="مثال: زکات، خیریه"></div>
-    <div class="form-group"><label class="form-label">گروه درآمدی</label><select class="form-select" id="fund-income-group"><option value="monthly">درآمد ماهیانه</option><option value="extra">درآمد اضافی</option><option value="all">همه</option></select></div>
-    <div class="form-group"><label class="form-label">درصد: <span id="fund-pct-val">0</span>٪</label><input type="range" min="0" max="50" step="0.5" value="0" id="fund-pct" oninput="document.getElementById('fund-pct-val').textContent=this.value" style="width:100%;accent-color:var(--lemon);"></div>
-    <div class="form-group"><label class="form-label">موجودی اولیه (ریال)</label><input type="number" class="form-input" id="fund-initial" placeholder="0"></div>
     <div class="form-group"><label class="form-label">آیکون</label><div class="chips" id="fund-icon-chips"><span class="chip sel" data-icon="🕌">🕌</span><span class="chip" data-icon="💝">💝</span><span class="chip" data-icon="💰">💰</span><span class="chip" data-icon="📈">📈</span><span class="chip" data-icon="🎓">🎓</span><span class="chip" data-icon="✈️">✈️</span><span class="chip" data-icon="🏠">🏠</span><span class="chip" data-icon="⭐">⭐</span></div></div>
+    <div style="background:var(--aqua-pale);border-radius:12px;padding:14px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--aqua-deep);margin-bottom:10px;">📊 درصد کسر از هر گروه درآمدی:</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><label style="font-size:12px;color:var(--text-main);">درآمد ماهیانه</label><div style="display:flex;align-items:center;gap:4px;"><input type="number" id="fund-rate-monthly" value="0" min="0" max="100" step="0.5" style="width:72px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;text-align:center;outline:none;"><span style="font-size:12px;color:var(--text-sub);">٪</span></div></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><label style="font-size:12px;color:var(--text-main);">درآمد اضافی</label><div style="display:flex;align-items:center;gap:4px;"><input type="number" id="fund-rate-extra" value="0" min="0" max="100" step="0.5" style="width:72px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;text-align:center;outline:none;"><span style="font-size:12px;color:var(--text-sub);">٪</span></div></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;"><label style="font-size:12px;color:var(--text-main);">سایر</label><div style="display:flex;align-items:center;gap:4px;"><input type="number" id="fund-rate-other" value="0" min="0" max="100" step="0.5" style="width:72px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;text-align:center;outline:none;"><span style="font-size:12px;color:var(--text-sub);">٪</span></div></div>
+    </div>
+    <div class="form-group"><label class="form-label">موجودی اولیه (ریال)</label><input type="number" class="form-input" id="fund-initial" placeholder="0"></div>
     <button class="btn-primary" onclick="submitFund()">ذخیره</button>
     <button class="btn-secondary" onclick="closeModal('modal-fund')">انصراف</button>
   </div>
@@ -643,7 +647,7 @@ function loadDB() {
   } catch(e) {}
   if (!DB.funds || !DB.funds.length) {
     if (!DB.funds) DB.funds = [];
-    DB.funds.push({id:'fund-zakat',name:'زکات',icon:'🕌',balance:0,totalIn:0,totalOut:0,pct:2.5,incomeGroup:'monthly'});
+    DB.funds.push({id:'fund-zakat',name:'زکات',icon:'🕌',balance:0,totalIn:0,totalOut:0,rates:{monthly:2.5,extra:0,other:0}});
     saveDB();
   }
 }
@@ -823,13 +827,20 @@ function sanitizeNumberInput(el) {
 function updateAllocPreview() {
   var amount = parseFloat(document.getElementById('inc-amount').value) || 0;
   var group = document.getElementById('inc-group').value;
-  var relevant = DB.funds.filter(function(f){ return f.incomeGroup === group || f.incomeGroup === 'all'; });
   var box = document.getElementById('inc-allocations');
-  if (!relevant.length || !amount) { box.style.display='none'; return; }
+  if (!amount) { box.style.display='none'; return; }
+  var hasAlloc = DB.funds.some(function(f){
+    var r = f.rates ? (f.rates[group]||0) : ((f.incomeGroup===group||f.incomeGroup==='all') ? (f.pct||0) : 0);
+    return r > 0;
+  });
+  if (!hasAlloc) { box.style.display='none'; return; }
   box.style.display = 'block';
-  box.innerHTML = '<strong>📊 تخصیص خودکار:</strong><br>' + relevant.map(function(f){
-    return f.icon + ' ' + f.name + ': ' + toFa(addCommas(Math.round(amount*f.pct/100))) + ' ریال (' + f.pct + '٪)';
-  }).join('<br>');
+    var plines = [];
+  DB.funds.forEach(function(f){
+    var r = f.rates ? (f.rates[group]||0) : ((f.incomeGroup===group||f.incomeGroup==='all') ? (f.pct||0) : 0);
+    if (r > 0) plines.push(f.icon+' '+f.name+': '+toFa(addCommas(Math.round(amount*r/100)))+' ریال ('+r+'٪)');
+  });
+  box.innerHTML = '<strong>📊 تخصیص خودکار:</strong><br>' + plines.join('<br>');
 }
 
 // ═══════════════════════════════════════
@@ -848,11 +859,12 @@ function submitIncome() {
   if (acc) acc.balance += amount;
   var tx = {id:'tx'+Date.now(),type:'income',amount:amount,group:group,accountId:accountId,desc:desc,date:dateISO,allocations:[]};
   DB.funds.forEach(function(f){
-    if (f.incomeGroup === group || f.incomeGroup === 'all') {
-      var v = amount * f.pct / 100;
+    var rate = f.rates ? (f.rates[group]||0) : ((f.incomeGroup===group||f.incomeGroup==='all') ? (f.pct||0) : 0);
+    if (rate > 0) {
+      var v = Math.round(amount * rate / 100);
       f.balance += v; f.totalIn = (f.totalIn||0) + v;
       tx.allocations.push({fundId:f.id,amount:v});
-      DB.transactions.push({id:'tx'+Date.now()+Math.random(),type:'fund-in',amount:v,fundId:f.id,desc:f.pct+'٪ از: '+desc,date:dateISO});
+      DB.transactions.push({id:'tx'+Date.now()+Math.random(),type:'fund-in',amount:v,fundId:f.id,desc:rate+'٪ از: '+desc,date:dateISO});
     }
   });
   DB.transactions.push(tx);
@@ -964,17 +976,16 @@ function submitAccount() {
 function submitFund() {
   var name = document.getElementById('fund-name').value.trim();
   if (!name) { alert('نام صندوق را وارد کنید'); return; }
-  var pct = parseFloat(document.getElementById('fund-pct').value) || 0;
-  var incomeGroup = document.getElementById('fund-income-group').value;
   var initial = parseFloat(document.getElementById('fund-initial').value) || 0;
   var iconEl = document.querySelector('#fund-icon-chips .chip.sel');
   var icon = iconEl ? iconEl.dataset.icon : '⭐';
-  DB.funds.push({id:'fund'+Date.now(),name:name,icon:icon,pct:pct,incomeGroup:incomeGroup,balance:initial,totalIn:initial,totalOut:0});
+  var rM = parseFloat(document.getElementById('fund-rate-monthly').value)||0;
+  var rE = parseFloat(document.getElementById('fund-rate-extra').value)||0;
+  var rO = parseFloat(document.getElementById('fund-rate-other').value)||0;
+  DB.funds.push({id:'fund'+Date.now(),name:name,icon:icon,rates:{monthly:rM,extra:rE,other:rO},balance:initial,totalIn:initial,totalOut:0});
   saveDB(); closeModal('modal-fund');
   document.getElementById('fund-name').value = '';
   document.getElementById('fund-initial').value = '';
-  document.getElementById('fund-pct').value = 0;
-  document.getElementById('fund-pct-val').textContent = '0';
   renderAll();
 }
 
@@ -1141,7 +1152,7 @@ function renderTransactions() {
   var list = document.getElementById('txList');
   if (!txs.length) { list.innerHTML = '<div class="empty"><div class="ei">📋</div><p>تراکنشی یافت نشد</p></div>'; return; }
 
-  var typeMap = {income:'درآمد',expense:'هزینه','fund-in':'واریز صندوق','fund-out':'برداشت صندوق'};
+  var typeMap = {income:'درآمد',expense:'هزینه','fund-in':'واریز صندوق','fund-out':'برداشت صندوق',transfer:'انتقال'};
   var html = '';
   txs.forEach(function(t) {
     var cat = t.catId ? DB.categories.find(function(c){ return c.id===t.catId; }) : null;
@@ -1149,6 +1160,7 @@ function renderTransactions() {
     var icon, label, amCls, prefix;
     if (t.type==='income') { icon='💵'; amCls='income'; prefix='+'; label=t.desc; }
     else if (t.type==='expense') { icon=cat?cat.icon:'💸'; amCls='expense'; prefix='-'; label=t.desc; }
+    else if (t.type==='transfer') { icon='⇔️'; amCls=''; prefix=''; label=t.desc; canEdit=false; }
     else if (t.type==='fund-in') { icon=fund?fund.icon:'💰'; amCls='income'; prefix='+'; label='واریز به '+(fund?fund.name:''); }
     else { icon=fund?fund.icon:'💰'; amCls='expense'; prefix='-'; label='پرداخت از '+(fund?fund.name:'')+': '+t.desc; }
     var cls = (t.type==='income'||t.type==='fund-in') ? 'inc-icon' : '';
@@ -1290,19 +1302,21 @@ function openEditFund(id) {
   var f = DB.funds.find(function(f){ return f.id===id; }); if (!f) return;
   document.getElementById('edit-fund-id').value = id;
   document.getElementById('edit-fund-name').value = f.name;
-  document.getElementById('edit-fund-pct').value = f.pct;
-  document.getElementById('edit-fund-pct-val').textContent = f.pct;
-  document.getElementById('edit-fund-group').value = f.incomeGroup;
+  var rates = f.rates || {monthly:f.pct||0,extra:0,other:0};
+  document.getElementById('edit-fund-rate-monthly').value = rates.monthly||0;
+  document.getElementById('edit-fund-rate-extra').value = rates.extra||0;
+  document.getElementById('edit-fund-rate-other').value = rates.other||0;
   openModal('modal-edit-fund');
 }
 function submitEditFund() {
   var id = document.getElementById('edit-fund-id').value;
   var name = document.getElementById('edit-fund-name').value.trim();
-  var pct = parseFloat(document.getElementById('edit-fund-pct').value)||0;
-  var incomeGroup = document.getElementById('edit-fund-group').value;
   if (!name) { alert('نام صندوق را وارد کنید'); return; }
+  var rM = parseFloat(document.getElementById('edit-fund-rate-monthly').value)||0;
+  var rE = parseFloat(document.getElementById('edit-fund-rate-extra').value)||0;
+  var rO = parseFloat(document.getElementById('edit-fund-rate-other').value)||0;
   var f = DB.funds.find(function(f){ return f.id===id; }); if (!f) return;
-  f.name=name; f.pct=pct; f.incomeGroup=incomeGroup;
+  f.name=name; f.rates={monthly:rM,extra:rE,other:rO};
   saveDB(); closeModal('modal-edit-fund'); renderAll();
 }
 function deleteFund(id) { if (!confirm('حذف شود؟')) return; DB.funds=DB.funds.filter(function(f){return f.id!==id;}); saveDB(); renderAll(); }
@@ -1480,7 +1494,7 @@ function exportReportExcel() {
   });
 
   var rows = [['تاریخ','نوع','مبلغ','توضیحات','دسته‌بندی','حساب']];
-  var typeMap = {income:'درآمد',expense:'هزینه','fund-in':'واریز صندوق','fund-out':'برداشت صندوق'};
+  var typeMap = {income:'درآمد',expense:'هزینه','fund-in':'واریز صندوق','fund-out':'برداشت صندوق',transfer:'انتقال'};
   monthTxs.sort(function(a,b){return new Date(b.date)-new Date(a.date);}).forEach(function(t) {
     var cat = t.catId ? DB.categories.find(function(c){return c.id===t.catId;}) : null;
     var fund = t.fundId ? DB.funds.find(function(f){return f.id===t.fundId;}) : null;
@@ -1507,7 +1521,7 @@ function exportData() {
 
 function exportExcel() {
   var rows = [['تاریخ','نوع','مبلغ','توضیحات','دسته‌بندی / صندوق','حساب']];
-  var typeMap = {income:'درآمد',expense:'هزینه','fund-in':'واریز صندوق','fund-out':'برداشت صندوق'};
+  var typeMap = {income:'درآمد',expense:'هزینه','fund-in':'واریز صندوق','fund-out':'برداشت صندوق',transfer:'انتقال'};
   DB.transactions.slice().sort(function(a,b){return new Date(b.date)-new Date(a.date);}).forEach(function(t) {
     var cat = t.catId ? DB.categories.find(function(c){return c.id===t.catId;}) : null;
     var fund = t.fundId ? DB.funds.find(function(f){return f.id===t.fundId;}) : null;
@@ -1530,7 +1544,7 @@ function exportPDF() {
   var totalRial = DB.accounts.filter(function(a){return a.currency==='IRR';}).reduce(function(s,a){return s+a.balance;},0);
   var totalUSD = DB.accounts.filter(function(a){return a.currency==='USD';}).reduce(function(s,a){return s+a.balance;},0);
   var totalAED = DB.accounts.filter(function(a){return a.currency==='AED';}).reduce(function(s,a){return s+a.balance;},0);
-  var typeMap = {income:'درآمد',expense:'هزینه','fund-in':'واریز صندوق','fund-out':'برداشت صندوق'};
+  var typeMap = {income:'درآمد',expense:'هزینه','fund-in':'واریز صندوق','fund-out':'برداشت صندوق',transfer:'انتقال'};
   var rows = '';
   DB.transactions.slice().sort(function(a,b){return new Date(b.date)-new Date(a.date);}).slice(0,300).forEach(function(t) {
     var cat = t.catId ? DB.categories.find(function(c){return c.id===t.catId;}) : null;
@@ -1690,13 +1704,32 @@ setTimeout(function() {
     <div class="modal-handle"></div>
     <div class="modal-title">✏️ ویرایش صندوق</div>
     <div class="form-group"><label class="form-label">نام صندوق</label><input type="text" class="form-input" id="edit-fund-name"></div>
-    <div class="form-group"><label class="form-label">گروه درآمدی</label><select class="form-select" id="edit-fund-group"><option value="monthly">درآمد ماهیانه</option><option value="extra">درآمد اضافی</option><option value="all">همه</option></select></div>
-    <div class="form-group"><label class="form-label">درصد: <span id="edit-fund-pct-val">0</span>٪</label><input type="range" min="0" max="50" step="0.5" value="0" id="edit-fund-pct" oninput="document.getElementById('edit-fund-pct-val').textContent=this.value" style="width:100%;accent-color:var(--aqua);"></div>
+    <div style="background:var(--aqua-pale);border-radius:12px;padding:14px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--aqua-deep);margin-bottom:10px;">📊 درصد کسر از هر گروه درآمدی:</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><label style="font-size:12px;color:var(--text-main);">درآمد ماهیانه</label><div style="display:flex;align-items:center;gap:4px;"><input type="number" id="edit-fund-rate-monthly" value="0" min="0" max="100" step="0.5" style="width:72px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;text-align:center;outline:none;"><span style="font-size:12px;color:var(--text-sub);">٪</span></div></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><label style="font-size:12px;color:var(--text-main);">درآمد اضافی</label><div style="display:flex;align-items:center;gap:4px;"><input type="number" id="edit-fund-rate-extra" value="0" min="0" max="100" step="0.5" style="width:72px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;text-align:center;outline:none;"><span style="font-size:12px;color:var(--text-sub);">٪</span></div></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;"><label style="font-size:12px;color:var(--text-main);">سایر</label><div style="display:flex;align-items:center;gap:4px;"><input type="number" id="edit-fund-rate-other" value="0" min="0" max="100" step="0.5" style="width:72px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;text-align:center;outline:none;"><span style="font-size:12px;color:var(--text-sub);">٪</span></div></div>
+    </div>
     <input type="hidden" id="edit-fund-id">
     <button class="btn-primary" onclick="submitEditFund()">ذخیره</button>
     <button class="btn-secondary" onclick="closeModal('modal-edit-fund')">انصراف</button>
   </div>
 </div>
 
+<!-- Transfer Modal -->
+<div class="modal-overlay" id="modal-transfer" onclick="closeModalOutside(event,'modal-transfer')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">↔️ انتقال بین‌حسابی</div>
+    <div class="form-group"><label class="form-label">مبلغ انتقال (واریز به مقصد)</label><input type="number" class="form-input" id="tr-amount" placeholder="مثال: ۱۰۰،۰۰۰"></div>
+    <div class="form-group"><label class="form-label">کارمزد (ریال) — اختیاری</label><input type="number" class="form-input" id="tr-fee" placeholder="0"></div>
+    <div class="hint-box">💡 مبلغ + کارمزد از مبدأ کسر می‌شود. فقط مبلغ به مقصد واریز می‌شود.</div>
+    <div class="form-group"><label class="form-label">حساب مبدأ</label><select class="form-select" id="tr-from"></select></div>
+    <div class="form-group"><label class="form-label">حساب مقصد</label><select class="form-select" id="tr-to"></select></div>
+    <div class="form-group"><label class="form-label">تاریخ</label><input type="date" class="form-input" id="tr-date"></div>
+    <button class="btn-primary" onclick="submitTransfer()">ثبت انتقال</button>
+    <button class="btn-secondary" onclick="closeModal('modal-transfer')">انصراف</button>
+  </div>
+</div>
 </body>
 </html>
