@@ -70,7 +70,7 @@ body::before { content:''; position:fixed; inset:0; background:var(--bg); z-inde
 .pkey.empty { background:transparent; border:none; box-shadow:none; cursor:default; }
 .lock-err { color:#8B0000; font-size:12px; margin-top:10px; min-height:18px; text-align:center; }
 .lock-note { font-size:11px; color:rgba(13,74,71,0.55); margin-top:5px; text-align:center; }
-.lock-credit { position:absolute; bottom:calc(20px + var(--safe-bottom)); font-size:11px; color:rgba(13,74,71,0.6); text-align:center; line-height:1.7; font-family:'Vazirmatn',sans-serif; }
+.lock-credit { position:absolute; bottom:calc(20px + var(--safe-bottom)); font-size:13px; font-weight:500; color:#222; text-align:center; line-height:1.7; font-family:'Vazirmatn',sans-serif; }
 
 /* ── TOP BAR ── */
 .top-bar { background:#fff; border-bottom:3px solid var(--aqua); box-shadow:var(--shadow-sm); padding:12px 14px 10px; padding-top:calc(12px + var(--safe-top)); display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
@@ -875,6 +875,16 @@ function submitExpense() {
   var desc = document.getElementById('exp-desc').value || (DB.categories.find(function(c){ return c.id===catId; })||{name:'هزینه'}).name;
   if (DB.accounts.length && !accountId) { alert('لطفاً حساب بانکی را انتخاب کنید'); return; }
   var acc = DB.accounts.find(function(a){ return a.id===accountId; });
+  // Check sufficient balance (only for IRR accounts)
+  if (acc && acc.currency === 'IRR' && acc.balance < amount) {
+    var shortage = addCommas(Math.round(amount - acc.balance));
+    alert('موجودی حساب «' + acc.name + '» کافی نیست.\nکمبود: ' + toFa(shortage) + ' ریال');
+    return;
+  }
+  if (acc && acc.currency !== 'IRR' && acc.balance < amount) {
+    alert('موجودی حساب «' + acc.name + '» کافی نیست.');
+    return;
+  }
   if (acc) acc.balance -= amount;
   DB.transactions.push({id:'tx'+Date.now(),type:'expense',amount:amount,catId:catId,accountId:accountId,desc:desc,date:dateISO});
   saveDB(); closeModal('modal-expense');
@@ -908,6 +918,12 @@ function submitFundPayment() {
   var dateISO = dateVal + 'T' + new Date().toTimeString().split(' ')[0];
   if (!amount || amount <= 0) { alert('مبلغ را وارد کنید'); return; }
   if (!accountId) { alert('لطفاً حساب بانکی را انتخاب کنید'); return; }
+  var accCheck = DB.accounts.find(function(a){ return a.id===accountId; });
+  if (accCheck && accCheck.balance < amount) {
+    var shortage2 = addCommas(Math.round(amount - accCheck.balance));
+    alert('موجودی حساب «' + accCheck.name + '» کافی نیست.\nکمبود: ' + toFa(shortage2) + ' ریال');
+    return;
+  }
   var f = DB.funds.find(function(f){ return f.id===fundId; }); if (!f) return;
   // Deduct from fund
   f.balance -= amount; f.totalOut = (f.totalOut||0) + amount;
@@ -1022,13 +1038,16 @@ function renderDashboard() {
   } else {
     var fHtml = '';
     DB.funds.forEach(function(f) {
-      var pct = f.totalIn > 0 ? Math.min(100, (f.balance/f.totalIn)*100) : 0;
-      fHtml += '<div class="fund-item">' +
-        '<div class="fund-top"><div class="fund-name">' + f.icon + ' ' + f.name + '</div><div class="fund-bal">' + toFa(addCommas(Math.round(f.balance))) + ' ریال</div></div>' +
-        '<div class="fund-bar-wrap"><div class="fund-bar-fill" style="width:' + pct.toFixed(0) + '%"></div></div>' +
-        '<div class="fund-meta"><span>واریز: ' + toFa(addCommas(Math.round(f.totalIn||0))) + '</span>' +
-        '<button data-id="' + f.id + '" data-action="fp" style="background:var(--pink-pale);border:none;border-radius:6px;padding:3px 9px;font-size:10px;color:rgba(255,200,200,1);font-weight:600;cursor:pointer;font-family:inherit;">💸 پرداخت</button>' +
-        '<span>برداشت: ' + toFa(addCommas(Math.round(f.totalOut||0))) + '</span></div></div>';
+      fHtml += '<div class="fund-item" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;">' +
+        '<div style="display:flex;align-items:center;gap:10px;">' +
+          '<span style="font-size:22px;">' + f.icon + '</span>' +
+          '<div>' +
+            '<div style="font-size:12px;font-weight:600;color:var(--text-main);">' + f.name + '</div>' +
+            '<div style="font-size:15px;font-weight:700;color:var(--aqua-dark);direction:ltr;">' + toFa(addCommas(Math.round(f.balance))) + ' ریال</div>' +
+          '</div>' +
+        '</div>' +
+        '<button data-id="' + f.id + '" data-action="fp" style="background:var(--aqua);border:none;border-radius:9px;padding:7px 14px;font-size:12px;color:#0D4A47;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;">💸 پرداخت</button>' +
+        '</div>';
     });
     fundsEl.innerHTML = fHtml;
     fundsEl.querySelectorAll('[data-action="fp"]').forEach(function(btn){ btn.addEventListener('click', function(){ openFundPayment(this.dataset.id); }); });
