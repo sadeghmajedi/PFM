@@ -259,7 +259,7 @@ body::before { content:''; position:fixed; inset:0; background:var(--bg); z-inde
   </div>
   <div class="lock-err" id="lockErr"></div>
   <div class="lock-note" id="lockNote"></div>
-  <div style="position:absolute;bottom:calc(20px + env(safe-area-inset-bottom,0px));font-size:11px;color:var(--lemon);text-align:center;line-height:1.6;font-family:'Vazirmatn',sans-serif;">Designed &amp; Developed by: Seyed<br>Sadegh Majedi</div>
+  <div class="lock-credit">Designed &amp; Developed by<br>Seyed Sadegh Majedi</div>
 </div>
 
 <!-- MAIN APP -->
@@ -374,7 +374,7 @@ body::before { content:''; position:fixed; inset:0; background:var(--bg); z-inde
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.0.5</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.0.9</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
@@ -404,6 +404,7 @@ body::before { content:''; position:fixed; inset:0; background:var(--bg); z-inde
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>تنظیمات
   </button>
 </nav>
+<div id="updateFab" onclick="doUpdate()" style="display:none;position:fixed;bottom:calc(var(--nav-h) + var(--safe-bottom) + 14px);left:50%;transform:translateX(-50%);z-index:300;height:34px;padding:0 16px;background:#27AE60;border-radius:99px;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:12px;font-weight:700;color:white;box-shadow:0 4px 14px rgba(39,174,96,0.45);animation:pulse-green 2s infinite;font-family:'Vazirmatn',sans-serif;white-space:nowrap;">🔄 نسخه جدید — به‌روزرسانی</div>
 
 <!-- ═══ MODALS ═══ -->
 
@@ -1321,6 +1322,47 @@ function submitEditFund() {
 }
 function deleteFund(id) { if (!confirm('حذف شود؟')) return; DB.funds=DB.funds.filter(function(f){return f.id!==id;}); saveDB(); renderAll(); }
 function deleteCat(id) { if (!confirm('حذف شود؟')) return; DB.categories=DB.categories.filter(function(c){return c.id!==id;}); saveDB(); renderAll(); }
+function openTransfer() {
+  if (!DB.accounts.length) { alert('ابتدا حساب بانکی اضافه کنید'); return; }
+  var opts = DB.accounts.map(function(a){
+    return '<option value="'+a.id+'">'+a.name+' ('+toCurrency(a.balance,a.currency)+')</option>';
+  }).join('');
+  document.getElementById('tr-from').innerHTML = '<option value="">— حساب مبدأ —</option>'+opts;
+  document.getElementById('tr-to').innerHTML = '<option value="">— حساب مقصد —</option>'+opts;
+  document.getElementById('tr-amount').value = '';
+  document.getElementById('tr-fee').value = '';
+  document.getElementById('tr-date').value = todayGregorian();
+  openModal('modal-transfer');
+}
+
+function submitTransfer() {
+  var amount = parseFloat(document.getElementById('tr-amount').value);
+  var fee = parseFloat(document.getElementById('tr-fee').value) || 0;
+  var fromId = document.getElementById('tr-from').value;
+  var toId = document.getElementById('tr-to').value;
+  var dateVal = document.getElementById('tr-date').value || todayGregorian();
+  var dateISO = dateVal + 'T' + new Date().toTimeString().split(' ')[0];
+  if (!amount || amount <= 0) { alert('مبلغ را وارد کنید'); return; }
+  if (!fromId) { alert('حساب مبدأ را انتخاب کنید'); return; }
+  if (!toId) { alert('حساب مقصد را انتخاب کنید'); return; }
+  if (fromId === toId) { alert('حساب مبدأ و مقصد یکسان نباشند'); return; }
+  var fromAcc = DB.accounts.find(function(a){ return a.id===fromId; });
+  var toAcc = DB.accounts.find(function(a){ return a.id===toId; });
+  if (!fromAcc || !toAcc) return;
+  var total = amount + fee;
+  if (fromAcc.balance < total) {
+    alert('موجودی «'+fromAcc.name+'» کافی نیست.\nکمبود: '+toFa(addCommas(Math.round(total-fromAcc.balance)))+' ریال');
+    return;
+  }
+  fromAcc.balance -= total;
+  toAcc.balance += amount;
+  var feeNote = fee > 0 ? ' (کارمزد: '+toFa(addCommas(fee))+')' : '';
+  DB.transactions.push({id:'tx'+Date.now(),type:'transfer',amount:amount,fee:fee,
+    fromAccountId:fromId,toAccountId:toId,
+    desc:'انتقال از '+fromAcc.name+' به '+toAcc.name+feeNote,date:dateISO});
+  saveDB(); closeModal('modal-transfer'); renderAll();
+}
+
 function deleteTx(id) {
   if (!confirm('این تراکنش حذف شود؟')) return;
   var tx = DB.transactions.find(function(t){ return t.id===id; });
@@ -1613,7 +1655,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.0.5';
+var CURRENT_VERSION = '1.0.9';
 
 function manualUpdateCheck() {
   checkForUpdate();
