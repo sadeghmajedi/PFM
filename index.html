@@ -402,7 +402,7 @@ body::before { content:''; position:fixed; inset:0; background:var(--bg); z-inde
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.1.0</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.1.2</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
@@ -1169,7 +1169,7 @@ function renderDashboard() {
     else if (t.type==='transfer') { icon='⇔️'; cls=''; amCls=''; prefix=''; }
     else if (t.type==='fund-out') { icon=fund?fund.icon:'💰'; cls=''; amCls='expense'; prefix='-'; }
     else { icon='💰'; cls=''; amCls=''; prefix=''; }
-    var canEdit = (t.type==='income'||t.type==='expense');
+    var canEdit = (t.type==='income'||t.type==='expense'||t.type==='transfer'||t.type==='fund-out');
     var feeSubLine = (t.type==='transfer'&&t.fee>0) ? '<div style="font-size:10px;color:var(--danger);">کارمزد: '+toFa(addCommas(Math.round(t.fee)))+'</div>' : '';
     rHtml += '<div class="tx-item">' +
       '<div class="tx-icon ' + cls + '">' + icon + '</div>' +
@@ -1277,13 +1277,13 @@ function renderTransactions() {
     var cat = t.catId ? DB.categories.find(function(c){ return c.id===t.catId; }) : null;
     var fund = t.fundId ? DB.funds.find(function(f){ return f.id===t.fundId; }) : null;
     var icon, label, amCls, prefix;
+    var canEdit = (t.type==='income' || t.type==='expense' || t.type==='transfer' || t.type==='fund-out');
     if (t.type==='income') { var incCat = t.incCatId ? (DB.incomeCategories||[]).find(function(c){ return c.id===t.incCatId; }) : null; icon=incCat?incCat.icon:'💵'; amCls='income'; prefix='+'; label=t.desc; }
     else if (t.type==='expense') { icon=cat?cat.icon:'💸'; amCls='expense'; prefix='-'; label=t.desc; }
-    else if (t.type==='transfer') { icon='⇔️'; amCls=''; prefix=''; label=t.desc; canEdit=false; }
+    else if (t.type==='transfer') { icon='⇔️'; amCls=''; prefix=''; label=t.desc; }
     else if (t.type==='fund-in') { icon=fund?fund.icon:'💰'; amCls='income'; prefix='+'; label='واریز به '+(fund?fund.name:''); }
     else { icon=fund?fund.icon:'💰'; amCls='expense'; prefix='-'; label='پرداخت از '+(fund?fund.name:'')+': '+t.desc; }
     var cls = (t.type==='income'||t.type==='fund-in') ? 'inc-icon' : '';
-    var canEdit = (t.type==='income' || t.type==='expense' || t.type==='transfer' || t.type==='fund-out');
     var feeSubLine = (t.type==='transfer' && t.fee > 0) ? '<div style="font-size:10px;color:var(--danger);margin-top:1px;">کارمزد: ' + toFa(addCommas(Math.round(t.fee))) + '</div>' : '';
     html += '<div class="card" style="margin-bottom:7px;"><div class="card-body" style="padding:10px;">' +
       '<div class="tx-item" style="padding:0;border:none;">' +
@@ -1790,7 +1790,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.1.1';
+var CURRENT_VERSION = '1.1.2';
 
 function manualUpdateCheck() {
   checkForUpdate();
