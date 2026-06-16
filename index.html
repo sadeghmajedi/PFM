@@ -8,31 +8,29 @@
 <meta name="apple-mobile-web-app-title" content="PFM">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
-<meta name="theme-color" content="#FF7F7F">
+<meta name="theme-color" content="#81D8D0">
 <title>مدیریت مالی شخصی</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --pink: #FF7F7F;
-  --pink-dark: #E06060;
-  --pink-light: #FFB3B3;
-  --pink-pale: rgba(255,127,127,0.15);
+  --aqua: #81D8D0;
+  --aqua-dark: #1A9D95;
+  --aqua-deep: #0D6B65;
+  --aqua-light: #B0EAE6;
+  --aqua-pale: #EAF8F7;
   --lemon: #FDEE00;
-  --cream: #FFFDD0;
-  --gray-mid: #A09A9A;
-  --gray-light: rgba(255,255,255,0.2);
+  --bg: #FAFAF7;
   --white: #FFFFFF;
-  --danger: #FF4444;
-  --success: #2ECC71;
-  --bg-start: #FF7F7F;
-  --bg-end: #C04040;
-  --glass: rgba(255,255,255,0.15);
-  --glass-border: rgba(255,255,255,0.3);
-  --glass-strong: rgba(255,255,255,0.22);
-  --text-main: #FFFFFF;
-  --text-sub: rgba(255,255,255,0.7);
-  --text-dark: #2C1A1A;
+  --danger: #D94040;
+  --success: #27AE60;
+  --text-main: #222222;
+  --text-mid: #555555;
+  --text-sub: #999999;
+  --border: #EFEFEA;
+  --border-aqua: #C8F0ED;
+  --shadow-sm: 0 1px 5px rgba(0,0,0,0.06);
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
   --radius: 18px;
   --radius-sm: 12px;
   --nav-h: 68px;
@@ -40,342 +38,196 @@
   --safe-top: env(safe-area-inset-top, 0px);
 }
 * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
-
-body {
-  font-family:'Vazirmatn',sans-serif;
-  background: linear-gradient(160deg, #FFE8E8 0%, #FFCECE 50%, #FFB8B8 100%);
-  min-height:100vh;
-  min-height:-webkit-fill-available;
-  padding-bottom:calc(var(--nav-h) + var(--safe-bottom) + 12px);
-  font-size:14px;
-  color:var(--text-main);
-}
-/* Fixed background so it doesn't scroll */
-body::before {
-  content:'';
-  position:fixed;
-  inset:0;
-  background: linear-gradient(160deg, #FF7F7F 0%, #D94F4F 40%, #B83030 100%);
-  z-index:-1;
-}
+body { font-family:'Vazirmatn',sans-serif; background:var(--bg); min-height:100vh; min-height:-webkit-fill-available; padding-bottom:calc(var(--nav-h) + var(--safe-bottom) + 12px); font-size:14px; color:var(--text-main); }
+body::before { content:''; position:fixed; inset:0; background:var(--bg); z-index:-1; }
 
 /* ── SPLASH ── */
-#splash { position:fixed; inset:0; background:linear-gradient(160deg,#FFE0E0,#FFBABA); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; transition:opacity 0.7s,transform 0.7s; }
-#splash.out { opacity:0; transform:scale(1.05); pointer-events:none; }
-.sp-ring { position:absolute; border-radius:50%; border:1.5px solid rgba(180,80,80,0.2); animation:rp 2.5s ease-in-out infinite; }
+#splash { position:fixed; inset:0; background:linear-gradient(150deg,#B0EAE6,#81D8D0); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; transition:opacity 0.7s,transform 0.7s; }
+#splash.out { opacity:0; transform:scale(1.04); pointer-events:none; }
+.sp-ring { position:absolute; border-radius:50%; border:1.5px solid rgba(255,255,255,0.35); animation:rp 2.5s ease-in-out infinite; }
 .sp-ring:nth-child(1){width:200px;height:200px;animation-delay:0s}
 .sp-ring:nth-child(2){width:280px;height:280px;animation-delay:0.4s}
 .sp-ring:nth-child(3){width:360px;height:360px;animation-delay:0.8s}
 @keyframes rp{0%,100%{opacity:.15;transform:scale(1)}50%{opacity:.5;transform:scale(1.03)}}
 #splashLogo { animation:pop 0.8s cubic-bezier(0.175,0.885,0.32,1.275) forwards; opacity:0; }
 @keyframes pop{0%{opacity:0;transform:scale(0.3)rotate(-15deg)}70%{opacity:1;transform:scale(1.08)rotate(2deg)}100%{opacity:1;transform:scale(1)rotate(0)}}
-.sp-title { margin-top:26px; font-size:26px; font-weight:700; color:#3A1010; animation:fu 0.6s 0.6s ease forwards; opacity:0; text-shadow:0 2px 12px rgba(0,0,0,0.2); }
-.sp-sub { margin-top:8px; font-size:15px; color:#8B5000; font-weight:600; animation:fu 0.6s 0.8s ease forwards; opacity:0; }
+.sp-title { margin-top:26px; font-size:26px; font-weight:700; color:#0D4A47; animation:fu 0.6s 0.6s ease forwards; opacity:0; }
+.sp-sub { margin-top:8px; font-size:15px; color:rgba(13,74,71,0.7); font-weight:500; animation:fu 0.6s 0.8s ease forwards; opacity:0; }
 @keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-@keyframes pulse-green{0%,100%{box-shadow:0 4px 12px rgba(46,204,113,0.4),0 0 0 3px rgba(46,204,113,0.2)}50%{box-shadow:0 4px 16px rgba(46,204,113,0.6),0 0 0 6px rgba(46,204,113,0.1)}}
+@keyframes pulse-green{0%,100%{box-shadow:0 4px 12px rgba(39,174,96,0.4)}50%{box-shadow:0 4px 18px rgba(39,174,96,0.65),0 0 0 4px rgba(39,174,96,0.1)}}
 
 /* ── LOCK ── */
-#lockScreen { display:none; position:fixed; inset:0; background:linear-gradient(160deg,#FFE0E0,#FFBABA); z-index:8000; flex-direction:column; align-items:center; justify-content:center; padding:30px 28px; }
+#lockScreen { display:none; position:fixed; inset:0; background:linear-gradient(150deg,#B0EAE6,#81D8D0); z-index:8000; flex-direction:column; align-items:center; justify-content:center; padding:30px 28px; }
 #lockScreen.vis { display:flex; }
-.lock-app-name { font-size:26px; font-weight:700; color:#3A1010; margin-top:16px; margin-bottom:5px; text-align:center; text-shadow:0 2px 10px rgba(0,0,0,0.15); }
-.lock-sub { font-size:13px; color:rgba(60,20,20,0.7); margin-bottom:24px; text-align:center; }
+.lock-app-name { font-size:26px; font-weight:700; color:#0D4A47; margin-top:16px; margin-bottom:5px; text-align:center; }
+.lock-sub { font-size:13px; color:rgba(13,74,71,0.7); margin-bottom:24px; text-align:center; }
 .pdots { display:flex; gap:14px; margin-bottom:24px; }
-.pdot { width:14px; height:14px; border-radius:50%; border:2px solid rgba(150,60,60,0.4); background:transparent; transition:all 0.2s; }
-.pdot.on { background:var(--lemon); border-color:var(--lemon); box-shadow:0 0 8px rgba(253,238,0,0.6); }
+.pdot { width:14px; height:14px; border-radius:50%; border:2px solid rgba(13,74,71,0.3); background:transparent; transition:all 0.2s; }
+.pdot.on { background:#0D4A47; border-color:#0D4A47; }
 .pkeypad { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; width:252px; }
-.pkey {
-  height:60px; border-radius:14px; border:none; cursor:pointer; font-family:'Vazirmatn',sans-serif; font-size:22px; font-weight:600;
-  background:rgba(255,255,255,0.15);
-  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-  border:1px solid rgba(255,255,255,0.25);
-  color:white;
-  box-shadow:0 4px 16px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.2);
-  transition:all 0.15s;
-}
-.pkey:active { background:rgba(255,255,255,0.28); transform:scale(0.93); }
+.pkey { height:60px; border-radius:13px; border:none; cursor:pointer; font-family:'Vazirmatn',sans-serif; font-size:22px; font-weight:600; background:rgba(255,255,255,0.45); color:#0D4A47; border:1px solid rgba(255,255,255,0.6); box-shadow:0 2px 8px rgba(0,0,0,0.08); transition:all 0.15s; }
+.pkey:active { background:rgba(255,255,255,0.65); transform:scale(0.93); }
 .pkey.empty { background:transparent; border:none; box-shadow:none; cursor:default; }
-.lock-err { color:#C03030; font-size:12px; margin-top:10px; min-height:18px; text-align:center; }
-.lock-note { font-size:11px; color:rgba(80,30,30,0.6); margin-top:5px; text-align:center; }
-.lock-credit { position:absolute; bottom:calc(20px + var(--safe-bottom)); font-size:11px; color:#8B6000; text-align:center; line-height:1.7; font-family:'Vazirmatn',sans-serif; }
+.lock-err { color:#8B0000; font-size:12px; margin-top:10px; min-height:18px; text-align:center; }
+.lock-note { font-size:11px; color:rgba(13,74,71,0.55); margin-top:5px; text-align:center; }
+.lock-credit { position:absolute; bottom:calc(20px + var(--safe-bottom)); font-size:11px; color:rgba(13,74,71,0.6); text-align:center; line-height:1.7; font-family:'Vazirmatn',sans-serif; }
 
 /* ── TOP BAR ── */
-.top-bar {
-  background:rgba(0,0,0,0.15);
-  backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
-  border-bottom:1px solid rgba(255,255,255,0.15);
-  padding:12px 14px 10px;
-  padding-top:calc(12px + var(--safe-top));
-  display:flex; align-items:center; justify-content:space-between;
-  position:sticky; top:0; z-index:100;
-}
+.top-bar { background:#fff; border-bottom:3px solid var(--aqua); box-shadow:var(--shadow-sm); padding:12px 14px 10px; padding-top:calc(12px + var(--safe-top)); display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
 .top-bar-left { display:flex; align-items:center; gap:9px; }
-.top-logo-wrap { width:34px; height:34px; border-radius:50%; overflow:hidden; flex-shrink:0; border:2px solid rgba(253,238,0,0.7); box-shadow:0 2px 8px rgba(0,0,0,0.2); }
+.top-logo-wrap { width:34px; height:34px; border-radius:50%; overflow:hidden; flex-shrink:0; border:2px solid var(--aqua); }
 .top-logo-wrap img { width:100%; height:100%; object-fit:cover; object-position:center 10%; }
-.top-bar h1 { font-size:14px; font-weight:700; color:#3A1010; text-shadow:0 1px 4px rgba(0,0,0,0.15); }
-.top-date { font-size:12px; font-weight:700; color:#3A1010; }
-.export-fab {
-  background:rgba(253,238,0,0.9); border:none; border-radius:10px; width:36px; height:36px;
-  display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:16px;
-  box-shadow:0 4px 12px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.4);
-}
+.top-bar h1 { font-size:14px; font-weight:700; color:var(--text-main); }
+.top-date { font-size:12px; font-weight:700; color:var(--aqua-dark); }
+.export-fab { background:var(--aqua); border:none; border-radius:10px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:16px; box-shadow:var(--shadow-sm); }
 
 /* ── PAGES ── */
 .page { display:none; padding:12px; }
 .page.active { display:block; }
 
 /* ── BOTTOM NAV ── */
-.bottom-nav {
-  position:fixed; bottom:0; left:0; right:0;
-  background:rgba(255,230,230,0.55);
-  backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
-  border-top:1.5px solid rgba(255,180,180,0.5);
-  display:flex; padding-bottom:var(--safe-bottom); z-index:200;
-}
-.nav-item { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:9px 4px 5px; cursor:pointer; color:rgba(100,40,40,0.55); position:relative; font-size:9px; font-weight:500; gap:3px; border:none; background:none; font-family:inherit; transition:color 0.2s; }
+.bottom-nav { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:2px solid var(--border-aqua); box-shadow:0 -2px 12px rgba(0,0,0,0.06); display:flex; padding-bottom:var(--safe-bottom); z-index:200; }
+.nav-item { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:9px 4px 7px; cursor:pointer; color:var(--text-sub); font-size:9px; font-weight:500; gap:3px; border:none; background:none; font-family:inherit; transition:color 0.2s; }
 .nav-item svg { width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:1.8; }
-.nav-item.active { color:#8B6000; font-weight:800; text-shadow:0 0 8px rgba(253,238,0,0.6); }
-.nav-item.active svg { stroke:#C8980A; filter:drop-shadow(0 0 4px rgba(253,238,0,0.5)); }
+.nav-item.active { color:var(--aqua-dark); font-weight:700; }
+.nav-item.active svg { stroke:var(--aqua-dark); }
 
-/* ── GLASS CARD ── */
-.card {
-  background:rgba(255,255,255,0.45);
-  backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
-  border:1px solid rgba(255,255,255,0.6);
-  border-radius:var(--radius);
-  margin-bottom:10px;
-  overflow:hidden;
-  box-shadow:0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.2);
-}
-.card-bar { height:2px; background:linear-gradient(90deg,rgba(253,238,0,0.6),rgba(253,238,0,0.1)); }
+/* ── CARDS ── */
+.card { background:#fff; border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-sm); margin-bottom:10px; overflow:hidden; }
+.card-bar { height:3px; background:var(--aqua); }
 .card-body { padding:14px; }
-.card-title { font-size:10px; font-weight:700; color:rgba(80,20,20,0.6); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
+.card-title { font-size:10px; font-weight:700; color:var(--aqua-dark); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
 
-/* ── NET WORTH CARD ── */
-.net-worth-card {
-  background:rgba(255,180,180,0.35);
-  backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
-  border:1px solid rgba(255,255,255,0.5);
-  border-radius:var(--radius);
-  padding:20px; margin-bottom:10px;
-  box-shadow:0 8px 32px rgba(255,150,150,0.2), inset 0 1px 0 rgba(255,255,255,0.4);
-  position:relative; overflow:hidden;
-}
-.net-worth-card::before { content:''; position:absolute; top:-40px; left:-40px; width:180px; height:180px; border-radius:50%; background:rgba(253,238,0,0.06); }
-.nw-label { color:rgba(60,20,20,0.65); font-size:10px; margin-bottom:3px; }
-.nw-amount { color:var(--lemon); font-size:26px; font-weight:700; direction:ltr; text-align:right; text-shadow:0 2px 8px rgba(0,0,0,0.2); }
+/* ── NET WORTH ── */
+.net-worth-card { background:var(--aqua); border-radius:var(--radius); padding:20px; margin-bottom:10px; box-shadow:0 6px 24px rgba(129,216,208,0.4); position:relative; overflow:hidden; }
+.net-worth-card::before { content:''; position:absolute; top:-40px; left:-40px; width:180px; height:180px; border-radius:50%; background:rgba(255,255,255,0.1); }
+.nw-label { color:rgba(13,74,71,0.75); font-size:10px; margin-bottom:3px; }
+.nw-amount { color:#fff; font-size:26px; font-weight:700; direction:ltr; text-align:right; }
 .nw-currencies { display:flex; gap:8px; margin-top:10px; }
-.nw-cur { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:10px; padding:6px 10px; }
-.nw-cur-val { color:var(--lemon); font-size:13px; font-weight:600; direction:ltr; }
+.nw-cur { background:rgba(255,255,255,0.25); border:1px solid rgba(255,255,255,0.35); border-radius:10px; padding:6px 10px; }
+.nw-cur-val { color:#fff; font-size:13px; font-weight:600; direction:ltr; }
 
-/* ── ACCOUNT GRID ── */
+/* ── ACCOUNTS GRID ── */
 .accounts-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
-.account-mini {
-  background:rgba(255,255,255,0.55);
-  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
-  border:1px solid rgba(255,255,255,0.65);
-  border-radius:var(--radius-sm); padding:12px 10px;
-  box-shadow:0 4px 16px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.2);
-  border-top:2px solid rgba(253,238,0,0.5);
-}
-.am-name { font-size:10px; color:rgba(80,30,30,0.7); margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.am-balance { font-size:14px; font-weight:700; color:#3A1010; direction:ltr; text-align:right; }
-.am-currency { font-size:9px; color:rgba(100,40,40,0.6); }
+.account-mini { background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:var(--radius-sm); padding:12px 10px; border-right:3px solid var(--aqua); }
+.am-name { font-size:10px; color:var(--text-sub); margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.am-balance { font-size:14px; font-weight:700; color:var(--aqua-deep); direction:ltr; text-align:right; }
+.am-currency { font-size:9px; color:var(--text-sub); }
 
-/* ── FUND CARDS ── */
-.fund-item {
-  background:rgba(255,255,255,0.45);
-  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
-  border:1px solid rgba(255,255,255,0.6);
-  border-radius:var(--radius-sm); padding:12px 12px 8px; margin-bottom:8px;
-  box-shadow:0 4px 16px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.15);
-}
+/* ── FUNDS ── */
+.fund-item { background:#fff; border:1px solid var(--border-aqua); border-radius:var(--radius-sm); padding:12px 12px 8px; margin-bottom:8px; box-shadow:var(--shadow-sm); }
 .fund-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:7px; }
-.fund-name { font-size:13px; font-weight:600; color:#3A1010; }
-.fund-bal { font-size:14px; font-weight:700; color:var(--lemon); direction:ltr; }
-.fund-bar-wrap { background:rgba(255,180,180,0.2); border-radius:99px; height:4px; overflow:hidden; }
-.fund-bar-fill { background:linear-gradient(90deg,rgba(253,238,0,0.7),var(--lemon)); height:100%; border-radius:99px; transition:width 0.6s; }
-.fund-meta { display:flex; justify-content:space-between; margin-top:5px; font-size:10px; color:rgba(80,30,30,0.65); }
+.fund-name { font-size:13px; font-weight:600; color:var(--text-main); }
+.fund-bal { font-size:14px; font-weight:700; color:var(--aqua-dark); direction:ltr; }
+.fund-bar-wrap { background:var(--aqua-pale); border-radius:99px; height:4px; overflow:hidden; }
+.fund-bar-fill { background:linear-gradient(90deg,var(--aqua-light),var(--aqua-dark)); height:100%; border-radius:99px; transition:width 0.6s; }
+.fund-meta { display:flex; justify-content:space-between; margin-top:5px; font-size:10px; color:var(--text-sub); }
 
 /* ── QUICK ACTIONS ── */
 .quick-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
-.qa-btn {
-  background:rgba(255,255,255,0.55);
-  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-  border:1px solid rgba(255,255,255,0.65);
-  border-radius:var(--radius-sm); padding:13px 10px;
-  display:flex; align-items:center; gap:8px; cursor:pointer;
-  font-family:inherit; font-size:13px; font-weight:600; color:#3A1010;
-  box-shadow:0 4px 16px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.2);
-  transition:all 0.15s;
-}
-.qa-btn:active { background:rgba(255,255,255,0.25); transform:scale(0.97); }
+.qa-btn { background:#fff; border:1px solid var(--border); border-radius:var(--radius-sm); padding:13px 10px; display:flex; align-items:center; gap:8px; cursor:pointer; font-family:inherit; font-size:13px; font-weight:600; color:var(--text-main); box-shadow:var(--shadow-sm); }
+.qa-btn:active { opacity:0.85; }
 .qa-btn svg { width:20px; height:20px; fill:none; stroke-width:2; flex-shrink:0; }
-.qa-btn.income svg { stroke:var(--lemon); }
-.qa-btn.expense svg { stroke:rgba(255,200,200,1); }
+.qa-btn.income svg { stroke:var(--success); }
+.qa-btn.expense svg { stroke:var(--danger); }
 
-/* ── TRANSACTION ITEMS ── */
-.tx-item { display:flex; align-items:center; gap:9px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,0.1); }
+/* ── TRANSACTIONS ── */
+.tx-item { display:flex; align-items:center; gap:9px; padding:9px 0; border-bottom:1px solid var(--border); }
 .tx-item:last-child { border-bottom:none; }
-.tx-icon { width:34px; height:34px; border-radius:9px; background:rgba(255,200,200,0.4); display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; border:1px solid rgba(255,180,180,0.3); }
-.tx-icon.inc-icon { background:rgba(46,204,113,0.2); border-color:rgba(46,204,113,0.3); }
+.tx-icon { width:34px; height:34px; border-radius:9px; background:var(--aqua-pale); display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; border:1px solid var(--border-aqua); }
+.tx-icon.inc-icon { background:rgba(39,174,96,0.1); border-color:rgba(39,174,96,0.2); }
 .tx-info { flex:1; min-width:0; }
-.tx-desc { font-size:12px; font-weight:500; color:#3A1010; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.tx-sub { font-size:10px; color:rgba(100,40,40,0.7); margin-top:1px; }
+.tx-desc { font-size:12px; font-weight:500; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tx-sub { font-size:10px; color:var(--text-sub); margin-top:1px; }
 .tx-amount { font-size:13px; font-weight:700; direction:ltr; white-space:nowrap; }
-.tx-amount.expense { color:#C03030; }
-.tx-amount.income { color:#27AE60; }
+.tx-amount.expense { color:var(--danger); }
+.tx-amount.income { color:var(--success); }
 
 /* ── SECTION TITLE ── */
-.sec-title { font-size:12px; font-weight:700; color:#3A1010; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; }
-.add-btn {
-  background:rgba(253,238,0,0.85); color:white; border:none; border-radius:8px;
-  padding:4px 10px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit;
-  box-shadow:0 2px 8px rgba(0,0,0,0.15);
-}
+.sec-title { font-size:12px; font-weight:700; color:var(--text-main); margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; }
+.add-btn { background:var(--aqua); color:#0D4A47; border:none; border-radius:7px; padding:4px 10px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; }
 
 /* ── FORMS ── */
 .form-group { margin-bottom:12px; }
-.form-label { display:block; font-size:11px; font-weight:600; color:#4A1A1A; margin-bottom:5px; }
-.form-input, .form-select {
-  width:100%; padding:11px 13px;
-  background:rgba(255,255,255,0.7);
-  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
-  border:1px solid rgba(255,180,180,0.4);
-  border-radius:var(--radius-sm);
-  font-family:inherit; font-size:16px; color:#3A1010; outline:none;
-  transition:border-color 0.2s, background 0.2s;
-  direction:rtl;
-  -webkit-appearance:none;
-}
-.form-input::placeholder { color:rgba(255,255,255,0.4); }
-.form-input:focus, .form-select:focus { border-color:rgba(253,238,0,0.6); background:rgba(255,255,255,0.18); }
+.form-label { display:block; font-size:11px; font-weight:600; color:var(--text-main); margin-bottom:5px; }
+.form-input, .form-select { width:100%; padding:11px 13px; background:#fff; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:inherit; font-size:16px; color:var(--text-main); outline:none; transition:border-color 0.2s; direction:rtl; -webkit-appearance:none; }
+.form-input::placeholder { color:var(--text-sub); }
+.form-input:focus, .form-select:focus { border-color:var(--aqua); }
 .form-input[type="number"] { direction:ltr; text-align:right; }
-.form-input[type="date"] { direction:ltr; color:white; }
-.form-select option { background:#FFF0F0; color:#3A1010; }
-.btn-primary {
-  width:100%; padding:13px;
-  background:rgba(253,238,0,0.9);
-  color:#2C1A1A; border:none; border-radius:var(--radius-sm);
-  font-family:inherit; font-size:15px; font-weight:700; cursor:pointer;
-  box-shadow:0 4px 16px rgba(253,238,0,0.35), inset 0 1px 0 rgba(255,255,255,0.4);
-  transition:all 0.15s;
-}
-.btn-primary:active { transform:scale(0.98); background:var(--lemon); }
-.btn-secondary {
-  width:100%; padding:11px;
-  background:rgba(255,255,255,0.45);
-  color:rgba(80,20,20,0.85); border:1px solid rgba(255,180,180,0.4);
-  border-radius:var(--radius-sm); font-family:inherit; font-size:13px; cursor:pointer; margin-top:7px;
-}
+.form-input[type="date"] { direction:ltr; color:var(--text-main); }
+.form-select option { background:#fff; color:var(--text-main); }
+.btn-primary { width:100%; padding:13px; background:var(--aqua); color:#0D4A47; border:none; border-radius:var(--radius-sm); font-family:inherit; font-size:15px; font-weight:700; cursor:pointer; box-shadow:0 4px 14px rgba(129,216,208,0.4); }
+.btn-primary:active { background:var(--aqua-dark); color:#fff; }
+.btn-secondary { width:100%; padding:11px; background:#fff; color:var(--text-mid); border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:inherit; font-size:13px; cursor:pointer; margin-top:7px; }
 
 /* ── MODAL ── */
-.modal-overlay { display:none; position:fixed; inset:0; background:rgba(200,100,100,0.35); backdrop-filter:blur(4px); z-index:500; align-items:flex-end; }
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(13,74,71,0.2); backdrop-filter:blur(4px); z-index:500; align-items:flex-end; }
 .modal-overlay.open { display:flex; }
-.modal-sheet {
-  background:linear-gradient(160deg,rgba(255,235,235,0.98),rgba(255,210,210,0.99));
-  backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
-  border:1px solid rgba(255,255,255,0.2);
-  border-radius:22px 22px 0 0;
-  padding:18px 16px calc(18px + var(--safe-bottom));
-  width:100%; max-height:92vh; overflow-y:auto;
-  animation:su 0.3s ease;
-  box-shadow:0 -8px 40px rgba(0,0,0,0.3);
-}
+.modal-sheet { background:#fff; border-radius:22px 22px 0 0; padding:18px 16px calc(18px + var(--safe-bottom)); width:100%; max-height:92vh; overflow-y:auto; animation:su 0.3s ease; box-shadow:0 -4px 32px rgba(0,0,0,0.1); }
 @keyframes su{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.modal-handle { width:36px; height:4px; background:rgba(255,255,255,0.3); border-radius:99px; margin:0 auto 14px; }
-.modal-title { font-size:15px; font-weight:700; color:white; margin-bottom:16px; }
+.modal-handle { width:36px; height:4px; background:var(--border-aqua); border-radius:99px; margin:0 auto 14px; }
+.modal-title { font-size:15px; font-weight:700; color:var(--aqua-deep); margin-bottom:16px; }
 
 /* ── CHIPS ── */
 .chips { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:12px; }
-.chip {
-  padding:6px 12px; border-radius:99px; font-size:11px; font-weight:500;
-  background:rgba(255,255,255,0.45); color:rgba(80,20,20,0.85);
-  border:1px solid rgba(255,200,200,0.4); cursor:pointer;
-  transition:all 0.15s;
-}
-.chip.sel {
-  background:var(--lemon); color:white; border-color:var(--lemon);
-  font-weight:700; box-shadow:0 2px 8px rgba(253,238,0,0.3);
-}
+.chip { padding:6px 12px; border-radius:99px; font-size:11px; font-weight:500; background:var(--aqua-pale); color:var(--text-main); border:1px solid var(--border-aqua); cursor:pointer; transition:all 0.15s; }
+.chip.sel { background:var(--aqua); color:#0D4A47; border-color:var(--aqua); font-weight:700; }
 
-/* ── LIST ITEMS ── */
-.list-item { display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid rgba(200,150,150,0.2); }
+/* ── LIST ── */
+.list-item { display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--border); }
 .list-item:last-child { border-bottom:none; }
 .li-actions { display:flex; gap:7px; }
-.icon-btn { width:30px; height:30px; border-radius:7px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.55); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:13px; color:#4A1010; }
-.icon-btn.danger { background:rgba(255,80,80,0.2); border-color:rgba(255,100,100,0.3); }
+.icon-btn { width:30px; height:30px; border-radius:7px; border:1px solid var(--border); background:var(--aqua-pale); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:13px; color:var(--aqua-deep); }
+.icon-btn.danger { background:#FDECEA; border-color:rgba(200,60,60,0.2); color:var(--danger); }
 
 /* ── REPORTS ── */
 .rep-summary { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
-.rep-box {
-  background:rgba(255,255,255,0.5); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-  border:1px solid rgba(255,255,255,0.65); border-radius:var(--radius-sm); padding:12px;
-  text-align:center; box-shadow:inset 0 1px 0 rgba(255,255,255,0.15);
-}
-.rep-box .rb-label { font-size:10px; color:rgba(60,20,20,0.65); margin-bottom:3px; }
-.rep-box .rb-val { font-size:16px; font-weight:700; color:#3A1010; direction:ltr; }
-.rep-box.inc-box { border-top:2px solid rgba(46,204,113,0.6); }
-.rep-box.exp-box { border-top:2px solid rgba(253,238,0,0.5); }
+.rep-box { background:#fff; border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px; box-shadow:var(--shadow-sm); text-align:center; }
+.rep-box .rb-label { font-size:10px; color:var(--text-sub); margin-bottom:3px; }
+.rep-box .rb-val { font-size:16px; font-weight:700; color:var(--text-main); direction:ltr; }
+.rep-box.inc-box { border-top:3px solid var(--success); }
+.rep-box.exp-box { border-top:3px solid var(--danger); }
 .bar-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
-.bar-label { font-size:11px; color:rgba(60,20,20,0.85); width:72px; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.bar-wrap { flex:1; background:rgba(255,180,180,0.25); border-radius:99px; height:7px; overflow:hidden; }
-.bar-fill { background:linear-gradient(90deg,rgba(253,238,0,0.5),var(--lemon)); height:100%; border-radius:99px; transition:width 0.6s; }
-.bar-val { font-size:10px; color:rgba(80,30,30,0.65); width:55px; text-align:left; direction:ltr; flex-shrink:0; }
+.bar-label { font-size:11px; color:var(--text-main); width:72px; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bar-wrap { flex:1; background:var(--aqua-pale); border-radius:99px; height:7px; overflow:hidden; }
+.bar-fill { background:linear-gradient(90deg,var(--aqua-light),var(--aqua-dark)); height:100%; border-radius:99px; transition:width 0.6s; }
+.bar-val { font-size:10px; color:var(--text-sub); width:55px; text-align:left; direction:ltr; flex-shrink:0; }
 
 /* ── PERIOD TABS ── */
 .ptabs { display:flex; gap:5px; margin-bottom:10px; overflow-x:auto; }
-.ptab {
-  flex-shrink:0; padding:6px 12px; border-radius:99px; font-size:11px; font-weight:600;
-  background:rgba(255,255,255,0.12); color:rgba(255,255,255,0.7);
-  border:1px solid rgba(255,255,255,0.2); cursor:pointer; font-family:inherit;
-  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
-}
-.ptab.active {
-  background:var(--lemon); color:white; border-color:var(--lemon);
-  box-shadow:0 2px 10px rgba(253,238,0,0.35);
-}
+.ptab { flex-shrink:0; padding:6px 12px; border-radius:99px; font-size:11px; font-weight:600; background:#fff; color:var(--text-mid); border:1px solid var(--border); cursor:pointer; font-family:inherit; }
+.ptab.active { background:var(--aqua); color:#0D4A47; border-color:var(--aqua); }
 
 /* ── MONTH SELECTOR ── */
 .month-sel { display:flex; gap:8px; margin-bottom:12px; }
-.month-sel select { flex:1; }
+.month-sel select { flex:1; background:#fff; border:1.5px solid var(--border); border-radius:8px; padding:7px 10px; font-family:inherit; font-size:13px; color:var(--text-main); outline:none; }
+.month-sel select:focus { border-color:var(--aqua); }
 
 /* ── SETTINGS ── */
-.settings-item { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid rgba(200,150,150,0.2); cursor:pointer; }
+.settings-item { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border); cursor:pointer; }
 .settings-item:last-child { border-bottom:none; }
-.si-label { font-size:13px; color:#3A1010; font-weight:500; }
-.si-val { font-size:12px; color:rgba(80,30,30,0.6); }
+.si-label { font-size:13px; color:var(--text-main); font-weight:500; }
+.si-val { font-size:12px; color:var(--text-sub); }
 
 /* ── EMPTY ── */
-.empty { text-align:center; padding:28px 16px; color:rgba(80,30,30,0.55); }
+.empty { text-align:center; padding:28px 16px; color:var(--text-sub); }
 .empty .ei { font-size:36px; margin-bottom:8px; }
 .empty p { font-size:12px; }
 
-/* ── EXPORT MODAL ── */
+/* ── EXPORT CHOICE ── */
 .export-choice { display:flex; flex-direction:column; gap:10px; margin-top:4px; }
-.exp-choice-btn {
-  display:flex; align-items:center; gap:12px;
-  background:rgba(255,255,255,0.45); border:1px solid rgba(255,200,200,0.4);
-  border-radius:14px; padding:14px 16px; cursor:pointer; font-family:inherit; text-align:right;
-  transition:background 0.15s;
-}
-.exp-choice-btn:active { background:rgba(255,255,255,0.22); }
+.exp-choice-btn { display:flex; align-items:center; gap:12px; background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:14px; padding:14px 16px; cursor:pointer; font-family:inherit; text-align:right; }
+.exp-choice-btn:active { background:var(--aqua-light); }
 .exp-choice-icon { font-size:26px; flex-shrink:0; }
-.exp-choice-title { font-size:14px; font-weight:700; color:#3A1010; display:block; }
-.exp-choice-sub { font-size:11px; color:rgba(80,30,30,0.65); display:block; margin-top:2px; }
-
-/* ── LOGO UPLOAD AREA ── */
-.logo-pick-area {
-  border:1.5px dashed rgba(255,255,255,0.3); border-radius:10px;
-  padding:12px; text-align:center; cursor:pointer;
-  background:rgba(255,255,255,0.08);
-}
-.logo-pick-sub { font-size:11px; color:rgba(255,255,255,0.5); margin-top:3px; }
+.exp-choice-title { font-size:14px; font-weight:700; color:var(--text-main); display:block; }
+.exp-choice-sub { font-size:11px; color:var(--text-sub); display:block; margin-top:2px; }
 
 /* ── HINT BOX ── */
-.hint-box {
-  background:rgba(255,230,200,0.4); border:1px solid rgba(200,150,100,0.3);
-  border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:11px; color:#5A2A00; line-height:1.6;
-}
+.hint-box { background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:11px; color:var(--aqua-deep); line-height:1.6; }
+
+/* ── LOGO PICK ── */
+.logo-pick-area { border:1.5px dashed var(--border-aqua); border-radius:10px; padding:12px; text-align:center; cursor:pointer; background:var(--aqua-pale); }
+.logo-pick-sub { font-size:11px; color:var(--text-sub); margin-top:3px; }
 </style>
 </head>
 <body>
@@ -425,7 +277,7 @@ body::before {
     </div>
   </div>
   <div style="display:flex;gap:7px;align-items:center;">
-    <div id="updateFab" onclick="doUpdate()" style="display:none;height:34px;padding:0 9px;background:rgba(46,204,113,0.95);border-radius:9px;align-items:center;justify-content:center;cursor:pointer;font-size:11px;font-weight:700;color:white;gap:3px;box-shadow:0 4px 12px rgba(46,204,113,0.45);animation:pulse-green 2s infinite;font-family:'Vazirmatn',sans-serif;white-space:nowrap;">🔄 آپدیت</div>
+    <div id="updateFab" onclick="doUpdate()" title="به‌روزرسانی" style="display:none;width:36px;height:36px;background:rgba(46,204,113,0.9);border-radius:10px;align-items:center;justify-content:center;cursor:pointer;font-size:16px;box-shadow:0 4px 12px rgba(46,204,113,0.4),0 0 0 3px rgba(46,204,113,0.2);animation:pulse-green 2s infinite;">🔄 آپدیت</div>
     <button class="export-fab" onclick="openModal('modal-export')" title="خروجی">📤</button>
   </div>
 </div>
@@ -525,7 +377,7 @@ body::before {
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.0.2</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.0.5</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
@@ -695,27 +547,22 @@ body::before {
 // ═══════════════════════════════════════
 var J = {
   toJalali: function(gy, gm, gd) {
-    // Correct algorithm — key fix: gy2 = gy - 1600
-    var gy2 = gy - 1600;
-    var gm2 = gm - 1;
-    var gd2 = gd - 1;
+    var gy2 = gy - 1600, gm2 = gm - 1, gd2 = gd - 1;
     var gDM = [31,28,31,30,31,30,31,31,30,31,30,31];
     var g_day_no = 365*gy2 + Math.floor((gy2+3)/4) - Math.floor((gy2+99)/100) + Math.floor((gy2+399)/400);
     for (var i=0; i<gm2; i++) g_day_no += gDM[i];
-    if (gm2 > 1 && ((gy2%4===0 && gy2%100!==0) || gy2%400===0)) g_day_no++;
+    if (gm2>1 && ((gy2%4===0 && gy2%100!==0) || gy2%400===0)) g_day_no++;
     g_day_no += gd2;
     var j_day_no = g_day_no - 79;
     var j_np = Math.floor(j_day_no/12053); j_day_no %= 12053;
     var jy = 979 + 33*j_np + 4*Math.floor(j_day_no/1461);
     j_day_no %= 1461;
     if (j_day_no >= 366) { jy += Math.floor((j_day_no-1)/365); j_day_no = (j_day_no-1)%365; }
-    var jm, jd;
-    var jDM = [31,31,31,31,31,31,30,30,30,30,30];
+    var jm, jd, jDM = [31,31,31,31,31,31,30,30,30,30,30];
     for (var i=0; i<11; i++) {
-      if (j_day_no >= jDM[i]) { j_day_no -= jDM[i]; }
-      else { jm = i+1; jd = j_day_no+1; break; }
+      if (j_day_no >= jDM[i]) { j_day_no -= jDM[i]; } else { jm=i+1; jd=j_day_no+1; break; }
     }
-    if (!jm) { jm = 12; jd = j_day_no+1; }
+    if (!jm) { jm=12; jd=j_day_no+1; }
     return { jy:jy, jm:jm, jd:jd };
   },
   monthName: function(m) {
@@ -1225,10 +1072,9 @@ function renderAccounts() {
     html += '</div></div>';
     list.innerHTML = html;
     list.onclick = function(e) {
-      var btn = e.target.closest('[data-action]');
-      if (!btn) return;
-      if (btn.dataset.action === 'da') deleteAccount(btn.dataset.id);
-      else if (btn.dataset.action === 'ea') openEditAccount(btn.dataset.id);
+      var btn = e.target.closest('[data-action]'); if (!btn) return;
+      if (btn.dataset.action==='da') deleteAccount(btn.dataset.id);
+      else if (btn.dataset.action==='ea') openEditAccount(btn.dataset.id);
     };
   }
 
@@ -1251,10 +1097,9 @@ function renderAccounts() {
     fHtml += '</div></div>';
     fList.innerHTML = fHtml;
     fList.onclick = function(e) {
-      var btn = e.target.closest('[data-action]');
-      if (!btn) return;
-      if (btn.dataset.action === 'df') deleteFund(btn.dataset.id);
-      else if (btn.dataset.action === 'ef') openEditFund(btn.dataset.id);
+      var btn = e.target.closest('[data-action]'); if (!btn) return;
+      if (btn.dataset.action==='df') deleteFund(btn.dataset.id);
+      else if (btn.dataset.action==='ef') openEditFund(btn.dataset.id);
     };
   }
 }
@@ -1406,8 +1251,7 @@ function deleteAccount(id) {
   saveDB(); renderAll();
 }
 function openEditAccount(id) {
-  var acc = DB.accounts.find(function(a){ return a.id === id; });
-  if (!acc) return;
+  var acc = DB.accounts.find(function(a){ return a.id===id; }); if (!acc) return;
   document.getElementById('edit-acc-id').value = id;
   document.getElementById('edit-acc-name').value = acc.name;
   document.getElementById('edit-acc-balance').value = acc.balance;
@@ -1417,16 +1261,14 @@ function openEditAccount(id) {
 function submitEditAccount() {
   var id = document.getElementById('edit-acc-id').value;
   var name = document.getElementById('edit-acc-name').value.trim();
-  var balance = parseFloat(document.getElementById('edit-acc-balance').value) || 0;
+  var balance = parseFloat(document.getElementById('edit-acc-balance').value)||0;
   if (!name) { alert('نام حساب را وارد کنید'); return; }
-  var acc = DB.accounts.find(function(a){ return a.id === id; });
-  if (!acc) return;
-  acc.name = name; acc.balance = balance;
+  var acc = DB.accounts.find(function(a){ return a.id===id; }); if (!acc) return;
+  acc.name=name; acc.balance=balance;
   saveDB(); closeModal('modal-edit-account'); renderAll();
 }
 function openEditFund(id) {
-  var f = DB.funds.find(function(f){ return f.id === id; });
-  if (!f) return;
+  var f = DB.funds.find(function(f){ return f.id===id; }); if (!f) return;
   document.getElementById('edit-fund-id').value = id;
   document.getElementById('edit-fund-name').value = f.name;
   document.getElementById('edit-fund-pct').value = f.pct;
@@ -1437,12 +1279,11 @@ function openEditFund(id) {
 function submitEditFund() {
   var id = document.getElementById('edit-fund-id').value;
   var name = document.getElementById('edit-fund-name').value.trim();
-  var pct = parseFloat(document.getElementById('edit-fund-pct').value) || 0;
+  var pct = parseFloat(document.getElementById('edit-fund-pct').value)||0;
   var incomeGroup = document.getElementById('edit-fund-group').value;
   if (!name) { alert('نام صندوق را وارد کنید'); return; }
-  var f = DB.funds.find(function(f){ return f.id === id; });
-  if (!f) return;
-  f.name = name; f.pct = pct; f.incomeGroup = incomeGroup;
+  var f = DB.funds.find(function(f){ return f.id===id; }); if (!f) return;
+  f.name=name; f.pct=pct; f.incomeGroup=incomeGroup;
   saveDB(); closeModal('modal-edit-fund'); renderAll();
 }
 function deleteFund(id) { if (!confirm('حذف شود؟')) return; DB.funds=DB.funds.filter(function(f){return f.id!==id;}); saveDB(); renderAll(); }
@@ -1590,7 +1431,7 @@ function exportReportPDF() {
     'th{background:#FF7F7F;color:white;padding:7px;text-align:right;font-size:10px;}' +
     'td{padding:6px 7px;border-bottom:1px solid #FFE8E8;font-size:11px;}' +
     'tr:nth-child(even) td{background:#FFF8F8;}' +
-    '.pbtn{margin-top:16px;background:#E06060;color:white;border:none;padding:9px 20px;border-radius:7px;font-family:Vazirmatn,sans-serif;font-size:13px;cursor:pointer;}' +
+    '.pbtn{margin-top:16px;background:#FF7F7F;color:white;border:none;padding:9px 20px;border-radius:7px;font-family:Vazirmatn,sans-serif;font-size:13px;cursor:pointer;}' +
     '@media print{.pbtn{display:none}}</style></head><body>' +
     '<h1>گزارش مالی — ' + monthName + '</h1>' +
     '<div class="sub">سید صادق ماجدی · مدیریت مالی شخصی</div>' +
@@ -1735,19 +1576,17 @@ function updateDateHeader() {
 }
 
 // ═══════════════════════════════════════
-// UPDATE CHECK
-// ═══════════════════════════════════════
 // UPDATE CHECK (version.json via XHR)
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.0.2';
+var CURRENT_VERSION = '1.0.5';
 
 function manualUpdateCheck() {
   checkForUpdate();
   setTimeout(function() {
     var fab = document.getElementById('updateFab');
-    if (!fab || fab.style.display === 'none') alert('نسخه شما به‌روز است ✓');
+    if (!fab || fab.style.display==='none') alert('نسخه شما به‌روز است ✓');
   }, 3000);
 }
 
@@ -1756,14 +1595,14 @@ function checkForUpdate() {
   var xhr = new XMLHttpRequest();
   xhr.open('GET', VERSION_URL + '?t=' + Date.now(), true);
   xhr.onload = function() {
-    if (xhr.status !== 200) return;
+    if (xhr.status!==200) return;
     try {
       var data = JSON.parse(xhr.responseText);
       var serverVer = data && data.version ? data.version : null;
       if (!serverVer) return;
       var stored = localStorage.getItem('pfm_version');
       if (!stored) { localStorage.setItem('pfm_version', CURRENT_VERSION); return; }
-      if (serverVer !== stored) { showUpdateBadge(data.date || ''); }
+      if (serverVer !== stored) { showUpdateBadge(data.date||''); }
     } catch(e) {}
   };
   xhr.onerror = function() {};
@@ -1772,21 +1611,21 @@ function checkForUpdate() {
 
 function showUpdateBadge(date) {
   var fab = document.getElementById('updateFab');
-  if (fab) { fab.style.display = 'flex'; fab.title = 'نسخه جدید ' + (date||'') + ' موجود است'; }
+  if (fab) { fab.style.display='flex'; fab.title='نسخه جدید '+date+' موجود است'; }
 }
 
 function doUpdate() {
-  if (!confirm('نسخه جدید نصب شود؟\nداده‌های شما حفظ می‌مانند.')) return;
+  if (!confirm('نسخه جدید نصب شود؟')) return;
   saveDB();
   var dbBackup = localStorage.getItem('pfm_db_v3');
   var xhr = new XMLHttpRequest();
   xhr.open('GET', UPDATE_URL + '?t=' + Date.now(), true);
   xhr.onload = function() {
-    if (xhr.status !== 200) { alert('خطا در دانلود'); return; }
+    if (xhr.status!==200) { alert('خطا در دانلود'); return; }
     document.open(); document.write(xhr.responseText); document.close();
     if (dbBackup) localStorage.setItem('pfm_db_v3', dbBackup);
     var xhr2 = new XMLHttpRequest();
-    xhr2.open('GET', VERSION_URL + '?t=' + Date.now(), true);
+    xhr2.open('GET', VERSION_URL+'?t='+Date.now(), true);
     xhr2.onload = function() {
       try { var d=JSON.parse(xhr2.responseText); if(d&&d.version) localStorage.setItem('pfm_version',d.version); } catch(e){}
     };
@@ -1811,47 +1650,14 @@ setTimeout(function() {
     setTimeout(checkForUpdate, 3000);
   }, 600);
 }, 2500);
-
 </script>
-
-<!-- Edit Transaction Modal -->
-<div class="modal-overlay" id="modal-edit-tx" onclick="closeModalOutside(event,'modal-edit-tx')">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-title">✏️ ویرایش تراکنش</div>
-    <div class="form-group"><label class="form-label">مبلغ (ریال)</label><input type="number" class="form-input" id="edit-amount"></div>
-    <div class="form-group"><label class="form-label">تاریخ</label><input type="date" class="form-input" id="edit-date"></div>
-    <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="edit-desc"></div>
-    <div class="form-group"><label class="form-label">حساب</label><select class="form-select" id="edit-account"></select></div>
-    <div class="form-group" id="edit-cat-group"><label class="form-label">دسته‌بندی</label><div class="chips" id="edit-cats"></div></div>
-    <input type="hidden" id="edit-tx-id">
-    <input type="hidden" id="edit-tx-type">
-    <button class="btn-primary" onclick="submitEditTx()">ذخیره تغییرات</button>
-    <button class="btn-secondary" onclick="closeModal('modal-edit-tx')">انصراف</button>
-  </div>
-</div>
-
-<!-- Edit Account Modal -->
-<div class="modal-overlay" id="modal-edit-account" onclick="closeModalOutside(event,'modal-edit-account')">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-title">✏️ ویرایش حساب</div>
-    <div class="form-group"><label class="form-label">نام حساب</label><input type="text" class="form-input" id="edit-acc-name"></div>
-    <div class="form-group"><label class="form-label">موجودی فعلی</label><input type="number" class="form-input" id="edit-acc-balance"></div>
-    <div class="form-group"><label class="form-label">ارز</label><select class="form-select" id="edit-acc-currency"><option value="IRR">ریال</option><option value="USD">دلار</option><option value="AED">درهم</option></select></div>
-    <input type="hidden" id="edit-acc-id">
-    <button class="btn-primary" onclick="submitEditAccount()">ذخیره</button>
-    <button class="btn-secondary" onclick="closeModal('modal-edit-account')">انصراف</button>
-  </div>
-</div>
-<!-- Edit Fund Modal -->
-<div class="modal-overlay" id="modal-edit-fund" onclick="closeModalOutside(event,'modal-edit-fund')">
+lass="modal-overlay" id="modal-edit-fund" onclick="closeModalOutside(event,'modal-edit-fund')">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-title">✏️ ویرایش صندوق</div>
     <div class="form-group"><label class="form-label">نام صندوق</label><input type="text" class="form-input" id="edit-fund-name"></div>
     <div class="form-group"><label class="form-label">گروه درآمدی</label><select class="form-select" id="edit-fund-group"><option value="monthly">درآمد ماهیانه</option><option value="extra">درآمد اضافی</option><option value="all">همه</option></select></div>
-    <div class="form-group"><label class="form-label">درصد: <span id="edit-fund-pct-val">0</span>٪</label><input type="range" min="0" max="50" step="0.5" value="0" id="edit-fund-pct" oninput="document.getElementById('edit-fund-pct-val').textContent=this.value" style="width:100%;accent-color:var(--lemon);"></div>
+    <div class="form-group"><label class="form-label">درصد: <span id="edit-fund-pct-val">0</span>٪</label><input type="range" min="0" max="50" step="0.5" value="0" id="edit-fund-pct" oninput="document.getElementById('edit-fund-pct-val').textContent=this.value" style="width:100%;accent-color:var(--aqua);"></div>
     <input type="hidden" id="edit-fund-id">
     <button class="btn-primary" onclick="submitEditFund()">ذخیره</button>
     <button class="btn-secondary" onclick="closeModal('modal-edit-fund')">انصراف</button>
