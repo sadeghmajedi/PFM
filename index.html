@@ -86,7 +86,7 @@ body::before { content:''; position:fixed; inset:0; background:var(--bg); z-inde
 .page.active { display:block; }
 
 /* ── BOTTOM NAV ── */
-.bottom-nav { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:2px solid var(--border-aqua); box-shadow:0 -2px 12px rgba(0,0,0,0.06); display:flex; padding-bottom:var(--safe-bottom); z-index:200; -webkit-transform:translateZ(0); transform:translateZ(0); will-change:transform; }
+.bottom-nav { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:2px solid var(--border-aqua); box-shadow:0 -2px 12px rgba(0,0,0,0.06); display:flex; padding-bottom:var(--safe-bottom); z-index:200; -webkit-transform:translate3d(0,0,0); transform:translate3d(0,0,0); will-change:transform; backface-visibility:hidden; -webkit-backface-visibility:hidden; }
 .nav-item { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:9px 4px 7px; cursor:pointer; color:var(--text-sub); font-size:9px; font-weight:500; gap:3px; border:none; background:none; font-family:inherit; transition:color 0.2s; }
 .nav-item svg { width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:1.8; }
 .nav-item.active { color:var(--aqua-dark); font-weight:700; }
@@ -99,8 +99,8 @@ body::before { content:''; position:fixed; inset:0; background:var(--bg); z-inde
 .card-title { font-size:10px; font-weight:700; color:var(--aqua-dark); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
 
 /* ── NET WORTH ── */
-.net-worth-card { background:var(--aqua); border-radius:var(--radius); padding:20px; margin-bottom:10px; box-shadow:0 6px 24px rgba(129,216,208,0.4); position:relative; overflow:hidden; }
-.net-worth-card::before { content:''; position:absolute; top:-40px; left:-40px; width:180px; height:180px; border-radius:50%; background:rgba(255,255,255,0.1); }
+.net-worth-card { background:var(--aqua); border-radius:var(--radius); padding:20px; margin-bottom:10px; box-shadow:0 6px 24px rgba(129,216,208,0.4); position:relative; }
+.net-worth-card::before { content:''; position:absolute; top:-40px; left:-40px; width:180px; height:180px; border-radius:50%; background:rgba(255,255,255,0.1); pointer-events:none; z-index:0; }
 .nw-label { color:rgba(13,74,71,0.75); font-size:10px; margin-bottom:3px; }
 .nw-amount { color:#fff; font-size:26px; font-weight:700; direction:ltr; text-align:right; }
 .nw-currencies { display:flex; gap:8px; margin-top:10px; }
@@ -124,9 +124,10 @@ body::before { content:''; position:fixed; inset:0; background:var(--bg); z-inde
 .fund-meta { display:flex; justify-content:space-between; margin-top:5px; font-size:10px; color:var(--text-sub); }
 
 /* ── NET-WORTH ACTION BUTTONS ── */
-.nw-action-btn { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.35); border-radius:12px; padding:10px 6px; cursor:pointer; font-family:inherit; font-size:10px; font-weight:700; color:#fff; width:100%; transition:background 0.15s; -webkit-tap-highlight-color:transparent; }
+.nw-action-btn { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.35); border-radius:12px; padding:10px 6px; cursor:pointer; font-family:inherit; font-size:10px; font-weight:700; color:#fff; width:100%; transition:background 0.15s; -webkit-tap-highlight-color:transparent; position:relative; z-index:1; }
 .nw-action-btn:active { background:rgba(255,255,255,0.35); }
-.nw-action-btn svg { width:18px; height:18px; stroke:currentColor; flex-shrink:0; }
+.nw-action-btn svg { width:18px; height:18px; stroke:currentColor; flex-shrink:0; pointer-events:none; }
+.nw-action-btn span { pointer-events:none; }
 .nw-action-btn.income svg { stroke:#A8F5C2; }
 .nw-action-btn.expense svg { stroke:#FFB3B3; }
 .nw-action-btn.transfer svg { stroke:#fff; }
@@ -339,14 +340,18 @@ body::before { content:''; position:fixed; inset:0; background:var(--bg); z-inde
 <div class="page" id="page-transactions">
   <div class="ptabs" id="typeTabs">
     <button class="ptab active" onclick="setFilter('all',this)">همه</button>
-    <button class="ptab" onclick="setFilter('income',this)">درآمد</button>
+    <button class="ptab" onclick="setFilter('income',this)">دریافت</button>
     <button class="ptab" onclick="setFilter('expense',this)">هزینه</button>
     <button class="ptab" onclick="setFilter('fund',this)">صندوق</button>
   </div>
-  <div style="margin-bottom:10px;">
+  <div style="margin-bottom:8px;">
     <select class="form-select" id="acc-filter-sel" onchange="setAccountFilter(this.value)" style="font-size:13px;padding:8px 12px;">
       <option value="all">همه حساب‌ها</option>
     </select>
+  </div>
+  <div style="margin-bottom:10px;position:relative;">
+    <input type="text" class="form-input" id="tx-search" placeholder="🔍 جستجو در توضیحات یا مبلغ..." oninput="setTxSearch(this.value)" style="padding-left:36px;font-size:13px;">
+    <button id="tx-search-clear" onclick="clearTxSearch()" style="display:none;position:absolute;left:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-sub);padding:0;line-height:1;">✕</button>
   </div>
   <div id="txList"></div>
 </div>
@@ -1070,6 +1075,7 @@ function deleteIncCat(id) { if (!confirm('حذف شود؟')) return; DB.incomeCa
 // ═══════════════════════════════════════
 var txFilter = 'all';
 var txAccountFilter = 'all';
+var txSearchQuery = '';
 
 function setFilter(f, el) {
   txFilter = f;
@@ -1079,6 +1085,20 @@ function setFilter(f, el) {
 }
 function setAccountFilter(val) {
   txAccountFilter = val;
+  renderTransactions();
+}
+function setTxSearch(val) {
+  txSearchQuery = val.trim();
+  var clearBtn = document.getElementById('tx-search-clear');
+  if (clearBtn) clearBtn.style.display = txSearchQuery ? 'block' : 'none';
+  renderTransactions();
+}
+function clearTxSearch() {
+  txSearchQuery = '';
+  var el = document.getElementById('tx-search');
+  if (el) el.value = '';
+  var clearBtn = document.getElementById('tx-search-clear');
+  if (clearBtn) clearBtn.style.display = 'none';
   renderTransactions();
 }
 
@@ -1132,21 +1152,42 @@ function renderDashboard() {
     fundsEl.querySelectorAll('[data-action="fp"]').forEach(function(btn){ btn.addEventListener('click', function(){ openFundPayment(this.dataset.id); }); });
   }
 
-  var recent = DB.transactions.filter(function(t){ return t.type==='income'||t.type==='expense'; })
-    .sort(function(a,b){ return new Date(b.date)-new Date(a.date); }).slice(0,8);
+  var recent = DB.transactions.slice()
+    .sort(function(a,b){ return new Date(b.date)-new Date(a.date); })
+    .filter(function(t){ return t.type!=='fund-in'; })
+    .slice(0,8);
   var recEl = document.getElementById('recentTransactions');
   if (!recent.length) { recEl.innerHTML = '<div class="empty"><div class="ei">📋</div><p>تراکنشی ثبت نشده</p></div>'; return; }
   var rHtml = '';
   recent.forEach(function(t) {
     var cat = t.catId ? DB.categories.find(function(c){ return c.id===t.catId; }) : null;
     var incCat = t.incCatId ? (DB.incomeCategories||[]).find(function(c){ return c.id===t.incCatId; }) : null;
-    var icon = t.type==='income' ? (incCat?incCat.icon:'💵') : (cat?cat.icon:'💸');
-    var cls = t.type==='income' ? 'inc-icon' : '';
-    var amCls = t.type==='income' ? 'income' : 'expense';
-    var prefix = t.type==='income' ? '+' : '-';
-    rHtml += '<div class="tx-item"><div class="tx-icon ' + cls + '">' + icon + '</div><div class="tx-info"><div class="tx-desc">' + t.desc + '</div><div class="tx-sub">' + J.format(t.date) + '</div></div><div class="tx-amount ' + amCls + '">' + prefix + toFa(addCommas(Math.round(t.amount))) + '</div></div>';
+    var fund = t.fundId ? DB.funds.find(function(f){ return f.id===t.fundId; }) : null;
+    var icon, cls, amCls, prefix;
+    if (t.type==='income') { icon=incCat?incCat.icon:'💵'; cls='inc-icon'; amCls='income'; prefix='+'; }
+    else if (t.type==='expense') { icon=cat?cat.icon:'💸'; cls=''; amCls='expense'; prefix='-'; }
+    else if (t.type==='transfer') { icon='⇔️'; cls=''; amCls=''; prefix=''; }
+    else if (t.type==='fund-out') { icon=fund?fund.icon:'💰'; cls=''; amCls='expense'; prefix='-'; }
+    else { icon='💰'; cls=''; amCls=''; prefix=''; }
+    var canEdit = (t.type==='income'||t.type==='expense');
+    var feeSubLine = (t.type==='transfer'&&t.fee>0) ? '<div style="font-size:10px;color:var(--danger);">کارمزد: '+toFa(addCommas(Math.round(t.fee)))+'</div>' : '';
+    rHtml += '<div class="tx-item">' +
+      '<div class="tx-icon ' + cls + '">' + icon + '</div>' +
+      '<div class="tx-info"><div class="tx-desc">' + t.desc + '</div><div class="tx-sub">' + J.format(t.date) + '</div>' + feeSubLine + '</div>' +
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">' +
+      '<div class="tx-amount ' + amCls + '">' + prefix + toFa(addCommas(Math.round(t.amount))) + '</div>' +
+      '<div style="display:flex;gap:5px;">' +
+      (canEdit ? '<button data-id="'+t.id+'" data-action="ret" style="width:24px;height:24px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.8);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">✏️</button>' : '') +
+      '<button data-id="'+t.id+'" data-action="rdt" style="width:24px;height:24px;border-radius:6px;border:1px solid rgba(255,80,80,0.3);background:rgba(255,80,80,0.1);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">🗑️</button>' +
+      '</div></div>' +
+      '</div>';
   });
   recEl.innerHTML = rHtml;
+  recEl.onclick = function(e) {
+    var btn = e.target.closest('[data-action]'); if (!btn) return;
+    if (btn.dataset.action==='rdt') deleteTx(btn.dataset.id);
+    else if (btn.dataset.action==='ret') openEditTx(btn.dataset.id);
+  };
 }
 
 function renderAccounts() {
@@ -1217,6 +1258,15 @@ function renderTransactions() {
   if (txFilter === 'fund') txs = txs.filter(function(t){ return t.type==='fund-in'||t.type==='fund-out'; });
   else if (txFilter !== 'all') txs = txs.filter(function(t){ return t.type===txFilter; });
   if (txAccountFilter && txAccountFilter !== 'all') txs = txs.filter(function(t){ return t.accountId===txAccountFilter; });
+  if (txSearchQuery) {
+    var q = txSearchQuery.toLowerCase().replace(/[،,]/g,'');
+    var qNum = parseFloat(txSearchQuery.replace(/[^0-9.]/g,''));
+    txs = txs.filter(function(t){
+      var descMatch = (t.desc||'').toLowerCase().indexOf(q) !== -1;
+      var amountMatch = !isNaN(qNum) && Math.round(t.amount) === Math.round(qNum);
+      return descMatch || amountMatch;
+    });
+  }
 
   var list = document.getElementById('txList');
   if (!txs.length) { list.innerHTML = '<div class="empty"><div class="ei">📋</div><p>تراکنشی یافت نشد</p></div>'; return; }
@@ -1233,7 +1283,7 @@ function renderTransactions() {
     else if (t.type==='fund-in') { icon=fund?fund.icon:'💰'; amCls='income'; prefix='+'; label='واریز به '+(fund?fund.name:''); }
     else { icon=fund?fund.icon:'💰'; amCls='expense'; prefix='-'; label='پرداخت از '+(fund?fund.name:'')+': '+t.desc; }
     var cls = (t.type==='income'||t.type==='fund-in') ? 'inc-icon' : '';
-    var canEdit = (t.type==='income' || t.type==='expense');
+    var canEdit = (t.type==='income' || t.type==='expense' || t.type==='transfer' || t.type==='fund-out');
     var feeSubLine = (t.type==='transfer' && t.fee > 0) ? '<div style="font-size:10px;color:var(--danger);margin-top:1px;">کارمزد: ' + toFa(addCommas(Math.round(t.fee))) + '</div>' : '';
     html += '<div class="card" style="margin-bottom:7px;"><div class="card-body" style="padding:10px;">' +
       '<div class="tx-item" style="padding:0;border:none;">' +
@@ -1475,6 +1525,12 @@ function openEditTx(id) {
   // Set date
   var d = new Date(tx.date);
   document.getElementById('edit-date').value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  // For transfer/fund-out: only desc+date editable — lock amount & account
+  var amountGroup = document.getElementById('edit-amount').closest('.form-group') || document.getElementById('edit-amount').parentNode;
+  var accGroup = document.getElementById('edit-account').closest('.form-group') || document.getElementById('edit-account').parentNode;
+  var isLocked = (tx.type==='transfer'||tx.type==='fund-out');
+  document.getElementById('edit-amount').disabled = isLocked;
+  document.getElementById('edit-account').disabled = isLocked;
   // Populate accounts
   document.getElementById('edit-account').innerHTML = DB.accounts.map(function(a){
     return '<option value="' + a.id + '"' + (a.id===tx.accountId?' selected':'') + '>' + a.name + '</option>';
@@ -1834,6 +1890,23 @@ setTimeout(function() {
     <input type="hidden" id="edit-fund-id">
     <button class="btn-primary" onclick="submitEditFund()">ذخیره</button>
     <button class="btn-secondary" onclick="closeModal('modal-edit-fund')">انصراف</button>
+  </div>
+</div>
+
+<!-- Edit Transaction Modal -->
+<div class="modal-overlay" id="modal-edit-tx" onclick="closeModalOutside(event,'modal-edit-tx')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">✏️ ویرایش تراکنش</div>
+    <input type="hidden" id="edit-tx-id">
+    <input type="hidden" id="edit-tx-type">
+    <div class="form-group"><label class="form-label">مبلغ (ریال)</label><input type="number" class="form-input" id="edit-amount" placeholder="مبلغ"></div>
+    <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="edit-desc" placeholder="توضیح تراکنش"></div>
+    <div class="form-group"><label class="form-label">تاریخ</label><input type="date" class="form-input" id="edit-date"></div>
+    <div class="form-group"><label class="form-label">حساب</label><select class="form-select" id="edit-account"></select></div>
+    <div class="form-group" id="edit-cat-group" style="display:none;"><label class="form-label">دسته‌بندی</label><div class="chips" id="edit-cats"></div></div>
+    <button class="btn-primary" onclick="submitEditTx()">ذخیره تغییرات</button>
+    <button class="btn-secondary" onclick="closeModal('modal-edit-tx')">انصراف</button>
   </div>
 </div>
 
