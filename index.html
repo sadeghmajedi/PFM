@@ -123,14 +123,13 @@ body::before { content:''; position:fixed; inset:0; background:var(--bg); z-inde
 .fund-bar-fill { background:linear-gradient(90deg,var(--aqua-light),var(--aqua-dark)); height:100%; border-radius:99px; transition:width 0.6s; }
 .fund-meta { display:flex; justify-content:space-between; margin-top:5px; font-size:10px; color:var(--text-sub); }
 
-/* ── QUICK ACTIONS ── */
-.quick-actions { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:10px; }
-.qa-btn { background:#fff; border:1px solid var(--border); border-radius:var(--radius-sm); padding:13px 6px; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer; font-family:inherit; font-size:12px; font-weight:600; color:var(--text-main); box-shadow:var(--shadow-sm); }
-.qa-btn:active { opacity:0.85; }
-.qa-btn svg { width:18px; height:18px; fill:none; stroke-width:2; flex-shrink:0; }
-.qa-btn.income svg { stroke:var(--success); }
-.qa-btn.expense svg { stroke:var(--danger); }
-.qa-btn.transfer svg { stroke:var(--aqua-dark); }
+/* ── NET-WORTH ACTION BUTTONS ── */
+.nw-action-btn { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.35); border-radius:12px; padding:10px 6px; cursor:pointer; font-family:inherit; font-size:10px; font-weight:700; color:#fff; width:100%; transition:background 0.15s; -webkit-tap-highlight-color:transparent; }
+.nw-action-btn:active { background:rgba(255,255,255,0.35); }
+.nw-action-btn svg { width:18px; height:18px; stroke:currentColor; flex-shrink:0; }
+.nw-action-btn.income svg { stroke:#A8F5C2; }
+.nw-action-btn.expense svg { stroke:#FFB3B3; }
+.nw-action-btn.transfer svg { stroke:#fff; }
 
 /* ── TRANSACTIONS ── */
 .tx-item { display:flex; align-items:center; gap:9px; padding:9px 0; border-bottom:1px solid var(--border); }
@@ -283,33 +282,42 @@ body::before { content:''; position:fixed; inset:0; background:var(--bg); z-inde
 <!-- PAGE: DASHBOARD -->
 <div class="page active" id="page-dashboard">
   <div class="net-worth-card">
-    <div class="nw-label">خالص دارایی (ریال)</div>
-    <div class="nw-amount" id="netWorthRial">۰</div>
-    <div class="nw-currencies">
-      <div class="nw-cur"><div class="nw-label">دلار</div><div class="nw-cur-val" id="totalUSD">$۰</div></div>
-      <div class="nw-cur"><div class="nw-label">درهم</div><div class="nw-cur-val" id="totalAED">AED ۰</div></div>
-    </div>
-    <div style="display:flex;justify-content:flex-start;margin-top:10px;">
-      <div style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);border-radius:10px;padding:6px 12px;">
-        <div class="nw-label">💚 صدقه روزانه</div>
-        <div class="nw-amount" id="sadaqahAmount" style="font-size:26px;">۰</div>
+    <div style="display:flex;gap:0;align-items:stretch;">
+      <!-- Left: financial info -->
+      <div style="flex:1;min-width:0;">
+        <div class="nw-label">خالص دارایی (ریال)</div>
+        <div class="nw-amount" id="netWorthRial">۰</div>
+        <div class="nw-currencies" style="margin-top:8px;">
+          <div class="nw-cur"><div class="nw-label">دلار</div><div class="nw-cur-val" id="totalUSD">$۰</div></div>
+          <div class="nw-cur"><div class="nw-label">درهم</div><div class="nw-cur-val" id="totalAED">AED ۰</div></div>
+        </div>
+        <div style="margin-top:10px;">
+          <div class="nw-label">💚 صدقه روزانه</div>
+          <div class="nw-amount" id="sadaqahAmount" style="font-size:20px;">۰</div>
+        </div>
+      </div>
+      <!-- Divider -->
+      <div style="width:1px;background:rgba(255,255,255,0.3);margin:0 12px;flex-shrink:0;"></div>
+      <!-- Right: action buttons vertical -->
+      <div style="display:flex;flex-direction:column;gap:8px;justify-content:center;flex-shrink:0;width:80px;">
+        <button class="nw-action-btn income" onclick="openModal('modal-income')">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="M12 5v14M5 12l7-7 7 7"/></svg>
+          <span>دریافت</span>
+        </button>
+        <button class="nw-action-btn transfer" onclick="openTransfer()">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+          <span>انتقال</span>
+        </button>
+        <button class="nw-action-btn expense" onclick="openModal('modal-expense')">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="M12 19V5M5 12l7 7 7-7"/></svg>
+          <span>هزینه</span>
+        </button>
       </div>
     </div>
   </div>
   <div class="accounts-grid" id="accountsGrid"></div>
   <div class="sec-title">صندوق‌های تخصیصی</div>
   <div id="fundsSection"></div>
-  <div class="quick-actions">
-    <button class="qa-btn income" onclick="openModal('modal-income')">
-      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7-7 7 7"/></svg>ثبت دریافت
-    </button>
-    <button class="qa-btn transfer" onclick="openTransfer()">
-      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>انتقال
-    </button>
-    <button class="qa-btn expense" onclick="openModal('modal-expense')">
-      <svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7 7 7-7"/></svg>ثبت هزینه
-    </button>
-  </div>
   <div class="card">
     <div class="card-bar"></div>
     <div class="card-body">
@@ -389,7 +397,7 @@ body::before { content:''; position:fixed; inset:0; background:var(--bg); z-inde
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.0.9</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.1.0</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
