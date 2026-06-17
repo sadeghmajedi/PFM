@@ -411,7 +411,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.1.10</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.1.11</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
@@ -1815,31 +1815,59 @@ function importData(e) {
   var file = e.target.files[0]; if (!file) return;
   var r = new FileReader();
   r.onload = function(ev) {
+    var p;
     try {
-      var p = JSON.parse(ev.target.result);
-      if (!p.accounts || !Array.isArray(p.accounts) || !p.transactions || !Array.isArray(p.transactions)) {
-        alert('فایل معتبر نیست — ساختار accounts یا transactions یافت نشد');
-        return;
+      p = JSON.parse(ev.target.result);
+    } catch(parseErr) {
+      alert('خطا در خواندن فایل: ساختار JSON معتبر نیست');
+      return;
+    }
+    if (!p.accounts || !Array.isArray(p.accounts) || !p.transactions || !Array.isArray(p.transactions)) {
+      alert('فایل معتبر نیست — ساختار accounts یا transactions یافت نشد');
+      return;
+    }
+    // اطمینان از وجود فیلدهای ضروری برای جلوگیری از خطا در نسخه‌های جدید
+    p.funds = p.funds || [];
+    p.categories = p.categories || [];
+    p.incomeCategories = p.incomeCategories || [
+      {id:'ic1',name:'حقوق',icon:'💰'},{id:'ic2',name:'اجاره',icon:'🏠'},
+      {id:'ic3',name:'قرض برگشتی',icon:'🔄'},{id:'ic4',name:'فروش',icon:'🏷️'},
+      {id:'ic5',name:'سایر',icon:'⭐'}
+    ];
+    p.accounts.forEach(function(a){ if (a.seedBalance === undefined) a.seedBalance = a.balance || 0; });
+
+    // تلاش اول: ذخیره کامل (بدون تغییر DB سراسری تا اطمینان از موفقیت)
+    var jsonStr = JSON.stringify(p);
+    var saved = false;
+    try { localStorage.setItem('pfm_db_v3', jsonStr); saved = true; } catch(saveErr) {}
+
+    if (!saved) {
+      // تلاش دوم: حذف لوگوهای base64 حساب‌ها (معمولاً حجم اصلی اینجاست) و دوباره تلاش
+      var hadLogos = p.accounts.some(function(a){ return a.logo; });
+      if (hadLogos) {
+        p.accounts.forEach(function(a){ a.logo = null; });
+        jsonStr = JSON.stringify(p);
+        try { localStorage.setItem('pfm_db_v3', jsonStr); saved = true; } catch(saveErr2) {}
       }
-      // اطمینان از وجود فیلدهای ضروری برای جلوگیری از خطا در نسخه‌های جدید
-      p.funds = p.funds || [];
-      p.categories = p.categories || [];
-      p.incomeCategories = p.incomeCategories || [
-        {id:'ic1',name:'حقوق',icon:'💰'},{id:'ic2',name:'اجاره',icon:'🏠'},
-        {id:'ic3',name:'قرض برگشتی',icon:'🔄'},{id:'ic4',name:'فروش',icon:'🏷️'},
-        {id:'ic5',name:'سایر',icon:'⭐'}
-      ];
-      p.accounts.forEach(function(a){ if (a.seedBalance === undefined) a.seedBalance = a.balance || 0; });
-      DB = p;
-      var saved = false;
-      try { localStorage.setItem('pfm_db_v3', JSON.stringify(DB)); saved = true; } catch(saveErr) {}
-      if (!saved) { alert('⚠️ خطا در ذخیره داده — فضای ذخیره‌سازی کافی نیست یا مرورگر اجازه نمی‌دهد.'); return; }
-      // تأیید واقعی ذخیره شدن با خواندن مجدد از localStorage
-      var verify = localStorage.getItem('pfm_db_v3');
-      if (!verify || verify.length < 10) { alert('⚠️ داده ذخیره نشد. لطفاً دوباره تلاش کنید.'); return; }
-      renderAll();
-      alert('✓ داده‌ها بارگذاری و ذخیره شد (' + p.transactions.length + ' تراکنش)');
-    } catch(e2) { alert('خطا در خواندن فایل: ' + e2.message); }
+    }
+
+    if (!saved) {
+      alert('⚠️ خطا در ذخیره داده — حجم فایل بیشتر از فضای مجاز مرورگر است.\nپیشنهاد: داده‌ها را به چند بخش کوچک‌تر تقسیم کرده و جدا Import کنید، یا لوگوهای حساب‌ها را حذف کنید.');
+      return;
+    }
+
+    // تأیید واقعی با خواندن مجدد از localStorage
+    var verify = localStorage.getItem('pfm_db_v3');
+    if (!verify || verify.length < 10) {
+      alert('⚠️ داده ذخیره نشد. لطفاً دوباره تلاش کنید.');
+      return;
+    }
+
+    // فقط بعد از تأیید ذخیره موفق، DB سراسری را آپدیت کن
+    DB = p;
+    renderAll();
+    var logoMsg = (saved && p.accounts.some(function(a){return !a.logo;})) ? ' (توجه: لوگوهای حساب به دلیل کمبود فضا حذف شدند)' : '';
+    alert('✓ داده‌ها بارگذاری و ذخیره شد (' + p.transactions.length + ' تراکنش)' + logoMsg);
   };
   r.readAsText(file);
 }
@@ -1865,7 +1893,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.1.10';
+var CURRENT_VERSION = '1.1.11';
 
 // ═══════════════════════════════════════
 // SERVICE WORKER — پشتیبانی آفلاین
