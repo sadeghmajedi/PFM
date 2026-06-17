@@ -411,10 +411,10 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.1.11</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.1.12</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
-    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+    <input type="file" id="importFile" accept=".json,.gz,.json.gz" style="display:none" onchange="importData(event)">
   </div></div>
 </div>
 
@@ -757,17 +757,42 @@ function loadDB() {
 }
 
 // ═══════════════════════════════════════
-// LOGO UPLOAD
+// LOGO UPLOAD — با کوچک‌سازی و فشرده‌سازی خودکار
 // ═══════════════════════════════════════
 var pendingLogoData = null;
+var LOGO_MAX_DIM = 128; // پیکسل
+var LOGO_QUALITY = 0.82; // کیفیت JPEG
+
+function resizeImageToDataURL(file, maxDim, quality, callback) {
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var img = new Image();
+    img.onload = function() {
+      var w = img.width, h = img.height;
+      if (w > h) { if (w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; } }
+      else { if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; } }
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      // پس‌زمینه سفید برای PNGهای شفاف (چون JPEG شفافیت ندارد)
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      var dataUrl = canvas.toDataURL('image/jpeg', quality);
+      callback(dataUrl);
+    };
+    img.onerror = function() { callback(ev.target.result); }; // در صورت خطا، اصل فایل را برگردان
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 function previewAccLogo(e) {
   var file = e.target.files[0]; if (!file) return;
-  var r = new FileReader();
-  r.onload = function(ev) {
-    pendingLogoData = ev.target.result;
+  resizeImageToDataURL(file, LOGO_MAX_DIM, LOGO_QUALITY, function(dataUrl) {
+    pendingLogoData = dataUrl;
     document.getElementById('logoPreviewWrap').innerHTML = '<img src="' + pendingLogoData + '" style="width:40px;height:40px;border-radius:8px;object-fit:contain;">';
-  };
-  r.readAsDataURL(file);
+  });
 }
 
 // ═══════════════════════════════════════
@@ -1740,11 +1765,33 @@ function exportReportExcel() {
 }
 
 function exportData() {
-  var blob = new Blob([JSON.stringify(DB,null,2)], {type:'application/json'});
-  var a = document.createElement('a');
+  var jsonStr = JSON.stringify(DB, null, 2);
   var d = J.today();
+  var fname = 'pfm-' + d.jy + String(d.jm).padStart(2,'0') + String(d.jd).padStart(2,'0');
+
+  if (typeof CompressionStream !== 'undefined') {
+    var blob0 = new Blob([jsonStr], {type:'application/json'});
+    var cs = new CompressionStream('gzip');
+    var compressedStream = blob0.stream().pipeThrough(cs);
+    new Response(compressedStream).blob().then(function(gzBlob) {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(gzBlob);
+      a.download = fname + '.json.gz';
+      a.click();
+    }).catch(function() {
+      // در صورت خطا، خروجی معمولی بدون فشرده‌سازی
+      exportPlainJSON(jsonStr, fname);
+    });
+  } else {
+    exportPlainJSON(jsonStr, fname);
+  }
+}
+
+function exportPlainJSON(jsonStr, fname) {
+  var blob = new Blob([jsonStr], {type:'application/json'});
+  var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'pfm-' + d.jy + String(d.jm).padStart(2,'0') + String(d.jd).padStart(2,'0') + '.json';
+  a.download = fname + '.json';
   a.click();
 }
 
@@ -1813,11 +1860,12 @@ function exportPDF() {
 
 function importData(e) {
   var file = e.target.files[0]; if (!file) return;
-  var r = new FileReader();
-  r.onload = function(ev) {
+  var isGzip = /\.gz$/i.test(file.name) || file.type === 'application/gzip';
+
+  function processJSONText(jsonText) {
     var p;
     try {
-      p = JSON.parse(ev.target.result);
+      p = JSON.parse(jsonText);
     } catch(parseErr) {
       alert('خطا در خواندن فایل: ساختار JSON معتبر نیست');
       return;
@@ -1826,7 +1874,6 @@ function importData(e) {
       alert('فایل معتبر نیست — ساختار accounts یا transactions یافت نشد');
       return;
     }
-    // اطمینان از وجود فیلدهای ضروری برای جلوگیری از خطا در نسخه‌های جدید
     p.funds = p.funds || [];
     p.categories = p.categories || [];
     p.incomeCategories = p.incomeCategories || [
@@ -1836,13 +1883,11 @@ function importData(e) {
     ];
     p.accounts.forEach(function(a){ if (a.seedBalance === undefined) a.seedBalance = a.balance || 0; });
 
-    // تلاش اول: ذخیره کامل (بدون تغییر DB سراسری تا اطمینان از موفقیت)
     var jsonStr = JSON.stringify(p);
     var saved = false;
     try { localStorage.setItem('pfm_db_v3', jsonStr); saved = true; } catch(saveErr) {}
 
     if (!saved) {
-      // تلاش دوم: حذف لوگوهای base64 حساب‌ها (معمولاً حجم اصلی اینجاست) و دوباره تلاش
       var hadLogos = p.accounts.some(function(a){ return a.logo; });
       if (hadLogos) {
         p.accounts.forEach(function(a){ a.logo = null; });
@@ -1856,20 +1901,33 @@ function importData(e) {
       return;
     }
 
-    // تأیید واقعی با خواندن مجدد از localStorage
     var verify = localStorage.getItem('pfm_db_v3');
     if (!verify || verify.length < 10) {
       alert('⚠️ داده ذخیره نشد. لطفاً دوباره تلاش کنید.');
       return;
     }
 
-    // فقط بعد از تأیید ذخیره موفق، DB سراسری را آپدیت کن
     DB = p;
     renderAll();
-    var logoMsg = (saved && p.accounts.some(function(a){return !a.logo;})) ? ' (توجه: لوگوهای حساب به دلیل کمبود فضا حذف شدند)' : '';
+    var logoMsg = (p.accounts.some(function(a){return !a.logo;}) && saved) ? ' (توجه: برخی لوگوها به دلیل کمبود فضا حذف شدند)' : '';
     alert('✓ داده‌ها بارگذاری و ذخیره شد (' + p.transactions.length + ' تراکنش)' + logoMsg);
-  };
-  r.readAsText(file);
+  }
+
+  if (isGzip && typeof DecompressionStream !== 'undefined') {
+    file.arrayBuffer().then(function(buf) {
+      var ds = new DecompressionStream('gzip');
+      var stream = new Blob([buf]).stream().pipeThrough(ds);
+      return new Response(stream).text();
+    }).then(function(text) {
+      processJSONText(text);
+    }).catch(function(err) {
+      alert('خطا در باز کردن فایل فشرده: ' + err.message);
+    });
+  } else {
+    var r = new FileReader();
+    r.onload = function(ev) { processJSONText(ev.target.result); };
+    r.readAsText(file);
+  }
 }
 
 function confirmClear() {
@@ -1893,7 +1951,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.1.11';
+var CURRENT_VERSION = '1.1.12';
 
 // ═══════════════════════════════════════
 // SERVICE WORKER — پشتیبانی آفلاین
