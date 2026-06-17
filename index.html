@@ -709,6 +709,24 @@ function saveDB() {
     }
   } catch(e) {}
 }
+
+// ── محاسبه موجودی real-time ──
+// موجودی = seedBalance + جمع تراکنش‌های حساب
+function getAccountBalance(accId) {
+  var acc = DB.accounts.find(function(a){ return a.id===accId; });
+  if (!acc) return 0;
+  var seed = (acc.seedBalance !== undefined) ? acc.seedBalance : acc.balance;
+  var txSum = 0;
+  DB.transactions.forEach(function(t) {
+    if (t.type==='income' && t.accountId===accId) txSum += t.amount;
+    else if ((t.type==='expense'||t.type==='fund-out') && t.accountId===accId) txSum -= t.amount;
+    else if (t.type==='transfer') {
+      if (t.fromAccountId===accId) txSum -= (t.amount + (t.fee||0));
+      if (t.toAccountId===accId) txSum += t.amount;
+    }
+  });
+  return seed + txSum;
+}
 function loadDB() {
   try {
     var raw = localStorage.getItem('pfm_db_v3');
@@ -727,6 +745,15 @@ function loadDB() {
     DB.funds.push({id:'fund-zakat',name:'زکات',icon:'🕌',balance:0,totalIn:0,totalOut:0,rates:{monthly:2.5,extra:0,other:0}});
     saveDB();
   }
+  // Migrate: اگر حسابی seedBalance ندارد، موجودی فعلی‌اش را به عنوان seed در نظر می‌گیریم
+  var needsSave = false;
+  DB.accounts.forEach(function(a) {
+    if (a.seedBalance === undefined) {
+      a.seedBalance = a.balance;
+      needsSave = true;
+    }
+  });
+  if (needsSave) saveDB();
 }
 
 // ═══════════════════════════════════════
@@ -942,7 +969,7 @@ function submitIncome() {
   var incCatId = selIncCat ? selIncCat.dataset.id : null;
   if (DB.accounts.length && !accountId) { alert('لطفاً حساب بانکی را انتخاب کنید'); return; }
   var acc = DB.accounts.find(function(a){ return a.id === accountId; });
-  if (acc) acc.balance += amount;
+  // موجودی از طریق getAccountBalance محاسبه می‌شود — نیازی به تغییر مستقیم نیست
   var tx = {id:'tx'+Date.now(),type:'income',amount:amount,group:group,accountId:accountId,desc:desc,date:dateISO,incCatId:incCatId,allocations:[]};
   DB.funds.forEach(function(f){
     var rate = f.rates ? (f.rates[group]||0) : ((f.incomeGroup===group||f.incomeGroup==='all') ? (f.pct||0) : 0);
@@ -973,17 +1000,16 @@ function submitExpense() {
   var desc = document.getElementById('exp-desc').value || (DB.categories.find(function(c){ return c.id===catId; })||{name:'هزینه'}).name;
   if (DB.accounts.length && !accountId) { alert('لطفاً حساب بانکی را انتخاب کنید'); return; }
   var acc = DB.accounts.find(function(a){ return a.id===accountId; });
-  // Check sufficient balance (only for IRR accounts)
-  if (acc && acc.currency === 'IRR' && acc.balance < amount) {
-    var shortage = addCommas(Math.round(amount - acc.balance));
+  var curBalance = acc ? getAccountBalance(accountId) : 0;
+  if (acc && acc.currency === 'IRR' && curBalance < amount) {
+    var shortage = addCommas(Math.round(amount - curBalance));
     alert('موجودی حساب «' + acc.name + '» کافی نیست.\nکمبود: ' + toFa(shortage) + ' ریال');
     return;
   }
-  if (acc && acc.currency !== 'IRR' && acc.balance < amount) {
+  if (acc && acc.currency !== 'IRR' && curBalance < amount) {
     alert('موجودی حساب «' + acc.name + '» کافی نیست.');
     return;
   }
-  if (acc) acc.balance -= amount;
   DB.transactions.push({id:'tx'+Date.now(),type:'expense',amount:amount,catId:catId,accountId:accountId,desc:desc,date:dateISO});
   saveDB(); closeModal('modal-expense');
   document.getElementById('exp-amount').value = '';
@@ -1017,18 +1043,18 @@ function submitFundPayment() {
   if (!amount || amount <= 0) { alert('مبلغ را وارد کنید'); return; }
   if (!accountId) { alert('لطفاً حساب بانکی را انتخاب کنید'); return; }
   var accCheck = DB.accounts.find(function(a){ return a.id===accountId; });
-  if (accCheck && accCheck.balance < amount) {
-    var shortage2 = addCommas(Math.round(amount - accCheck.balance));
+  if (accCheck && getAccountBalance(accountId) < amount) {
+    var shortage2 = addCommas(Math.round(amount - getAccountBalance(accountId)));
     alert('موجودی حساب «' + accCheck.name + '» کافی نیست.\nکمبود: ' + toFa(shortage2) + ' ریال');
     return;
   }
   var f = DB.funds.find(function(f){ return f.id===fundId; }); if (!f) return;
   // Deduct from fund
   f.balance -= amount; f.totalOut = (f.totalOut||0) + amount;
-  // Deduct from bank account
+  // Deduct from bank account — حذف شد، getAccountBalance محاسبه می‌کند
   if (DB.accounts.length && !accountId) { alert('لطفاً حساب بانکی را انتخاب کنید'); return; }
   var acc = DB.accounts.find(function(a){ return a.id===accountId; });
-  if (acc) acc.balance -= amount;
+  // موجودی از طریق getAccountBalance محاسبه می‌شود
   // Record transaction (expense type with fund reference)
   DB.transactions.push({
     id:'tx'+Date.now(), type:'expense', amount:amount,
@@ -1050,7 +1076,7 @@ function submitAccount() {
   if (!name) { alert('نام حساب را وارد کنید'); return; }
   var currency = document.getElementById('acc-currency').value;
   var balance = parseFloat(document.getElementById('acc-balance').value) || 0;
-  DB.accounts.push({id:'acc'+Date.now(),name:name,currency:currency,balance:balance,logo:pendingLogoData||null});
+  DB.accounts.push({id:'acc'+Date.now(),name:name,currency:currency,balance:balance,seedBalance:balance,logo:pendingLogoData||null});
   pendingLogoData = null;
   var lpw = document.getElementById('logoPreviewWrap'); if (lpw) lpw.innerHTML = '🏦';
   saveDB(); closeModal('modal-account');
@@ -1135,10 +1161,10 @@ function clearTxSearch() {
 function renderAll() { renderDashboard(); renderAccounts(); renderTransactions(); renderReports(); renderSettings(); }
 
 function renderDashboard() {
-  var totalRial = DB.accounts.filter(function(a){ return a.currency==='IRR'; }).reduce(function(s,a){ return s+a.balance; }, 0);
+  var totalRial = DB.accounts.filter(function(a){ return a.currency==='IRR'; }).reduce(function(s,a){ return s+getAccountBalance(a.id); }, 0);
   document.getElementById('netWorthRial').textContent = toFa(addCommas(Math.round(totalRial))) + ' ریال';
-  var totalUSD = DB.accounts.filter(function(a){ return a.currency==='USD'; }).reduce(function(s,a){ return s+a.balance; }, 0);
-  var totalAED = DB.accounts.filter(function(a){ return a.currency==='AED'; }).reduce(function(s,a){ return s+a.balance; }, 0);
+  var totalUSD = DB.accounts.filter(function(a){ return a.currency==='USD'; }).reduce(function(s,a){ return s+getAccountBalance(a.id); }, 0);
+  var totalAED = DB.accounts.filter(function(a){ return a.currency==='AED'; }).reduce(function(s,a){ return s+getAccountBalance(a.id); }, 0);
   document.getElementById('totalUSD').textContent = '$' + addCommas(totalUSD.toFixed(2));
   document.getElementById('totalAED').textContent = 'AED ' + addCommas(totalAED.toFixed(2));
   var sadaqah = Math.round(totalRial * 0.0002);
@@ -1155,7 +1181,7 @@ function renderDashboard() {
         : '<span class="am-logo-emoji">🏦</span>';
       html += '<div class="account-mini">' +
         '<div class="am-header">' + logoHtml + '<div class="am-name">' + a.name + '</div></div>' +
-        '<div class="am-footer"><div class="am-balance">' + toCurrency(a.balance,a.currency) + '</div><div class="am-currency">' + a.currency + '</div></div>' +
+        '<div class="am-footer"><div class="am-balance">' + toCurrency(getAccountBalance(a.id),a.currency) + '</div><div class="am-currency">' + a.currency + '</div></div>' +
         '</div>';
     });
     grid.innerHTML = html;
@@ -1233,7 +1259,7 @@ function renderAccounts() {
       html += '<div class="list-item">' +
         '<div style="display:flex;align-items:center;gap:9px;">' + logoHtml +
         '<div><div style="font-weight:600;font-size:13px;">' + a.name + '</div>' +
-        '<div style="font-size:11px;color:rgba(255,255,255,0.5);">' + a.currency + ' · ' + toCurrency(a.balance,a.currency) + '</div></div></div>' +
+        '<div style="font-size:11px;color:rgba(255,255,255,0.5);">' + a.currency + ' · ' + toCurrency(getAccountBalance(a.id),a.currency) + '</div></div></div>' +
         '<div class="li-actions">' +
         '<button class="icon-btn" data-id="' + a.id + '" data-action="ea">✏️</button>' +
         '<button class="icon-btn danger" data-id="' + a.id + '" data-action="da">🗑️</button>' +
@@ -1455,7 +1481,7 @@ function submitEditAccount() {
   var balance = parseFloat(document.getElementById('edit-acc-balance').value)||0;
   if (!name) { alert('نام حساب را وارد کنید'); return; }
   var acc = DB.accounts.find(function(a){ return a.id===id; }); if (!acc) return;
-  acc.name = name; acc.balance = balance; acc.currency = document.getElementById('edit-acc-currency').value;
+  acc.name = name; acc.seedBalance = balance; acc.balance = balance; acc.currency = document.getElementById('edit-acc-currency').value;
   saveDB(); closeModal('modal-edit-account'); renderAll();
 }
 function openEditFund(id) {
@@ -1484,7 +1510,7 @@ function deleteCat(id) { if (!confirm('حذف شود؟')) return; DB.categories=
 function openTransfer() {
   if (!DB.accounts.length) { alert('ابتدا حساب بانکی اضافه کنید'); return; }
   var opts = DB.accounts.map(function(a){
-    return '<option value="'+a.id+'">'+a.name+' ('+toCurrency(a.balance,a.currency)+')</option>';
+    return '<option value="'+a.id+'">'+a.name+' ('+toCurrency(getAccountBalance(a.id),a.currency)+')</option>';
   }).join('');
   document.getElementById('tr-from').innerHTML = '<option value="">— حساب مبدأ —</option>'+opts;
   document.getElementById('tr-to').innerHTML = '<option value="">— حساب مقصد —</option>'+opts;
@@ -1509,12 +1535,12 @@ function submitTransfer() {
   var toAcc = DB.accounts.find(function(a){ return a.id===toId; });
   if (!fromAcc || !toAcc) return;
   var total = amount + fee;
-  if (fromAcc.balance < total) {
-    alert('موجودی «'+fromAcc.name+'» کافی نیست.\nکمبود: '+toFa(addCommas(Math.round(total-fromAcc.balance)))+' ریال');
+  var fromBalance = getAccountBalance(fromId);
+  if (fromBalance < total) {
+    alert('موجودی «'+fromAcc.name+'» کافی نیست.\nکمبود: '+toFa(addCommas(Math.round(total-fromBalance)))+' ریال');
     return;
   }
-  fromAcc.balance -= total;
-  toAcc.balance += amount;
+  // موجودی از طریق getAccountBalance محاسبه می‌شود — تغییر مستقیم حذف شد
   var feeNote = fee > 0 ? ' (کارمزد: '+toFa(addCommas(fee))+')' : '';
   DB.transactions.push({id:'tx'+Date.now(),type:'transfer',amount:amount,fee:fee,
     fromAccountId:fromId,toAccountId:toId,
@@ -1525,20 +1551,13 @@ function submitTransfer() {
 function deleteTx(id) {
   if (!confirm('این تراکنش حذف شود؟')) return;
   var tx = DB.transactions.find(function(t){ return t.id===id; });
-  if (tx) {
-    // Reverse the balance effect
-    var acc = tx.accountId ? DB.accounts.find(function(a){ return a.id===tx.accountId; }) : null;
-    if (acc) {
-      if (tx.type==='income') acc.balance -= tx.amount;
-      else if (tx.type==='expense' || tx.type==='fund-out') acc.balance += tx.amount;
-    }
-    // Reverse fund effect
-    if (tx.fundId) {
-      var fund = DB.funds.find(function(f){ return f.id===tx.fundId; });
-      if (fund) {
-        if (tx.type==='fund-in') { fund.balance -= tx.amount; fund.totalIn = Math.max(0,(fund.totalIn||0)-tx.amount); }
-        else if (tx.type==='fund-out') { fund.balance += tx.amount; fund.totalOut = Math.max(0,(fund.totalOut||0)-tx.amount); }
-      }
+  if (!tx) return;
+  // فقط اثر صندوق را برمی‌گردانیم — موجودی حساب real-time محاسبه می‌شود
+  if (tx.fundId) {
+    var fund = DB.funds.find(function(f){ return f.id===tx.fundId; });
+    if (fund) {
+      if (tx.type==='fund-in') { fund.balance -= tx.amount; fund.totalIn = Math.max(0,(fund.totalIn||0)-tx.amount); }
+      else if (tx.type==='fund-out') { fund.balance += tx.amount; fund.totalOut = Math.max(0,(fund.totalOut||0)-tx.amount); }
     }
   }
   DB.transactions = DB.transactions.filter(function(t){ return t.id!==id; });
@@ -1751,9 +1770,9 @@ function exportExcel() {
 function exportPDF() {
   var d = J.today();
   var dateStr = toFa(d.jd) + ' ' + J.monthName(d.jm) + ' ' + toFa(d.jy);
-  var totalRial = DB.accounts.filter(function(a){return a.currency==='IRR';}).reduce(function(s,a){return s+a.balance;},0);
-  var totalUSD = DB.accounts.filter(function(a){return a.currency==='USD';}).reduce(function(s,a){return s+a.balance;},0);
-  var totalAED = DB.accounts.filter(function(a){return a.currency==='AED';}).reduce(function(s,a){return s+a.balance;},0);
+  var totalRial = DB.accounts.filter(function(a){return a.currency==='IRR';}).reduce(function(s,a){return s+getAccountBalance(a.id);},0);
+  var totalUSD = DB.accounts.filter(function(a){return a.currency==='USD';}).reduce(function(s,a){return s+getAccountBalance(a.id);},0);
+  var totalAED = DB.accounts.filter(function(a){return a.currency==='AED';}).reduce(function(s,a){return s+getAccountBalance(a.id);},0);
   var typeMap = {income:'درآمد',expense:'هزینه','fund-in':'واریز صندوق','fund-out':'برداشت صندوق',transfer:'انتقال'};
   var rows = '';
   DB.transactions.slice().sort(function(a,b){return new Date(b.date)-new Date(a.date);}).slice(0,300).forEach(function(t) {
