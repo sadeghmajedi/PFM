@@ -411,7 +411,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.1.2</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.1.10</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
@@ -1817,9 +1817,29 @@ function importData(e) {
   r.onload = function(ev) {
     try {
       var p = JSON.parse(ev.target.result);
-      if (p.accounts && p.transactions) { DB = p; saveDB(); renderAll(); alert('داده‌ها بارگذاری شد ✓'); }
-      else alert('فایل معتبر نیست');
-    } catch(e2) { alert('خطا در خواندن فایل'); }
+      if (!p.accounts || !Array.isArray(p.accounts) || !p.transactions || !Array.isArray(p.transactions)) {
+        alert('فایل معتبر نیست — ساختار accounts یا transactions یافت نشد');
+        return;
+      }
+      // اطمینان از وجود فیلدهای ضروری برای جلوگیری از خطا در نسخه‌های جدید
+      p.funds = p.funds || [];
+      p.categories = p.categories || [];
+      p.incomeCategories = p.incomeCategories || [
+        {id:'ic1',name:'حقوق',icon:'💰'},{id:'ic2',name:'اجاره',icon:'🏠'},
+        {id:'ic3',name:'قرض برگشتی',icon:'🔄'},{id:'ic4',name:'فروش',icon:'🏷️'},
+        {id:'ic5',name:'سایر',icon:'⭐'}
+      ];
+      p.accounts.forEach(function(a){ if (a.seedBalance === undefined) a.seedBalance = a.balance || 0; });
+      DB = p;
+      var saved = false;
+      try { localStorage.setItem('pfm_db_v3', JSON.stringify(DB)); saved = true; } catch(saveErr) {}
+      if (!saved) { alert('⚠️ خطا در ذخیره داده — فضای ذخیره‌سازی کافی نیست یا مرورگر اجازه نمی‌دهد.'); return; }
+      // تأیید واقعی ذخیره شدن با خواندن مجدد از localStorage
+      var verify = localStorage.getItem('pfm_db_v3');
+      if (!verify || verify.length < 10) { alert('⚠️ داده ذخیره نشد. لطفاً دوباره تلاش کنید.'); return; }
+      renderAll();
+      alert('✓ داده‌ها بارگذاری و ذخیره شد (' + p.transactions.length + ' تراکنش)');
+    } catch(e2) { alert('خطا در خواندن فایل: ' + e2.message); }
   };
   r.readAsText(file);
 }
@@ -1845,7 +1865,18 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.1.2';
+var CURRENT_VERSION = '1.1.10';
+
+// ═══════════════════════════════════════
+// SERVICE WORKER — پشتیبانی آفلاین
+// ═══════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./sw.js').catch(function(err) {
+      console.warn('SW registration failed:', err);
+    });
+  });
+}
 
 function manualUpdateCheck() {
   checkForUpdate();
@@ -1883,6 +1914,11 @@ function doUpdate() {
   if (!confirm('نسخه جدید نصب شود؟')) return;
   saveDB();
   var dbBackup = localStorage.getItem('pfm_db_v3');
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(regs) {
+      regs.forEach(function(r) { r.update(); });
+    });
+  }
   var xhr = new XMLHttpRequest();
   xhr.open('GET', UPDATE_URL + '?t=' + Date.now(), true);
   xhr.onload = function() {
