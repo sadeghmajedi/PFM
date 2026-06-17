@@ -131,13 +131,13 @@ html { height:100%; height:-webkit-fill-available; }
 .fund-meta { display:flex; justify-content:space-between; margin-top:5px; font-size:10px; color:var(--text-sub); }
 
 /* ── NET-WORTH ACTION BUTTONS ── */
-.nw-action-btn { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.35); border-radius:12px; padding:10px 6px; cursor:pointer; font-family:inherit; font-size:10px; font-weight:700; color:#fff; width:100%; transition:background 0.15s; -webkit-tap-highlight-color:transparent; position:relative; z-index:1; }
-.nw-action-btn:active { background:rgba(255,255,255,0.35); }
-.nw-action-btn svg { width:18px; height:18px; stroke:currentColor; flex-shrink:0; pointer-events:none; }
+.nw-action-btn { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; background:rgba(255,255,255,0.92); border:1px solid rgba(255,255,255,0.6); border-radius:12px; padding:10px 6px; cursor:pointer; font-family:inherit; font-size:11px; font-weight:700; color:#1a1a1a; width:100%; transition:background 0.15s; -webkit-tap-highlight-color:transparent; position:relative; z-index:1; }
+.nw-action-btn:active { background:rgba(255,255,255,0.7); }
+.nw-action-btn svg { width:18px; height:18px; flex-shrink:0; pointer-events:none; }
 .nw-action-btn span { pointer-events:none; }
-.nw-action-btn.income svg { stroke:#A8F5C2; }
-.nw-action-btn.expense svg { stroke:#FFB3B3; }
-.nw-action-btn.transfer svg { stroke:#fff; }
+.nw-action-btn.income svg { stroke:#1a9e50; fill:none; stroke-width:2.5; }
+.nw-action-btn.expense svg { stroke:#e03030; fill:none; stroke-width:2.5; }
+.nw-action-btn.transfer svg { stroke:#1a7a9a; fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
 
 /* ── TRANSACTIONS ── */
 .tx-item { display:flex; align-items:center; gap:9px; padding:9px 0; border-bottom:1px solid var(--border); }
@@ -693,7 +693,22 @@ var DB = { accounts:[], funds:[], transactions:[], categories:[
   {id:'ic5',name:'سایر',icon:'⭐'}
 ]};
 
-function saveDB() { try { localStorage.setItem('pfm_db_v3', JSON.stringify(DB)); } catch(e){} }
+function saveDB() {
+  try {
+    localStorage.setItem('pfm_db_v3', JSON.stringify(DB));
+    // Auto-backup reminder every 10 transactions
+    var txCount = DB.transactions.length;
+    var lastRemind = parseInt(localStorage.getItem('pfm_last_backup_remind') || '0');
+    if (txCount > 0 && Math.floor(txCount / 10) > Math.floor(lastRemind / 10)) {
+      localStorage.setItem('pfm_last_backup_remind', txCount);
+      setTimeout(function() {
+        if (confirm('💾 یادآوری پشتیبان‌گیری\n\n' + toFa(txCount) + ' تراکنش ثبت شده.\nپیشنهاد می‌شود از داده‌ها خروجی JSON بگیرید.\n\nاکنون به صفحه تنظیمات بروید؟')) {
+          navigate('settings', document.querySelector('.nav-item:last-child'));
+        }
+      }, 800);
+    }
+  } catch(e) {}
+}
 function loadDB() {
   try {
     var raw = localStorage.getItem('pfm_db_v3');
@@ -1440,7 +1455,7 @@ function submitEditAccount() {
   var balance = parseFloat(document.getElementById('edit-acc-balance').value)||0;
   if (!name) { alert('نام حساب را وارد کنید'); return; }
   var acc = DB.accounts.find(function(a){ return a.id===id; }); if (!acc) return;
-  acc.name=name; acc.balance=balance;
+  acc.name = name; acc.balance = balance; acc.currency = document.getElementById('edit-acc-currency').value;
   saveDB(); closeModal('modal-edit-account'); renderAll();
 }
 function openEditFund(id) {
@@ -1656,8 +1671,9 @@ function exportReportPDF() {
     'th{background:#FF7F7F;color:white;padding:7px;text-align:right;font-size:10px;}' +
     'td{padding:6px 7px;border-bottom:1px solid #FFE8E8;font-size:11px;}' +
     'tr:nth-child(even) td{background:#FFF8F8;}' +
-    '.pbtn{margin-top:16px;background:#FF7F7F;color:white;border:none;padding:9px 20px;border-radius:7px;font-family:Vazirmatn,sans-serif;font-size:13px;cursor:pointer;}' +
-    '@media print{.pbtn{display:none}}</style></head><body>' +
+    '.pbtn{margin-top:16px;background:#FF7F7F;color:white;border:none;padding:9px 20px;border-radius:7px;font-family:Vazirmatn,sans-serif;font-size:13px;cursor:pointer;margin-left:8px;}' +
+    '.cbtn{margin-top:16px;background:#888;color:white;border:none;padding:9px 20px;border-radius:7px;font-family:Vazirmatn,sans-serif;font-size:13px;cursor:pointer;}' +
+    '@media print{.pbtn,.cbtn{display:none}}</style></head><body>' +
     '<h1>گزارش مالی — ' + monthName + '</h1>' +
     '<div class="sub">سید صادق ماجدی · مدیریت مالی شخصی</div>' +
     '<div class="sum">' +
@@ -1667,7 +1683,9 @@ function exportReportPDF() {
     '</div>' +
     (catRows ? '<h2>هزینه بر اساس دسته‌بندی</h2><table><tr><th>دسته‌بندی</th><th>مبلغ</th></tr>' + catRows + '</table>' : '') +
     '<h2>وضعیت صندوق‌های تخصیصی</h2><table><tr><th>صندوق</th><th>موجودی</th><th>درصد</th></tr>' + fundsHtml + '</table>' +
-    '<button class="pbtn" onclick="window.print()">🖨️ چاپ / PDF</button></body></html>');
+    '<button class="pbtn" onclick="window.print()">🖨️ چاپ / PDF</button>' +
+    '<button class="cbtn" onclick="window.close()">✕ بستن</button>' +
+    '</body></html>');
   w.document.close();
 }
 
@@ -1759,15 +1777,18 @@ function exportPDF() {
     '.fbox h3{font-size:9px;color:#999;margin-bottom:2px;}.fbox p{font-size:13px;font-weight:700;color:#B8860B;}' +
     'table{width:100%;border-collapse:collapse;}th{background:#FF7F7F;color:white;padding:7px;text-align:right;font-size:10px;}' +
     'td{padding:6px 7px;border-bottom:1px solid #FFE8E8;font-size:10px;}tr:nth-child(even) td{background:#FFF8F8;}' +
-    '.pbtn{margin-top:16px;background:#FF7F7F;color:white;border:none;padding:9px 20px;border-radius:7px;font-family:Vazirmatn,sans-serif;font-size:13px;cursor:pointer;}' +
-    '@media print{.pbtn{display:none}}</style></head><body>' +
+    '.pbtn{margin-top:16px;background:#FF7F7F;color:white;border:none;padding:9px 20px;border-radius:7px;font-family:Vazirmatn,sans-serif;font-size:13px;cursor:pointer;margin-left:8px;}' +
+    '.cbtn{margin-top:16px;background:#888;color:white;border:none;padding:9px 20px;border-radius:7px;font-family:Vazirmatn,sans-serif;font-size:13px;cursor:pointer;}' +
+    '@media print{.pbtn,.cbtn{display:none}}</style></head><body>' +
     '<h1>مدیریت مالی شخصی — سید صادق ماجدی</h1><div class="sub">' + dateStr + '</div>' +
     '<div class="sumrow"><div class="sbox"><h3>دارایی ریالی</h3><p>' + addCommas(Math.round(totalRial)) + '</p></div>' +
     (totalUSD ? '<div class="sbox"><h3>دلار</h3><p>$' + addCommas(totalUSD.toFixed(2)) + '</p></div>' : '') +
     (totalAED ? '<div class="sbox"><h3>درهم</h3><p>AED ' + addCommas(totalAED.toFixed(2)) + '</p></div>' : '') + '</div>' +
     (fundsRows ? '<div class="frow">' + fundsRows + '</div>' : '') +
     '<table><tr><th>تاریخ</th><th>نوع</th><th>مبلغ</th><th>توضیحات</th><th>دسته‌بندی</th></tr>' + rows + '</table>' +
-    '<button class="pbtn" onclick="window.print()">🖨️ چاپ / PDF</button></body></html>');
+    '<button class="pbtn" onclick="window.print()">🖨️ چاپ / PDF</button>' +
+    '<button class="cbtn" onclick="window.close()">✕ بستن</button>' +
+    '</body></html>');
   w.document.close();
 }
 
@@ -1882,7 +1903,7 @@ setTimeout(function() {
     <div class="modal-handle"></div>
     <div class="modal-title">✏️ ویرایش حساب</div>
     <div class="form-group"><label class="form-label">نام حساب</label><input type="text" class="form-input" id="edit-acc-name"></div>
-    <div class="form-group"><label class="form-label">موجودی فعلی</label><input type="number" class="form-input" id="edit-acc-balance"></div>
+    <div class="form-group"><label class="form-label">موجودی اولیه</label><input type="number" class="form-input" id="edit-acc-balance" placeholder="مانده پایه حساب"></div>
     <div class="form-group"><label class="form-label">ارز</label><select class="form-select" id="edit-acc-currency"><option value="IRR">ریال</option><option value="USD">دلار</option><option value="AED">درهم</option></select></div>
     <input type="hidden" id="edit-acc-id">
     <button class="btn-primary" onclick="submitEditAccount()">ذخیره</button>
