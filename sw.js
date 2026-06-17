@@ -1,5 +1,5 @@
 // PFM Service Worker — پشتیبانی آفلاین
-var CACHE_NAME = 'pfm-cache-v1.1.10';
+var CACHE_NAME = 'pfm-cache-v1.1.11';
 var CACHE_FILES = [
   './',
   './index.html',
