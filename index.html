@@ -411,7 +411,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.1.13</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.1.14</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
     <input type="file" id="importFile" accept=".json,.gz,.json.gz" style="display:none" onchange="importData(event)">
@@ -477,7 +477,7 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="form-group"><label class="form-label">تاریخ</label><input type="date" class="form-input" id="inc-date"></div>
     <div class="form-group"><label class="form-label">گروه دریافتی</label><select class="form-select" id="inc-group" onchange="updateAllocPreview()"><option value="monthly">ماهیانه</option><option value="extra">اضافی</option><option value="other">سایر</option></select></div>
     <div class="form-group"><label class="form-label">واریز به حساب</label><select class="form-select" id="inc-account"></select></div>
-    <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="inc-desc" placeholder="حقوق، اجاره، قرض برگشتی، ..."></div>
+    <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="inc-desc" placeholder="حقوق، اجاره، قرض برگشتی، ..." list="inc-desc-suggestions" autocomplete="off"><datalist id="inc-desc-suggestions"></datalist></div>
     <div id="inc-allocations" class="hint-box" style="display:none;"></div>
     <div class="form-group"><label class="form-label">دسته‌بندی دریافت</label><div class="chips" id="inc-cats"></div></div>
     <button class="btn-primary" onclick="submitIncome()">ثبت دریافت</button>
@@ -494,7 +494,7 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="form-group"><label class="form-label">تاریخ</label><input type="date" class="form-input" id="exp-date"></div>
     <div class="form-group"><label class="form-label">دسته‌بندی</label><div class="chips" id="exp-cats"></div></div>
     <div class="form-group"><label class="form-label">پرداخت از حساب</label><select class="form-select" id="exp-account"></select></div>
-    <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="exp-desc" placeholder="توضیح مختصر..."></div>
+    <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="exp-desc" placeholder="توضیح مختصر..." list="exp-desc-suggestions" autocomplete="off"><datalist id="exp-desc-suggestions"></datalist></div>
     <button class="btn-primary" onclick="submitExpense()">ثبت هزینه</button>
     <button class="btn-secondary" onclick="closeModal('modal-expense')">انصراف</button>
   </div>
@@ -907,10 +907,23 @@ function navigate(page, el) {
 // ═══════════════════════════════════════
 // MODALS
 // ═══════════════════════════════════════
+function populateDescSuggestions(txType, datalistId) {
+  var dl = document.getElementById(datalistId); if (!dl) return;
+  var freq = {};
+  DB.transactions.forEach(function(t) {
+    if (t.type === txType && t.desc) {
+      var d = t.desc.trim();
+      if (d) freq[d] = (freq[d] || 0) + 1;
+    }
+  });
+  var sorted = Object.keys(freq).sort(function(a,b){ return freq[b] - freq[a]; }).slice(0, 30);
+  dl.innerHTML = sorted.map(function(d){ return '<option value="' + d.replace(/"/g,'&quot;') + '">'; }).join('');
+}
+
 function openModal(id) {
   document.getElementById(id).classList.add('open');
-  if (id === 'modal-expense') { populateExpCats(); populateExpAccounts(); setDateDefault('exp-date'); }
-  if (id === 'modal-income') { populateIncAccounts(); populateIncCats(); setDateDefault('inc-date'); }
+  if (id === 'modal-expense') { populateExpCats(); populateExpAccounts(); setDateDefault('exp-date'); populateDescSuggestions('expense','exp-desc-suggestions'); }
+  if (id === 'modal-income') { populateIncAccounts(); populateIncCats(); setDateDefault('inc-date'); populateDescSuggestions('income','inc-desc-suggestions'); }
 }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 function closeModalOutside(e, id) { if (e.target.id === id) closeModal(id); }
@@ -1341,10 +1354,10 @@ function renderTransactions() {
   if (txAccountFilter && txAccountFilter !== 'all') txs = txs.filter(function(t){ return t.accountId===txAccountFilter; });
   if (txSearchQuery) {
     var q = txSearchQuery.toLowerCase().replace(/[،,]/g,'');
-    var qNum = parseFloat(txSearchQuery.replace(/[^0-9.]/g,''));
+    var qNumStr = txSearchQuery.replace(/[^0-9]/g,'');
     txs = txs.filter(function(t){
       var descMatch = (t.desc||'').toLowerCase().indexOf(q) !== -1;
-      var amountMatch = !isNaN(qNum) && Math.round(t.amount) === Math.round(qNum);
+      var amountMatch = qNumStr && String(Math.round(t.amount)).indexOf(qNumStr) !== -1;
       return descMatch || amountMatch;
     });
   }
@@ -1951,7 +1964,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.1.13';
+var CURRENT_VERSION = '1.1.14';
 
 // ═══════════════════════════════════════
 // SERVICE WORKER — پشتیبانی آفلاین
