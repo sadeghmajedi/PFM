@@ -353,9 +353,12 @@ html { height:100%; height:-webkit-fill-available; }
     <button class="ptab" onclick="setFilter('expense',this)">هزینه</button>
     <button class="ptab" onclick="setFilter('fund',this)">صندوق</button>
   </div>
-  <div style="margin-bottom:8px;">
-    <select class="form-select" id="acc-filter-sel" onchange="setAccountFilter(this.value)" style="font-size:13px;padding:8px 12px;">
+  <div style="display:flex;gap:8px;margin-bottom:8px;">
+    <select class="form-select" id="acc-filter-sel" onchange="setAccountFilter(this.value)" style="font-size:13px;padding:8px 12px;flex:1;">
       <option value="all">همه حساب‌ها</option>
+    </select>
+    <select class="form-select" id="cat-filter-sel" onchange="setCatFilter(this.value)" style="font-size:13px;padding:8px 12px;flex:1;">
+      <option value="all">همه دسته‌بندی‌ها</option>
     </select>
   </div>
   <div style="margin-bottom:10px;position:relative;">
@@ -411,7 +414,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.1.14</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.2.0</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
     <input type="file" id="importFile" accept=".json,.gz,.json.gz" style="display:none" onchange="importData(event)">
@@ -475,7 +478,7 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="modal-title">💵 ثبت دریافت</div>
     <div class="form-group"><label class="form-label">مبلغ (ریال)</label><input type="number" class="form-input" id="inc-amount" placeholder="مثال: 50000000" oninput="updateAllocPreview()"></div>
     <div class="form-group"><label class="form-label">تاریخ</label><input type="date" class="form-input" id="inc-date"></div>
-    <div class="form-group"><label class="form-label">گروه دریافتی</label><select class="form-select" id="inc-group" onchange="updateAllocPreview()"><option value="monthly">ماهیانه</option><option value="extra">اضافی</option><option value="other">سایر</option></select></div>
+    <div class="form-group"><label class="form-label">گروه دریافتی</label><select class="form-select" id="inc-group" onchange="updateAllocPreview()"><option value="monthly">ماهیانه</option><option value="extra">اضافی</option><option value="other">سایر</option><option value="none">هیچکدام</option></select></div>
     <div class="form-group"><label class="form-label">واریز به حساب</label><select class="form-select" id="inc-account"></select></div>
     <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="inc-desc" placeholder="حقوق، اجاره، قرض برگشتی، ..." list="inc-desc-suggestions" autocomplete="off"><datalist id="inc-desc-suggestions"></datalist></div>
     <div id="inc-allocations" class="hint-box" style="display:none;"></div>
@@ -710,8 +713,21 @@ function saveDB() {
   } catch(e) {}
 }
 
-// ── محاسبه موجودی real-time ──
-// موجودی = seedBalance + جمع تراکنش‌های حساب
+// ── محاسبه موجودی صندوق real-time ──
+function getFundBalance(fundId) {
+  var f = DB.funds.find(function(x){ return x.id===fundId; });
+  if (!f) return 0;
+  var seed = (f.seedBalance !== undefined) ? f.seedBalance : f.balance;
+  var sum = 0;
+  DB.transactions.forEach(function(t) {
+    if (t.fundId !== fundId) return;
+    if (t.type === 'fund-in') sum += t.amount;
+    else if (t.type === 'fund-out') sum -= t.amount;
+  });
+  return seed + sum;
+}
+
+// ── محاسبه موجودی حساب real-time ──
 function getAccountBalance(accId) {
   var acc = DB.accounts.find(function(a){ return a.id===accId; });
   if (!acc) return 0;
@@ -750,6 +766,13 @@ function loadDB() {
   DB.accounts.forEach(function(a) {
     if (a.seedBalance === undefined) {
       a.seedBalance = a.balance;
+      needsSave = true;
+    }
+  });
+  // Migrate: همین کار برای صندوق‌ها
+  DB.funds.forEach(function(f) {
+    if (f.seedBalance === undefined) {
+      f.seedBalance = f.balance;
       needsSave = true;
     }
   });
@@ -1013,7 +1036,7 @@ function submitIncome() {
     var rate = f.rates ? (f.rates[group]||0) : ((f.incomeGroup===group||f.incomeGroup==='all') ? (f.pct||0) : 0);
     if (rate > 0) {
       var v = Math.round(amount * rate / 100);
-      f.balance += v; f.totalIn = (f.totalIn||0) + v;
+      f.totalIn = (f.totalIn||0) + v; // f.balance حذف شد — getFundBalance محاسبه می‌کند
       tx.allocations.push({fundId:f.id,amount:v});
       DB.transactions.push({id:'tx'+Date.now()+Math.random(),type:'fund-in',amount:v,fundId:f.id,desc:rate+'٪ از: '+desc,date:dateISO});
     }
@@ -1088,7 +1111,7 @@ function submitFundPayment() {
   }
   var f = DB.funds.find(function(f){ return f.id===fundId; }); if (!f) return;
   // Deduct from fund
-  f.balance -= amount; f.totalOut = (f.totalOut||0) + amount;
+  f.totalOut = (f.totalOut||0) + amount; // f.balance حذف شد — getFundBalance محاسبه می‌کند
   // Deduct from bank account — حذف شد، getAccountBalance محاسبه می‌کند
   if (DB.accounts.length && !accountId) { alert('لطفاً حساب بانکی را انتخاب کنید'); return; }
   var acc = DB.accounts.find(function(a){ return a.id===accountId; });
@@ -1132,7 +1155,7 @@ function submitFund() {
   var rM = parseFloat(document.getElementById('fund-rate-monthly').value)||0;
   var rE = parseFloat(document.getElementById('fund-rate-extra').value)||0;
   var rO = parseFloat(document.getElementById('fund-rate-other').value)||0;
-  DB.funds.push({id:'fund'+Date.now(),name:name,icon:icon,rates:{monthly:rM,extra:rE,other:rO},balance:initial,totalIn:initial,totalOut:0});
+  DB.funds.push({id:'fund'+Date.now(),name:name,icon:icon,rates:{monthly:rM,extra:rE,other:rO},balance:initial,seedBalance:initial,totalIn:initial,totalOut:0});
   saveDB(); closeModal('modal-fund');
   document.getElementById('fund-name').value = '';
   document.getElementById('fund-initial').value = '';
@@ -1166,17 +1189,35 @@ function deleteIncCat(id) { if (!confirm('حذف شود؟')) return; DB.incomeCa
 // ═══════════════════════════════════════
 var txFilter = 'all';
 var txAccountFilter = 'all';
+var txCatFilter = 'all';
 var txSearchQuery = '';
 
 function setFilter(f, el) {
   txFilter = f;
+  txCatFilter = 'all';
   document.querySelectorAll('.ptab').forEach(function(t){ t.classList.remove('active'); });
   el.classList.add('active');
+  populateCatFilter();
   renderTransactions();
 }
 function setAccountFilter(val) {
   txAccountFilter = val;
   renderTransactions();
+}
+function setCatFilter(val) {
+  txCatFilter = val;
+  renderTransactions();
+}
+function populateCatFilter() {
+  var sel = document.getElementById('cat-filter-sel'); if (!sel) return;
+  var list;
+  if (txFilter === 'income') list = DB.incomeCategories || [];
+  else if (txFilter === 'expense') list = DB.categories || [];
+  else list = (DB.categories || []).concat(DB.incomeCategories || []);
+  sel.innerHTML = '<option value="all">همه دسته‌بندی‌ها</option>' +
+    list.map(function(c){ return '<option value="' + c.id + '">' + c.icon + ' ' + c.name + '</option>'; }).join('');
+  sel.value = 'all';
+  sel.style.display = (txFilter === 'fund') ? 'none' : '';
 }
 function setTxSearch(val) {
   txSearchQuery = val.trim();
@@ -1236,7 +1277,7 @@ function renderDashboard() {
           '<span style="font-size:22px;">' + f.icon + '</span>' +
           '<div>' +
             '<div style="font-size:12px;font-weight:600;color:var(--text-main);">' + f.name + '</div>' +
-            '<div style="font-size:15px;font-weight:700;color:var(--aqua-dark);direction:ltr;">' + toFa(addCommas(Math.round(f.balance))) + ' ریال</div>' +
+            '<div style="font-size:15px;font-weight:700;color:var(--aqua-dark);direction:ltr;">' + toFa(addCommas(Math.round(getFundBalance(f.id)))) + ' ریال</div>' +
           '</div>' +
         '</div>' +
         '<button data-id="' + f.id + '" data-action="fp" style="background:var(--aqua);border:none;border-radius:9px;padding:7px 14px;font-size:12px;color:#0D4A47;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;">💸 پرداخت</button>' +
@@ -1322,7 +1363,7 @@ function renderAccounts() {
       fHtml += '<div class="list-item">' +
         '<div><div style="font-weight:600;">' + f.icon + ' ' + f.name + '</div>' +
         '<div style="font-size:11px;color:rgba(255,255,255,0.5);">' + f.pct + '٪ · ' + g + '</div>' +
-        '<div style="font-size:12px;color:var(--lemon);font-weight:600;">' + toFa(addCommas(Math.round(f.balance))) + ' ریال</div></div>' +
+        '<div style="font-size:12px;color:var(--lemon);font-weight:600;">' + toFa(addCommas(Math.round(getFundBalance(f.id)))) + ' ریال</div></div>' +
         '<div class="li-actions">' +
         '<button class="icon-btn" data-id="' + f.id + '" data-action="ef">✏️</button>' +
         '<button class="icon-btn danger" data-id="' + f.id + '" data-action="df">🗑️</button>' +
@@ -1347,11 +1388,15 @@ function renderTransactions() {
     accFilterSel.innerHTML = opts;
     accFilterSel.value = curVal;
   }
+  if (document.getElementById('cat-filter-sel') && document.getElementById('cat-filter-sel').options.length <= 1) {
+    populateCatFilter();
+  }
 
   var txs = DB.transactions.slice().sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
   if (txFilter === 'fund') txs = txs.filter(function(t){ return t.type==='fund-in'||t.type==='fund-out'; });
   else if (txFilter !== 'all') txs = txs.filter(function(t){ return t.type===txFilter; });
   if (txAccountFilter && txAccountFilter !== 'all') txs = txs.filter(function(t){ return t.accountId===txAccountFilter; });
+  if (txCatFilter && txCatFilter !== 'all') txs = txs.filter(function(t){ return t.catId===txCatFilter || t.incCatId===txCatFilter; });
   if (txSearchQuery) {
     var q = txSearchQuery.toLowerCase().replace(/[،,]/g,'');
     var qNumStr = txSearchQuery.replace(/[^0-9]/g,'');
@@ -1459,8 +1504,8 @@ function renderReports() {
   else {
     var frHtml = '';
     DB.funds.forEach(function(f) {
-      var pct = f.totalIn > 0 ? Math.min(100, (f.balance/f.totalIn)*100) : 0;
-      frHtml += '<div class="fund-item"><div class="fund-top"><div class="fund-name">' + f.icon + ' ' + f.name + ' (' + f.pct + '٪)</div><div class="fund-bal">' + toFa(addCommas(Math.round(f.balance))) + ' ریال</div></div>' +
+      var pct = f.totalIn > 0 ? Math.min(100, (getFundBalance(f.id)/f.totalIn)*100) : 0;
+      frHtml += '<div class="fund-item"><div class="fund-top"><div class="fund-name">' + f.icon + ' ' + f.name + ' (' + f.pct + '٪)</div><div class="fund-bal">' + toFa(addCommas(Math.round(getFundBalance(f.id)))) + ' ریال</div></div>' +
         '<div class="fund-bar-wrap"><div class="fund-bar-fill" style="width:' + pct.toFixed(0) + '%"></div></div>' +
         '<div class="fund-meta"><span>واریز: ' + toFa(addCommas(Math.round(f.totalIn||0))) + '</span><span>برداشت: ' + toFa(addCommas(Math.round(f.totalOut||0))) + '</span></div></div>';
     });
@@ -1526,6 +1571,7 @@ function openEditFund(id) {
   var f = DB.funds.find(function(f){ return f.id===id; }); if (!f) return;
   document.getElementById('edit-fund-id').value = id;
   document.getElementById('edit-fund-name').value = f.name;
+  document.getElementById('edit-fund-initial').value = (f.seedBalance !== undefined) ? f.seedBalance : f.balance;
   var rates = f.rates || {monthly:f.pct||0,extra:0,other:0};
   document.getElementById('edit-fund-rate-monthly').value = rates.monthly||0;
   document.getElementById('edit-fund-rate-extra').value = rates.extra||0;
@@ -1536,11 +1582,12 @@ function submitEditFund() {
   var id = document.getElementById('edit-fund-id').value;
   var name = document.getElementById('edit-fund-name').value.trim();
   if (!name) { alert('نام صندوق را وارد کنید'); return; }
+  var initial = parseFloat(document.getElementById('edit-fund-initial').value) || 0;
   var rM = parseFloat(document.getElementById('edit-fund-rate-monthly').value)||0;
   var rE = parseFloat(document.getElementById('edit-fund-rate-extra').value)||0;
   var rO = parseFloat(document.getElementById('edit-fund-rate-other').value)||0;
   var f = DB.funds.find(function(f){ return f.id===id; }); if (!f) return;
-  f.name=name; f.rates={monthly:rM,extra:rE,other:rO};
+  f.name=name; f.seedBalance=initial; f.rates={monthly:rM,extra:rE,other:rO};
   saveDB(); closeModal('modal-edit-fund'); renderAll();
 }
 function deleteFund(id) { if (!confirm('حذف شود؟')) return; DB.funds=DB.funds.filter(function(f){return f.id!==id;}); saveDB(); renderAll(); }
@@ -1594,8 +1641,8 @@ function deleteTx(id) {
   if (tx.fundId) {
     var fund = DB.funds.find(function(f){ return f.id===tx.fundId; });
     if (fund) {
-      if (tx.type==='fund-in') { fund.balance -= tx.amount; fund.totalIn = Math.max(0,(fund.totalIn||0)-tx.amount); }
-      else if (tx.type==='fund-out') { fund.balance += tx.amount; fund.totalOut = Math.max(0,(fund.totalOut||0)-tx.amount); }
+      if (tx.type==='fund-in') { fund.totalIn = Math.max(0,(fund.totalIn||0)-tx.amount); }
+      else if (tx.type==='fund-out') { fund.totalOut = Math.max(0,(fund.totalOut||0)-tx.amount); }
     }
   }
   DB.transactions = DB.transactions.filter(function(t){ return t.id!==id; });
@@ -1709,7 +1756,7 @@ function exportReportPDF() {
   }).join('');
 
   var fundsHtml = DB.funds.map(function(f) {
-    return '<tr><td>' + f.icon + ' ' + f.name + '</td><td>' + addCommas(Math.round(f.balance)) + ' ریال</td><td>' + f.pct + '٪</td></tr>';
+    return '<tr><td>' + f.icon + ' ' + f.name + '</td><td>' + addCommas(Math.round(getFundBalance(f.id))) + ' ریال</td><td>' + f.pct + '٪</td></tr>';
   }).join('');
 
   var w = window.open('','_blank');
@@ -1842,7 +1889,7 @@ function exportPDF() {
     var sign = (t.type==='income'||t.type==='fund-in') ? '+' : '-';
     rows += '<tr><td>' + J.format(t.date) + '</td><td>' + (typeMap[t.type]||t.type) + '</td><td style="direction:ltr;text-align:left;color:' + color + ';font-weight:600;">' + sign + addCommas(Math.round(t.amount)) + '</td><td>' + (t.desc||'') + '</td><td>' + (cat?cat.icon+' '+cat.name:(fund?fund.icon+' '+fund.name:'')) + '</td></tr>';
   });
-  var fundsRows = DB.funds.map(function(f){ return '<div class="fbox"><h3>' + f.icon + ' ' + f.name + ' (' + f.pct + '٪)</h3><p>' + addCommas(Math.round(f.balance)) + ' ریال</p></div>'; }).join('');
+  var fundsRows = DB.funds.map(function(f){ return '<div class="fbox"><h3>' + f.icon + ' ' + f.name + ' (' + f.pct + '٪)</h3><p>' + addCommas(Math.round(getFundBalance(f.id))) + ' ریال</p></div>'; }).join('');
   var w = window.open('','_blank');
   w.document.write('<!DOCTYPE html><html dir="rtl" lang="fa"><head><meta charset="UTF-8"><title>گزارش مالی</title>' +
     '<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet">' +
@@ -1964,7 +2011,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.1.14';
+var CURRENT_VERSION = '1.2.0';
 
 // ═══════════════════════════════════════
 // SERVICE WORKER — پشتیبانی آفلاین
@@ -2071,6 +2118,7 @@ setTimeout(function() {
     <div class="modal-handle"></div>
     <div class="modal-title">✏️ ویرایش صندوق</div>
     <div class="form-group"><label class="form-label">نام صندوق</label><input type="text" class="form-input" id="edit-fund-name"></div>
+    <div class="form-group"><label class="form-label">موجودی اولیه (ریال)</label><input type="number" class="form-input" id="edit-fund-initial" placeholder="مانده پایه صندوق"></div>
     <div style="background:var(--aqua-pale);border-radius:12px;padding:14px;margin-bottom:12px;">
       <div style="font-size:11px;font-weight:700;color:var(--aqua-deep);margin-bottom:10px;">📊 درصد کسر از هر گروه درآمدی:</div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><label style="font-size:12px;color:var(--text-main);">درآمد ماهیانه</label><div style="display:flex;align-items:center;gap:4px;"><input type="number" id="edit-fund-rate-monthly" value="0" min="0" max="100" step="0.5" style="width:72px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;text-align:center;outline:none;"><span style="font-size:12px;color:var(--text-sub);">٪</span></div></div>
