@@ -414,7 +414,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.2.2</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.2.3</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
     <input type="file" id="importFile" accept=".json,.gz,.json.gz" style="display:none" onchange="importData(event)">
@@ -1141,23 +1141,15 @@ function submitFundPayment() {
     return;
   }
   var f = DB.funds.find(function(f){ return f.id===fundId; }); if (!f) return;
-  // Deduct from fund
-  f.totalOut = (f.totalOut||0) + amount; // f.balance حذف شد — getFundBalance محاسبه می‌کند
-  // Deduct from bank account — حذف شد، getAccountBalance محاسبه می‌کند
   if (DB.accounts.length && !accountId) { alert('لطفاً حساب بانکی را انتخاب کنید'); return; }
-  var acc = DB.accounts.find(function(a){ return a.id===accountId; });
-  // موجودی از طریق getAccountBalance محاسبه می‌شود
-  // Record transaction (expense type with fund reference)
+  // یک تراکنش واحد از نوع fund-out ثبت می‌شود.
+  // getFundBalance این را برای کاهش موجودی صندوق لحاظ می‌کند،
+  // و getAccountBalance همین تراکنش را (چون accountId دارد) برای کسر از حساب بانکی لحاظ می‌کند.
+  // قبلاً این تابع دو تراکنش (expense + fund-out) ثبت می‌کرد که باعث کسر دوبرابر و نمایش تکراری در لیست می‌شد.
+  f.totalOut = (f.totalOut||0) + amount;
   DB.transactions.push({
-    id:'tx'+Date.now(), type:'expense', amount:amount,
+    id:'tx'+Date.now(), type:'fund-out', amount:amount,
     accountId:accountId, fundId:fundId,
-    desc:f.icon + ' ' + f.name + ': ' + desc,
-    date:dateISO, isFundPayment:true
-  });
-  // Also record fund-out for fund tracking
-  DB.transactions.push({
-    id:'tx'+Date.now()+1, type:'fund-out', amount:amount,
-    fundId:fundId, accountId:accountId,
     desc:desc, date:dateISO
   });
   saveDB(); closeModal('modal-fund-pay'); renderAll();
@@ -2042,7 +2034,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.2.2';
+var CURRENT_VERSION = '1.2.3';
 
 // ═══════════════════════════════════════
 // SERVICE WORKER — پشتیبانی آفلاین
