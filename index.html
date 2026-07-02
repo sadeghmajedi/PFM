@@ -360,6 +360,9 @@ html { height:100%; height:-webkit-fill-available; }
     <select class="form-select" id="cat-filter-sel" onchange="setCatFilter(this.value)" style="font-size:13px;padding:8px 12px;flex:1;">
       <option value="all">همه دسته‌بندی‌ها</option>
     </select>
+    <select class="form-select" id="fund-filter-sel" onchange="setFundFilter(this.value)" style="font-size:13px;padding:8px 12px;flex:1;display:none;">
+      <option value="all">همه صندوق‌ها</option>
+    </select>
   </div>
   <div style="margin-bottom:10px;position:relative;">
     <input type="text" class="form-input" id="tx-search" placeholder="🔍 جستجو در توضیحات یا مبلغ..." oninput="setTxSearch(this.value)" style="padding-left:36px;font-size:13px;">
@@ -382,11 +385,6 @@ html { height:100%; height:-webkit-fill-available; }
       <option value="10">دی</option><option value="11">بهمن</option><option value="12">اسفند</option>
     </select>
     <select id="rep-year" class="form-select" onchange="renderReports()" style="font-size:13px;padding:7px;"></select>
-  </div>
-  <div style="margin-bottom:10px;">
-    <select class="form-select" id="rep-fund-filter" onchange="renderReports()" style="font-size:13px;padding:8px 12px;">
-      <option value="all">همه صندوق‌ها</option>
-    </select>
   </div>
   <div class="rep-summary">
     <div class="rep-box inc-box"><div class="rb-label">درآمد</div><div class="rb-val" id="rep-income">۰</div></div>
@@ -419,7 +417,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.3.2</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.3.3</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
     <input type="file" id="importFile" accept=".json,.gz,.json.gz" style="display:none" onchange="importData(event)">
@@ -1218,14 +1216,17 @@ function deleteIncCat(id) { if (!confirm('حذف شود؟')) return; DB.incomeCa
 var txFilter = 'all';
 var txAccountFilter = 'all';
 var txCatFilter = 'all';
+var txFundFilter = 'all';
 var txSearchQuery = '';
 
 function setFilter(f, el) {
   txFilter = f;
   txCatFilter = 'all';
+  txFundFilter = 'all';
   document.querySelectorAll('.ptab').forEach(function(t){ t.classList.remove('active'); });
   el.classList.add('active');
   populateCatFilter();
+  populateFundFilter();
   renderTransactions();
 }
 function setAccountFilter(val) {
@@ -1234,6 +1235,10 @@ function setAccountFilter(val) {
 }
 function setCatFilter(val) {
   txCatFilter = val;
+  renderTransactions();
+}
+function setFundFilter(val) {
+  txFundFilter = val;
   renderTransactions();
 }
 function populateCatFilter() {
@@ -1246,6 +1251,13 @@ function populateCatFilter() {
     list.map(function(c){ return '<option value="' + c.id + '">' + c.icon + ' ' + c.name + '</option>'; }).join('');
   sel.value = 'all';
   sel.style.display = (txFilter === 'fund') ? 'none' : '';
+}
+function populateFundFilter() {
+  var sel = document.getElementById('fund-filter-sel'); if (!sel) return;
+  sel.innerHTML = '<option value="all">همه صندوق‌ها</option>' +
+    (DB.funds || []).map(function(f){ return '<option value="' + f.id + '">' + f.icon + ' ' + f.name + '</option>'; }).join('');
+  sel.value = 'all';
+  sel.style.display = (txFilter === 'fund') ? '' : 'none';
 }
 function setTxSearch(val) {
   txSearchQuery = val.trim();
@@ -1418,12 +1430,16 @@ function renderTransactions() {
   if (document.getElementById('cat-filter-sel') && document.getElementById('cat-filter-sel').options.length <= 1) {
     populateCatFilter();
   }
+  if (document.getElementById('fund-filter-sel') && document.getElementById('fund-filter-sel').options.length <= 1) {
+    populateFundFilter();
+  }
 
   var txs = DB.transactions.slice().sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
   if (txFilter === 'fund') txs = txs.filter(function(t){ return t.type==='fund-in'||t.type==='fund-out'; });
   else if (txFilter !== 'all') txs = txs.filter(function(t){ return t.type===txFilter; });
   if (txAccountFilter && txAccountFilter !== 'all') txs = txs.filter(function(t){ return t.accountId===txAccountFilter; });
   if (txCatFilter && txCatFilter !== 'all') txs = txs.filter(function(t){ return t.catId===txCatFilter || t.incCatId===txCatFilter; });
+  if (txFilter === 'fund' && txFundFilter && txFundFilter !== 'all') txs = txs.filter(function(t){ return t.fundId===txFundFilter; });
   if (txSearchQuery) {
     var q = txSearchQuery.toLowerCase().replace(/[،,]/g,'');
     var qNumStr = txSearchQuery.replace(/[^0-9]/g,'');
@@ -1494,17 +1510,6 @@ function renderReports() {
     repMonthSel.value = String(today.jm);
   }
 
-  // Populate fund filter
-  var repFundSel = document.getElementById('rep-fund-filter');
-  if (repFundSel) {
-    var curFundVal = repFundSel.value || 'all';
-    var fundOpts = '<option value="all">همه صندوق‌ها</option>';
-    DB.funds.forEach(function(f){ fundOpts += '<option value="' + f.id + '">' + f.icon + ' ' + f.name + '</option>'; });
-    repFundSel.innerHTML = fundOpts;
-    repFundSel.value = (DB.funds.find(function(f){ return f.id===curFundVal; })) ? curFundVal : 'all';
-  }
-  var selFundId = repFundSel ? repFundSel.value : 'all';
-
   var selYear = repYearSel ? parseInt(repYearSel.value) : today.jy;
   var selMonth = repMonthSel ? parseInt(repMonthSel.value) : today.jm;
   var curMonth = selYear + '-' + String(selMonth).padStart(2,'0');
@@ -1515,18 +1520,11 @@ function renderReports() {
     return j.jy + '-' + String(j.jm).padStart(2,'0') === curMonth;
   });
 
-  // Apply fund filter
   var filteredTxs = monthTxs;
-  if (selFundId !== 'all') {
-    filteredTxs = monthTxs.filter(function(t){
-      if (t.type === 'fund-in' || t.type === 'fund-out') return t.fundId === selFundId;
-      return true; // show all income/expense regardless
-    });
-  }
 
   var income = filteredTxs.filter(function(t){ return t.type==='income'; }).reduce(function(s,t){ return s+t.amount; }, 0);
   var expense = filteredTxs.filter(function(t){
-    if (t.type === 'fund-out') return selFundId === 'all' || t.fundId === selFundId;
+    if (t.type === 'fund-out') return true;
     return t.type === 'expense';
   }).reduce(function(s,t){ return s+t.amount; }, 0);
   document.getElementById('rep-income').textContent = toFa(addCommas(Math.round(income)));
@@ -1540,8 +1538,7 @@ function renderReports() {
     catTotals[k] = (catTotals[k]||0) + t.amount;
   });
   filteredTxs.filter(function(t){
-    if (t.type !== 'fund-out') return false;
-    return selFundId === 'all' || t.fundId === selFundId;
+    return t.type === 'fund-out';
   }).forEach(function(t) {
     var fund = DB.funds.find(function(f){ return f.id===t.fundId; });
     var k = (fund ? fund.icon : '💰') + ' پرداخت: ' + (fund ? fund.name : 'صندوق');
@@ -1558,7 +1555,7 @@ function renderReports() {
     chart.innerHTML = cHtml;
   }
 
-  var displayFunds = selFundId === 'all' ? DB.funds : DB.funds.filter(function(f){ return f.id===selFundId; });
+  var displayFunds = DB.funds;
   var fr = document.getElementById('fundsReport');
   if (!displayFunds.length) { fr.innerHTML = '<div class="empty"><p>صندوقی انتخاب نشده</p></div>'; }
   else {
@@ -2071,7 +2068,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.3.2';
+var CURRENT_VERSION = '1.3.3';
 
 // ═══════════════════════════════════════
 // SERVICE WORKER — پشتیبانی آفلاین
