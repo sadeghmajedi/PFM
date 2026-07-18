@@ -392,6 +392,7 @@ html { height:100%; height:-webkit-fill-available; }
   </div>
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">هزینه بر اساس دسته‌بندی</div><div id="catChart"></div></div></div>
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">وضعیت صندوق‌ها</div><div id="fundsReport"></div></div></div>
+  <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">سهم هزینه‌ها از کل سال <span id="pieYearLabel" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></div><div id="expensePie"></div></div></div>
 </div>
 
 <!-- PAGE: SETTINGS -->
@@ -417,7 +418,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.3.3</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.4.0</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
     <input type="file" id="importFile" accept=".json,.gz,.json.gz" style="display:none" onchange="importData(event)">
@@ -1568,6 +1569,94 @@ function renderReports() {
     });
     fr.innerHTML = frHtml;
   }
+
+  renderExpensePie(selYear);
+}
+
+// Pie chart: expense share for the whole selected Jalali year (top 9 + others)
+function renderExpensePie(selYear) {
+  var pieEl = document.getElementById('expensePie');
+  if (!pieEl) return;
+  var yearLabel = document.getElementById('pieYearLabel');
+  if (yearLabel) yearLabel.textContent = '(' + toFa(String(selYear)) + ')';
+
+  // Gather all expense + fund-out for the selected year, grouped like catChart
+  var yearTxs = DB.transactions.filter(function(t) {
+    var d = new Date(t.date);
+    var j = J.toJalali(d.getFullYear(), d.getMonth()+1, d.getDate());
+    return j.jy === selYear;
+  });
+
+  var totals = {};
+  yearTxs.filter(function(t){ return t.type==='expense'; }).forEach(function(t) {
+    var cat = DB.categories.find(function(c){ return c.id===t.catId; }) || {name:'سایر',icon:'⭐'};
+    var k = cat.icon + ' ' + cat.name;
+    totals[k] = (totals[k]||0) + t.amount;
+  });
+  yearTxs.filter(function(t){ return t.type==='fund-out'; }).forEach(function(t) {
+    var fund = DB.funds.find(function(f){ return f.id===t.fundId; });
+    var k = (fund ? fund.icon : '💰') + ' پرداخت: ' + (fund ? fund.name : 'صندوق');
+    totals[k] = (totals[k]||0) + t.amount;
+  });
+
+  var entries = Object.entries(totals).sort(function(a,b){ return b[1]-a[1]; });
+  var grandTotal = entries.reduce(function(s,e){ return s+e[1]; }, 0);
+
+  if (!entries.length || grandTotal <= 0) {
+    pieEl.innerHTML = '<div class="empty"><p>هزینه‌ای در این سال ثبت نشده</p></div>';
+    return;
+  }
+
+  // Top 9 + aggregate the rest as "سایر"
+  var top = entries.slice(0, 9);
+  var restSum = entries.slice(9).reduce(function(s,e){ return s+e[1]; }, 0);
+  var slices = top.map(function(e){ return {label:e[0], value:e[1]}; });
+  if (restSum > 0) slices.push({label:'▫️ سایر موارد', value:restSum});
+
+  var PIE_COLORS = ['#14B8A6','#F59E0B','#3B82F6','#EC4899','#8B5CF6','#10B981','#EF4444','#06B6D4','#F97316','#94A3B8'];
+
+  var size = 240, cx = size/2, cy = size/2, r = size/2 - 6;
+  function polar(pr, ang){ var a=(ang-90)*Math.PI/180; return [cx+pr*Math.cos(a), cy+pr*Math.sin(a)]; }
+  function slicePath(startA, endA){
+    var large = (endA-startA) > 180 ? 1 : 0;
+    var p0 = polar(r, startA), p1 = polar(r, endA);
+    return 'M '+cx+' '+cy+' L '+p0[0].toFixed(2)+' '+p0[1].toFixed(2)+
+           ' A '+r+' '+r+' 0 '+large+' 1 '+p1[0].toFixed(2)+' '+p1[1].toFixed(2)+' Z';
+  }
+
+  var svg = '<svg viewBox="0 0 '+size+' '+size+'" width="'+size+'" height="'+size+'" style="display:block;margin:0 auto;max-width:100%;">';
+  var ang = 0;
+  slices.forEach(function(s, i){
+    var sweep = s.value/grandTotal*360;
+    var start = ang, end = ang + sweep;
+    var color = PIE_COLORS[i % PIE_COLORS.length];
+    svg += '<path d="'+slicePath(start, end)+'" fill="'+color+'" stroke="#0D4A47" stroke-width="1.5"/>';
+    var pct = s.value/grandTotal*100;
+    if (sweep > 18) {
+      var mid = (start+end)/2;
+      var pos = polar(r*0.62, mid);
+      svg += '<text x="'+pos[0].toFixed(2)+'" y="'+pos[1].toFixed(2)+'" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="central">'+toFa(pct.toFixed(1))+'٪</text>';
+    }
+    ang = end;
+  });
+  svg += '</svg>';
+
+  // Legend
+  var legend = '<div style="margin-top:14px;display:flex;flex-direction:column;gap:6px;">';
+  slices.forEach(function(s, i){
+    var color = PIE_COLORS[i % PIE_COLORS.length];
+    var pct = s.value/grandTotal*100;
+    legend += '<div style="display:flex;align-items:center;gap:8px;font-size:12px;">'+
+      '<span style="width:12px;height:12px;border-radius:3px;flex-shrink:0;background:'+color+';"></span>'+
+      '<span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+s.label+'</span>'+
+      '<span style="font-weight:700;direction:ltr;">'+toFa(pct.toFixed(1))+'٪</span>'+
+      '<span style="font-size:10px;color:var(--text-sub);direction:ltr;min-width:70px;text-align:left;">'+toFa(addCommas(Math.round(s.value)))+'</span>'+
+      '</div>';
+  });
+  legend += '</div>';
+  legend += '<div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.12);font-size:12px;text-align:center;direction:ltr;">جمع کل: '+toFa(addCommas(Math.round(grandTotal)))+' ریال</div>';
+
+  pieEl.innerHTML = svg + legend;
 }
 
 function renderSettings() {
@@ -2068,7 +2157,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.3.3';
+var CURRENT_VERSION = '1.4.0';
 
 // ═══════════════════════════════════════
 // SERVICE WORKER — پشتیبانی آفلاین
