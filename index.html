@@ -328,6 +328,11 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="accounts-grid" id="accountsGrid"></div>
   <div class="sec-title">صندوق‌های تخصیصی</div>
   <div id="fundsSection"></div>
+  <div class="sec-title" style="display:flex;align-items:center;justify-content:space-between;">
+    <span>📒 دفتر قروض</span>
+    <button onclick="openLoanModal()" style="background:var(--aqua);border:none;border-radius:9px;padding:6px 12px;font-size:12px;color:#0D4A47;font-weight:700;cursor:pointer;font-family:inherit;">+ ثبت قرض</button>
+  </div>
+  <div id="loansSection"></div>
   <div class="card">
     <div class="card-bar"></div>
     <div class="card-body">
@@ -418,7 +423,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.4.0</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.5.1</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
     <input type="file" id="importFile" accept=".json,.gz,.json.gz" style="display:none" onchange="importData(event)">
@@ -522,6 +527,39 @@ html { height:100%; height:-webkit-fill-available; }
     </div>
     <button class="btn-primary" onclick="submitFundPayment()">ثبت پرداخت</button>
     <button class="btn-secondary" onclick="closeModal('modal-fund-pay')">انصراف</button>
+  </div>
+</div>
+
+<!-- Loan Create Modal -->
+<div class="modal-overlay" id="modal-loan" onclick="closeModalOutside(event,'modal-loan')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📒 ثبت قرض</div>
+    <div class="form-group"><label class="form-label">نوع</label><select class="form-select" id="loan-type" onchange="updateLoanTypeUI()"><option value="given">قرض دادم (طلبکارم)</option><option value="taken">قرض گرفتم (بدهکارم)</option></select></div>
+    <div class="form-group"><label class="form-label">طرف حساب</label><input type="text" class="form-input" id="loan-party" placeholder="نام شخص یا شرکت"></div>
+    <div class="form-group"><label class="form-label">مبلغ (ریال)</label><input type="text" inputmode="numeric" class="form-input" id="loan-amount" placeholder="مثال: 10,000,000" oninput="sanitizeNumberInput(this)"></div>
+    <div class="form-group"><label class="form-label">تاریخ</label><input type="date" class="form-input" id="loan-date"></div>
+    <div class="form-group"><label class="form-label" id="loan-acc-label">پرداخت از حساب</label><select class="form-select" id="loan-account"></select></div>
+    <div class="form-group"><label class="form-label">توضیحات (اختیاری)</label><input type="text" class="form-input" id="loan-note" placeholder="توضیح مختصر..."></div>
+    <div class="hint-box" id="loan-hint">💡 این مبلغ از حساب انتخابی کسر می‌شود، ولی جزو هزینه‌ها شمرده نمی‌شود — به‌عنوان طلب ثبت می‌گردد.</div>
+    <button class="btn-primary" onclick="submitLoan()">ثبت قرض</button>
+    <button class="btn-secondary" onclick="closeModal('modal-loan')">انصراف</button>
+  </div>
+</div>
+
+<!-- Loan Repayment Modal -->
+<div class="modal-overlay" id="modal-repay" onclick="closeModalOutside(event,'modal-repay')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="repay-title">💵 بازپرداخت</div>
+    <div class="hint-box" id="repay-info" style="margin-bottom:12px;"></div>
+    <div class="form-group"><label class="form-label">مبلغ بازپرداخت (ریال)</label><input type="text" inputmode="numeric" class="form-input" id="repay-amount" placeholder="مبلغ" oninput="sanitizeNumberInput(this)"></div>
+    <div class="form-group"><label class="form-label">تاریخ</label><input type="date" class="form-input" id="repay-date"></div>
+    <div class="form-group"><label class="form-label" id="repay-acc-label">به حساب</label><select class="form-select" id="repay-account"></select></div>
+    <input type="hidden" id="repay-loan-id">
+    <button class="btn-primary" onclick="submitRepayment()">ثبت بازپرداخت</button>
+    <button class="btn-secondary" onclick="fullSettleLoan()" style="background:rgba(39,174,96,0.15);color:var(--aqua-dark);border:1px solid rgba(39,174,96,0.3);">تسویه کامل</button>
+    <button class="btn-secondary" onclick="closeModal('modal-repay')">انصراف</button>
   </div>
 </div>
 
@@ -740,6 +778,8 @@ function getAccountBalance(accId) {
   DB.transactions.forEach(function(t) {
     if (t.type==='income' && t.accountId===accId) txSum += t.amount;
     else if ((t.type==='expense'||t.type==='fund-out') && t.accountId===accId) txSum -= t.amount;
+    else if ((t.type==='loan-given'||t.type==='loan-repaid') && t.accountId===accId) txSum -= t.amount;
+    else if ((t.type==='loan-taken'||t.type==='loan-collected') && t.accountId===accId) txSum += t.amount;
     else if (t.type==='transfer') {
       if (t.fromAccountId===accId) txSum -= (t.amount + (t.fee||0));
       if (t.toAccountId===accId) txSum += t.amount;
@@ -780,6 +820,8 @@ function loadDB() {
       needsSave = true;
     }
   });
+  // Migrate: دفتر قروض
+  if (!DB.loans) { DB.loans = []; needsSave = true; }
   if (needsSave) saveDB();
 }
 
@@ -1159,6 +1201,250 @@ function submitFundPayment() {
   saveDB(); closeModal('modal-fund-pay'); renderAll();
 }
 
+// ═══════════════════════════════════════
+// LOANS — دفتر قروض (راه‌حل ۱: اثر بر خالص دارایی، جدا از آمار درآمد/هزینه)
+// ═══════════════════════════════════════
+function curLabel(cur) {
+  if (cur === 'USD') return 'دلار';
+  if (cur === 'AED') return 'درهم';
+  return 'ریال';
+}
+function loanAccountOptions(selectedId, curFilter) {
+  return '<option value="">-- انتخاب حساب --</option>' +
+    DB.accounts.filter(function(a){ return curFilter ? a.currency===curFilter : true; }).map(function(a){
+      return '<option value="' + a.id + '"' + (a.id===selectedId?' selected':'') + '>' + a.name + ' (' + curLabel(a.currency) + ')</option>';
+    }).join('');
+}
+
+function openLoanModal() {
+  if (!DB.accounts.length) {
+    alert('ابتدا یک حساب ثبت کنید'); return;
+  }
+  document.getElementById('loan-type').value = 'given';
+  document.getElementById('loan-party').value = '';
+  document.getElementById('loan-amount').value = '';
+  document.getElementById('loan-note').value = '';
+  document.getElementById('loan-date').value = todayGregorian();
+  document.getElementById('loan-account').innerHTML = loanAccountOptions();
+  updateLoanTypeUI();
+  openModal('modal-loan');
+}
+
+function updateLoanTypeUI() {
+  var type = document.getElementById('loan-type').value;
+  var accLabel = document.getElementById('loan-acc-label');
+  var hint = document.getElementById('loan-hint');
+  if (type === 'given') {
+    accLabel.textContent = 'پرداخت از حساب';
+    hint.innerHTML = '💡 این مبلغ از حساب انتخابی کسر می‌شود، ولی جزو هزینه‌ها شمرده نمی‌شود — به‌عنوان طلب ثبت می‌گردد.';
+  } else {
+    accLabel.textContent = 'واریز به حساب';
+    hint.innerHTML = '💡 این مبلغ به حساب انتخابی اضافه می‌شود، ولی جزو درآمدها شمرده نمی‌شود — به‌عنوان بدهی ثبت می‌گردد.';
+  }
+}
+
+function submitLoan() {
+  var type = document.getElementById('loan-type').value;
+  var party = document.getElementById('loan-party').value.trim();
+  var amount = getNumericValue('loan-amount');
+  var accountId = document.getElementById('loan-account').value;
+  var note = document.getElementById('loan-note').value.trim();
+  var dateVal = document.getElementById('loan-date').value || todayGregorian();
+  var dateISO = dateVal + 'T' + new Date().toTimeString().split(' ')[0];
+
+  if (!party) { alert('طرف حساب را وارد کنید'); return; }
+  if (!amount || amount <= 0) { alert('مبلغ را وارد کنید'); return; }
+  if (!accountId) { alert('لطفاً حساب را انتخاب کنید'); return; }
+
+  var acc = DB.accounts.find(function(a){ return a.id===accountId; });
+  var cur = acc ? acc.currency : 'IRR';
+
+  // برای قرض دادن، موجودی حساب باید کافی باشد
+  if (type === 'given') {
+    if (acc && getAccountBalance(accountId) < amount) {
+      alert('موجودی حساب «' + acc.name + '» کافی نیست.\nکمبود: ' + toCurrency(amount - getAccountBalance(accountId), cur) + ' ' + curLabel(cur));
+      return;
+    }
+  }
+
+  var loanId = 'loan' + Date.now();
+  var txType = (type === 'given') ? 'loan-given' : 'loan-taken';
+  var descPrefix = (type === 'given') ? 'قرض به ' : 'قرض از ';
+
+  DB.loans.push({
+    id: loanId, type: type, counterparty: party,
+    principal: amount, remaining: amount, currency: cur,
+    accountId: accountId, date: dateISO,
+    status: 'open', note: note, repayments: []
+  });
+  DB.transactions.push({
+    id: 'tx' + Date.now(), type: txType, amount: amount,
+    accountId: accountId, loanId: loanId,
+    desc: descPrefix + party + (note ? ' — ' + note : ''), date: dateISO
+  });
+  saveDB(); closeModal('modal-loan'); renderAll();
+}
+
+function openRepayment(loanId) {
+  var loan = (DB.loans||[]).find(function(l){ return l.id===loanId; });
+  if (!loan) return;
+  var cur = loan.currency || 'IRR';
+  document.getElementById('repay-loan-id').value = loanId;
+  document.getElementById('repay-amount').value = '';
+  document.getElementById('repay-date').value = todayGregorian();
+  document.getElementById('repay-account').innerHTML = loanAccountOptions(loan.accountId, cur);
+
+  var isGiven = loan.type === 'given';
+  document.getElementById('repay-title').textContent = isGiven ? '💵 دریافت بازپرداخت' : '💸 پرداخت بدهی';
+  document.getElementById('repay-acc-label').textContent = (isGiven ? 'واریز به حساب' : 'پرداخت از حساب') + ' (' + curLabel(cur) + ')';
+  document.getElementById('repay-info').innerHTML =
+    (isGiven ? 'طلب از ' : 'بدهی به ') + '<b>' + loan.counterparty + '</b><br>' +
+    'باقی‌مانده: <b>' + toCurrency(loan.remaining, cur) + '</b> ' + curLabel(cur);
+  openModal('modal-repay');
+}
+
+function submitRepayment() {
+  var loanId = document.getElementById('repay-loan-id').value;
+  var amount = getNumericValue('repay-amount');
+  var accountId = document.getElementById('repay-account').value;
+  var dateVal = document.getElementById('repay-date').value || todayGregorian();
+  processRepayment(loanId, amount, accountId, dateVal);
+}
+
+function fullSettleLoan() {
+  var loanId = document.getElementById('repay-loan-id').value;
+  var loan = (DB.loans||[]).find(function(l){ return l.id===loanId; });
+  if (!loan) return;
+  var accountId = document.getElementById('repay-account').value;
+  var dateVal = document.getElementById('repay-date').value || todayGregorian();
+  processRepayment(loanId, loan.remaining, accountId, dateVal);
+}
+
+function processRepayment(loanId, amount, accountId, dateVal) {
+  var loan = (DB.loans||[]).find(function(l){ return l.id===loanId; });
+  if (!loan) return;
+  var cur = loan.currency || 'IRR';
+  if (!amount || amount <= 0) { alert('مبلغ را وارد کنید'); return; }
+  if (!accountId) { alert('لطفاً حساب را انتخاب کنید'); return; }
+  var selAcc = DB.accounts.find(function(a){ return a.id===accountId; });
+  if (selAcc && selAcc.currency !== cur) {
+    alert('حساب انتخابی باید هم‌ارز با قرض («' + curLabel(cur) + '») باشد'); return;
+  }
+  if (amount > loan.remaining + 0.001) {
+    alert('مبلغ بازپرداخت از باقی‌مانده بیشتر است.\nباقی‌مانده: ' + toCurrency(loan.remaining, cur) + ' ' + curLabel(cur));
+    return;
+  }
+
+  var isGiven = loan.type === 'given';
+  // قرض دادم → بازپرداخت یعنی پول به حسابم برمی‌گردد (loan-collected, +حساب)
+  // قرض گرفتم → بازپرداخت یعنی از حسابم می‌پردازم (loan-repaid, −حساب)
+  var txType = isGiven ? 'loan-collected' : 'loan-repaid';
+
+  // برای پرداخت بدهی، موجودی باید کافی باشد
+  if (!isGiven) {
+    if (selAcc && getAccountBalance(accountId) < amount) {
+      alert('موجودی حساب «' + selAcc.name + '» کافی نیست.\nکمبود: ' + toCurrency(amount - getAccountBalance(accountId), cur) + ' ' + curLabel(cur));
+      return;
+    }
+  }
+
+  var dateISO = dateVal + 'T' + new Date().toTimeString().split(' ')[0];
+  loan.remaining = Math.round((loan.remaining - amount) * 100) / 100;
+  loan.repayments.push({ date: dateISO, amount: amount, accountId: accountId });
+  if (loan.remaining <= 0.001) { loan.remaining = 0; loan.status = 'settled'; }
+
+  DB.transactions.push({
+    id: 'tx' + Date.now(), type: txType, amount: amount,
+    accountId: accountId, loanId: loanId,
+    desc: (isGiven ? 'بازپرداخت از ' : 'پرداخت بدهی به ') + loan.counterparty, date: dateISO
+  });
+  saveDB(); closeModal('modal-repay'); renderAll();
+}
+
+function deleteLoan(loanId) {
+  var loan = (DB.loans||[]).find(function(l){ return l.id===loanId; });
+  if (!loan) return;
+  if (!confirm('حذف این قرض و همه تراکنش‌های مرتبط با آن؟\n(' + loan.counterparty + ' — ' + toCurrency(loan.principal, loan.currency||'IRR') + ' ' + curLabel(loan.currency||'IRR') + ')')) return;
+  DB.loans = DB.loans.filter(function(l){ return l.id!==loanId; });
+  DB.transactions = DB.transactions.filter(function(t){ return t.loanId!==loanId; });
+  saveDB(); renderAll();
+}
+
+function renderLoans() {
+  var el = document.getElementById('loansSection');
+  if (!el) return;
+  var loans = DB.loans || [];
+
+  // خلاصه به تفکیک ارز — فقط ارزهایی که طلب/بدهی باز دارند
+  var curList = ['IRR','USD','AED'];
+  var rows = '';
+  curList.forEach(function(cur){
+    var rec = getTotalReceivable(cur);
+    var deb = getTotalDebt(cur);
+    if (rec === 0 && deb === 0) return;
+    rows += '<div style="display:flex;gap:8px;margin-bottom:8px;">' +
+      '<div style="flex:1;background:rgba(39,174,96,0.12);border:1px solid rgba(39,174,96,0.25);border-radius:12px;padding:10px;text-align:center;">' +
+        '<div style="font-size:11px;color:var(--text-sub);">طلبم (' + curLabel(cur) + ')</div>' +
+        '<div style="font-size:15px;font-weight:700;color:var(--aqua-dark);direction:ltr;">' + toCurrency(rec, cur) + '</div></div>' +
+      '<div style="flex:1;background:rgba(192,57,43,0.1);border:1px solid rgba(192,57,43,0.25);border-radius:12px;padding:10px;text-align:center;">' +
+        '<div style="font-size:11px;color:var(--text-sub);">بدهیم (' + curLabel(cur) + ')</div>' +
+        '<div style="font-size:15px;font-weight:700;color:var(--danger);direction:ltr;">' + toCurrency(deb, cur) + '</div></div>' +
+      '</div>';
+  });
+  var summary = rows || '<div style="margin-bottom:8px;"></div>';
+
+  if (!loans.length) {
+    el.innerHTML = summary + '<div class="empty" style="padding:16px;"><p style="font-size:12px;">قرضی ثبت نشده</p></div>';
+    return;
+  }
+
+  // مرتب‌سازی: باز اول (به ترتیب تاریخ نزولی)، بعد تسویه‌شده‌ها
+  var sorted = loans.slice().sort(function(a,b){
+    if (a.status !== b.status) return a.status==='open' ? -1 : 1;
+    return new Date(b.date) - new Date(a.date);
+  });
+
+  var html = '';
+  sorted.forEach(function(l) {
+    var isGiven = l.type === 'given';
+    var settled = l.status === 'settled';
+    var badge = isGiven
+      ? '<span style="font-size:10px;background:rgba(39,174,96,0.15);color:var(--aqua-dark);padding:2px 7px;border-radius:6px;">طلب</span>'
+      : '<span style="font-size:10px;background:rgba(192,57,43,0.12);color:var(--danger);padding:2px 7px;border-radius:6px;">بدهی</span>';
+    var statusBadge = settled
+      ? '<span style="font-size:10px;background:rgba(120,120,120,0.15);color:var(--text-sub);padding:2px 7px;border-radius:6px;">✓ تسویه</span>'
+      : '';
+    var paid = l.principal - l.remaining;
+    var pct = l.principal > 0 ? (paid / l.principal * 100) : 0;
+    var barColor = isGiven ? 'var(--aqua)' : 'var(--danger)';
+
+    html += '<div class="card" style="margin-bottom:8px;' + (settled?'opacity:0.65;':'') + '"><div class="card-body" style="padding:12px;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
+        '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
+          '<span style="font-weight:700;font-size:13px;">' + l.counterparty + '</span>' + badge + statusBadge +
+        '</div>' +
+        '<div style="display:flex;gap:5px;">' +
+          (settled ? '' : '<button data-id="' + l.id + '" data-lact="repay" style="background:var(--aqua);border:none;border-radius:7px;padding:5px 10px;font-size:11px;color:#0D4A47;font-weight:700;cursor:pointer;font-family:inherit;">' + (isGiven?'دریافت':'پرداخت') + '</button>') +
+          '<button data-id="' + l.id + '" data-lact="del" style="width:26px;height:26px;border-radius:7px;border:1px solid rgba(255,80,80,0.3);background:rgba(255,80,80,0.1);cursor:pointer;font-size:12px;">🗑️</button>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-sub);margin-bottom:5px;direction:ltr;">' +
+        '<span>باقی‌مانده: <b style="color:' + (isGiven?'var(--aqua-dark)':'var(--danger)') + ';">' + toCurrency(l.remaining, l.currency||'IRR') + '</b></span>' +
+        '<span>کل: ' + toCurrency(l.principal, l.currency||'IRR') + ' ' + curLabel(l.currency||'IRR') + '</span>' +
+      '</div>' +
+      '<div style="height:6px;background:rgba(0,0,0,0.06);border-radius:4px;overflow:hidden;"><div style="height:100%;width:' + pct.toFixed(0) + '%;background:' + barColor + ';"></div></div>' +
+      '<div style="font-size:10px;color:var(--text-sub);margin-top:5px;">' + J.format(l.date) + (l.note ? ' • ' + l.note : '') + '</div>' +
+    '</div></div>';
+  });
+  el.innerHTML = summary + html;
+
+  el.onclick = function(e) {
+    var btn = e.target.closest('[data-lact]'); if (!btn) return;
+    if (btn.dataset.lact === 'repay') openRepayment(btn.dataset.id);
+    else if (btn.dataset.lact === 'del') deleteLoan(btn.dataset.id);
+  };
+}
+
 function submitAccount() {
   var name = document.getElementById('acc-name').value.trim();
   if (!name) { alert('نام حساب را وارد کنید'); return; }
@@ -1280,15 +1566,31 @@ function clearTxSearch() {
 // ═══════════════════════════════════════
 function renderAll() { renderDashboard(); renderAccounts(); renderTransactions(); renderReports(); renderSettings(); }
 
+function getTotalReceivable(cur) {
+  cur = cur || 'IRR';
+  return (DB.loans||[]).filter(function(l){ return l.type==='given' && l.status==='open' && (l.currency||'IRR')===cur; })
+    .reduce(function(s,l){ return s + (l.remaining||0); }, 0);
+}
+function getTotalDebt(cur) {
+  cur = cur || 'IRR';
+  return (DB.loans||[]).filter(function(l){ return l.type==='taken' && l.status==='open' && (l.currency||'IRR')===cur; })
+    .reduce(function(s,l){ return s + (l.remaining||0); }, 0);
+}
+
 function renderDashboard() {
-  var totalRial = DB.accounts.filter(function(a){ return a.currency==='IRR'; }).reduce(function(s,a){ return s+getAccountBalance(a.id); }, 0);
+  var accountsRial = DB.accounts.filter(function(a){ return a.currency==='IRR'; }).reduce(function(s,a){ return s+getAccountBalance(a.id); }, 0);
+  var totalRial = accountsRial + getTotalReceivable('IRR') - getTotalDebt('IRR');
   document.getElementById('netWorthRial').textContent = toFa(addCommas(Math.round(totalRial))) + ' ریال';
-  var totalUSD = DB.accounts.filter(function(a){ return a.currency==='USD'; }).reduce(function(s,a){ return s+getAccountBalance(a.id); }, 0);
-  var totalAED = DB.accounts.filter(function(a){ return a.currency==='AED'; }).reduce(function(s,a){ return s+getAccountBalance(a.id); }, 0);
+  var accountsUSD = DB.accounts.filter(function(a){ return a.currency==='USD'; }).reduce(function(s,a){ return s+getAccountBalance(a.id); }, 0);
+  var accountsAED = DB.accounts.filter(function(a){ return a.currency==='AED'; }).reduce(function(s,a){ return s+getAccountBalance(a.id); }, 0);
+  var totalUSD = accountsUSD + getTotalReceivable('USD') - getTotalDebt('USD');
+  var totalAED = accountsAED + getTotalReceivable('AED') - getTotalDebt('AED');
   document.getElementById('totalUSD').textContent = '$' + addCommas(totalUSD.toFixed(2));
   document.getElementById('totalAED').textContent = 'AED ' + addCommas(totalAED.toFixed(2));
   var sadaqah = Math.round(totalRial * 0.0002);
   document.getElementById('sadaqahAmount').textContent = toFa(addCommas(sadaqah)) + ' ریال';
+
+  renderLoans();
 
   var grid = document.getElementById('accountsGrid');
   if (!DB.accounts.length) {
@@ -1344,6 +1646,10 @@ function renderDashboard() {
     else if (t.type==='expense') { icon=cat?cat.icon:'💸'; cls=''; amCls='expense'; prefix='-'; }
     else if (t.type==='transfer') { icon='⇔️'; cls=''; amCls=''; prefix=''; }
     else if (t.type==='fund-out') { icon=fund?fund.icon:'💰'; cls=''; amCls='expense'; prefix='-'; }
+    else if (t.type==='loan-given') { icon='🤝'; cls=''; amCls='expense'; prefix='-'; }
+    else if (t.type==='loan-repaid') { icon='🤝'; cls=''; amCls='expense'; prefix='-'; }
+    else if (t.type==='loan-taken') { icon='🤝'; cls='inc-icon'; amCls='income'; prefix='+'; }
+    else if (t.type==='loan-collected') { icon='🤝'; cls='inc-icon'; amCls='income'; prefix='+'; }
     else { icon='💰'; cls=''; amCls=''; prefix=''; }
     var canEdit = (t.type==='income'||t.type==='expense'||t.type==='transfer'||t.type==='fund-out');
     var feeSubLine = (t.type==='transfer'&&t.fee>0) ? '<div style="font-size:10px;color:var(--danger);">کارمزد: '+toFa(addCommas(Math.round(t.fee)))+'</div>' : '';
@@ -1465,8 +1771,12 @@ function renderTransactions() {
     else if (t.type==='expense') { icon=cat?cat.icon:'💸'; amCls='expense'; prefix='-'; label=t.desc; }
     else if (t.type==='transfer') { icon='⇔️'; amCls=''; prefix=''; label=t.desc; }
     else if (t.type==='fund-in') { icon=fund?fund.icon:'💰'; amCls='income'; prefix='+'; label='واریز به '+(fund?fund.name:''); }
+    else if (t.type==='loan-given') { icon='🤝'; amCls='expense'; prefix='-'; label=t.desc; }
+    else if (t.type==='loan-repaid') { icon='🤝'; amCls='expense'; prefix='-'; label=t.desc; }
+    else if (t.type==='loan-taken') { icon='🤝'; amCls='income'; prefix='+'; label=t.desc; }
+    else if (t.type==='loan-collected') { icon='🤝'; amCls='income'; prefix='+'; label=t.desc; }
     else { icon=fund?fund.icon:'💰'; amCls='expense'; prefix='-'; label='پرداخت از '+(fund?fund.name:'')+': '+t.desc; }
-    var cls = (t.type==='income'||t.type==='fund-in') ? 'inc-icon' : '';
+    var cls = (t.type==='income'||t.type==='fund-in'||t.type==='loan-taken'||t.type==='loan-collected') ? 'inc-icon' : '';
     var feeSubLine = (t.type==='transfer' && t.fee > 0) ? '<div style="font-size:10px;color:var(--danger);margin-top:1px;">کارمزد: ' + toFa(addCommas(Math.round(t.fee))) + '</div>' : '';
     html += '<div class="card" style="margin-bottom:7px;"><div class="card-body" style="padding:10px;">' +
       '<div class="tx-item" style="padding:0;border:none;">' +
@@ -1780,9 +2090,14 @@ function submitTransfer() {
 }
 
 function deleteTx(id) {
-  if (!confirm('این تراکنش حذف شود؟')) return;
   var tx = DB.transactions.find(function(t){ return t.id===id; });
   if (!tx) return;
+  // تراکنش‌های قرض: از دفتر قروض مدیریت شوند تا رکورد قرض ناسازگار نشود
+  if (tx.loanId) {
+    alert('این تراکنش مربوط به دفتر قروض است. لطفاً از بخش «دفتر قروض» در داشبورد آن را مدیریت یا حذف کنید.');
+    return;
+  }
+  if (!confirm('این تراکنش حذف شود؟')) return;
   // فقط اثر صندوق را برمی‌گردانیم — موجودی حساب real-time محاسبه می‌شود
   if (tx.fundId) {
     var fund = DB.funds.find(function(f){ return f.id===tx.fundId; });
@@ -1798,6 +2113,7 @@ function deleteTx(id) {
 function openEditTx(id) {
   var tx = DB.transactions.find(function(t){ return t.id===id; });
   if (!tx || tx.type==='fund-in') { alert('این نوع تراکنش قابل ویرایش نیست'); return; }
+  if (tx.loanId) { alert('تراکنش‌های قرض از بخش «دفتر قروض» مدیریت می‌شوند'); return; }
   document.getElementById('edit-tx-id').value = id;
   document.getElementById('edit-tx-type').value = tx.type;
   document.getElementById('edit-amount').value = addCommas(tx.amount);
@@ -2157,7 +2473,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.4.0';
+var CURRENT_VERSION = '1.5.1';
 
 // ═══════════════════════════════════════
 // SERVICE WORKER — پشتیبانی آفلاین
