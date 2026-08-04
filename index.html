@@ -325,6 +325,7 @@ html { height:100%; height:-webkit-fill-available; }
       </div>
     </div>
   </div>
+  <div id="budgetAlerts"></div>
   <div class="accounts-grid" id="accountsGrid"></div>
   <div class="sec-title">صندوق‌های تخصیصی</div>
   <div id="fundsSection"></div>
@@ -393,6 +394,7 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="rep-box exp-box"><div class="rb-label">هزینه</div><div class="rb-val" id="rep-expense">۰</div></div>
   </div>
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">میانگین‌ها <span id="avgScopeLabel" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></div><div id="avgStats"></div></div></div>
+  <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">روند درآمد و هزینه ماهانه <span id="trendYearLabel" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></div><div id="trendChart"></div></div></div>
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">هزینه بر اساس دسته‌بندی</div><div id="catChart"></div></div></div>
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">سهم هزینه‌ها از کل سال <span id="pieYearLabel" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></div><div id="expensePie"></div></div></div>
 </div>
@@ -420,7 +422,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.6.0</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.7.0</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
     <input type="file" id="importFile" accept=".json,.gz,.json.gz" style="display:none" onchange="importData(event)">
@@ -819,6 +821,8 @@ function loadDB() {
   });
   // Migrate: دفتر قروض
   if (!DB.loans) { DB.loans = []; needsSave = true; }
+  // Migrate: هشدارهای محوشده بودجه
+  if (!DB.alertDismissals) { DB.alertDismissals = {}; needsSave = true; }
   if (needsSave) saveDB();
 }
 
@@ -1459,6 +1463,145 @@ function renderLoans() {
   };
 }
 
+// ═══════════════════════════════════════
+// BUDGET ALERTS — هشدار عبور از میانگین هزینه‌ی هر گروه
+// پایه: میانگین گروه در ماه‌های کامل سپری‌شده (حداقل ۲ ماه) | مقایسه: هزینه واقعی ماه جاری
+// ═══════════════════════════════════════
+var MIN_BASE_MONTHS = 2;   // حداقل ماه پایه برای فعال شدن هشدار
+var NEAR_THRESHOLD = 0.95; // نزدیک شدن: ۹۵٪
+var OVER_THRESHOLD = 1.00; // عبور: ۱۰۰٪
+
+function groupKeyForTx(t) {
+  // کلید گروه یکتا برای دسته‌های هزینه و پرداخت‌های صندوق
+  if (t.type === 'expense') {
+    var cat = DB.categories.find(function(c){ return c.id===t.catId; });
+    return cat ? ('exp:' + cat.id) : 'exp:__none';
+  }
+  if (t.type === 'fund-out') {
+    var fund = DB.funds.find(function(f){ return f.id===t.fundId; });
+    return fund ? ('fund:' + fund.id) : 'fund:__none';
+  }
+  return null;
+}
+function groupLabel(key) {
+  var parts = key.split(':');
+  if (parts[0] === 'exp') {
+    var cat = DB.categories.find(function(c){ return c.id===parts[1]; });
+    return cat ? (cat.icon + ' ' + cat.name) : 'سایر';
+  }
+  var fund = DB.funds.find(function(f){ return f.id===parts[1]; });
+  return fund ? (fund.icon + ' پرداخت: ' + fund.name) : 'صندوق';
+}
+
+function computeBudgetAlerts() {
+  var today = J.today();
+  var curKey = today.jy + '-' + String(today.jm).padStart(2,'0');
+
+  // جمع هزینه‌ی هر گروه به تفکیک ماه
+  // structure: groups[groupKey][ 'jy-jm' ] = sum
+  var groups = {};
+  DB.transactions.forEach(function(t) {
+    if (t.type !== 'expense' && t.type !== 'fund-out') return;
+    var gk = groupKeyForTx(t); if (!gk) return;
+    var d = new Date(t.date);
+    var j = J.toJalali(d.getFullYear(), d.getMonth()+1, d.getDate());
+    var mk = j.jy + '-' + String(j.jm).padStart(2,'0');
+    if (!groups[gk]) groups[gk] = {};
+    groups[gk][mk] = (groups[gk][mk] || 0) + t.amount;
+  });
+
+  var alerts = [];
+  Object.keys(groups).forEach(function(gk) {
+    var byMonth = groups[gk];
+    // ماه‌های کاملِ سپری‌شده = همه‌ی ماه‌ها به‌جز ماه جاری
+    var pastMonths = Object.keys(byMonth).filter(function(mk){ return mk !== curKey; });
+    if (pastMonths.length < MIN_BASE_MONTHS) return; // پایه کافی نیست
+
+    var baseSum = pastMonths.reduce(function(s,mk){ return s + byMonth[mk]; }, 0);
+    var baseAvg = baseSum / pastMonths.length;
+    if (baseAvg <= 0) return;
+
+    var current = byMonth[curKey] || 0;
+    if (current <= 0) return;
+
+    var ratio = current / baseAvg;
+    var level = null;
+    if (ratio > OVER_THRESHOLD) level = 'over';
+    else if (ratio >= NEAR_THRESHOLD) level = 'near';
+    if (!level) return;
+
+    alerts.push({
+      key: gk, label: groupLabel(gk), current: current, avg: baseAvg,
+      ratio: ratio, level: level, month: curKey,
+      dismissKey: gk + '|' + curKey + '|' + level
+    });
+  });
+  return alerts;
+}
+
+function renderBudgetAlerts() {
+  var el = document.getElementById('budgetAlerts');
+  if (!el) return;
+
+  // پاکسازی هشدارهای محوشده‌ی ماه‌های گذشته (فقط ماه جاری نگه داشته شود)
+  var today = J.today();
+  var curKey = today.jy + '-' + String(today.jm).padStart(2,'0');
+  if (DB.alertDismissals) {
+    var pruned = false;
+    Object.keys(DB.alertDismissals).forEach(function(k) {
+      // ساختار کلید: groupKey|jy-jm|level
+      var mk = k.split('|')[1];
+      if (mk && mk !== curKey) { delete DB.alertDismissals[k]; pruned = true; }
+    });
+    if (pruned) saveDB();
+  }
+
+  var alerts = computeBudgetAlerts();
+  var dismissed = DB.alertDismissals || {};
+
+  var visible = alerts.filter(function(a){ return !dismissed[a.dismissKey]; });
+  if (!visible.length) { el.innerHTML = ''; return; }
+
+  // مرتب‌سازی: عبور اول، بعد نزدیک شدن؛ در هر گروه نسبت بالاتر اول
+  visible.sort(function(a,b){
+    if (a.level !== b.level) return a.level==='over' ? -1 : 1;
+    return b.ratio - a.ratio;
+  });
+
+  var html = visible.map(function(a) {
+    var isOver = a.level === 'over';
+    var bg = isOver ? 'rgba(192,57,43,0.1)' : 'rgba(225,179,36,0.12)';
+    var border = isOver ? 'rgba(192,57,43,0.35)' : 'rgba(225,179,36,0.45)';
+    var color = isOver ? 'var(--danger)' : '#9a7d0a';
+    var icon = isOver ? '🚨' : '⚠️';
+    var pctText = toFa(String(Math.round(a.ratio * 100)));
+    var msg = isOver
+      ? 'هزینه‌ی این ماه از میانگین عبور کرد (' + pctText + '٪ میانگین)'
+      : 'هزینه‌ی این ماه به میانگین نزدیک شده (' + pctText + '٪ میانگین)';
+    return '<div style="background:' + bg + ';border:1px solid ' + border + ';border-radius:14px;padding:12px 14px;margin-bottom:8px;">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">' +
+        '<div style="min-width:0;">' +
+          '<div style="font-size:13px;font-weight:700;color:' + color + ';margin-bottom:3px;">' + icon + ' ' + a.label + '</div>' +
+          '<div style="font-size:12px;color:var(--text-main);">' + msg + '</div>' +
+          '<div style="font-size:11px;color:var(--text-sub);margin-top:4px;direction:ltr;">این ماه: ' + toFa(addCommas(Math.round(a.current))) + ' • میانگین: ' + toFa(addCommas(Math.round(a.avg))) + '</div>' +
+        '</div>' +
+        '<button data-dismiss="' + a.dismissKey.replace(/"/g,'&quot;') + '" style="background:' + color + ';border:none;border-radius:9px;padding:6px 12px;font-size:11px;color:#fff;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;white-space:nowrap;">فهمیدم</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  el.innerHTML = html;
+
+  el.querySelectorAll('[data-dismiss]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      if (!DB.alertDismissals) DB.alertDismissals = {};
+      DB.alertDismissals[this.dataset.dismiss] = true;
+      saveDB();
+      renderBudgetAlerts();
+    });
+  });
+}
+
 function submitAccount() {
   var name = document.getElementById('acc-name').value.trim();
   if (!name) { alert('نام حساب را وارد کنید'); return; }
@@ -1605,6 +1748,7 @@ function renderDashboard() {
   document.getElementById('sadaqahAmount').textContent = toFa(addCommas(sadaqah)) + ' ریال';
 
   renderLoans();
+  renderBudgetAlerts();
 
   var grid = document.getElementById('accountsGrid');
   if (!DB.accounts.length) {
@@ -1881,6 +2025,7 @@ function renderReports() {
   }
 
   renderAvgStats(selYear);
+  renderTrendChart(selYear);
   renderExpensePie(selYear);
 }
 
@@ -1971,6 +2116,81 @@ function isLeapJalali(jy) {
   // الگوریتم ۳۳ ساله‌ی تقریبی
   var r = jy % 33;
   return [1,5,9,13,17,22,26,30].indexOf(r) !== -1;
+}
+
+// نمودار خطی ماه‌به‌ماه درآمد و هزینه برای سال انتخاب‌شده
+function renderTrendChart(selYear) {
+  var el = document.getElementById('trendChart');
+  if (!el) return;
+  var lbl = document.getElementById('trendYearLabel');
+  if (lbl) lbl.textContent = '(' + toFa(String(selYear)) + ')';
+
+  // جمع درآمد و هزینه به تفکیک ماه (۱..۱۲)
+  var incByMonth = {}, expByMonth = {};
+  DB.transactions.forEach(function(t) {
+    if (t.type!=='income' && t.type!=='expense' && t.type!=='fund-out') return;
+    var d = new Date(t.date);
+    var j = J.toJalali(d.getFullYear(), d.getMonth()+1, d.getDate());
+    if (j.jy !== selYear) return;
+    if (t.type==='income') incByMonth[j.jm] = (incByMonth[j.jm]||0) + t.amount;
+    else expByMonth[j.jm] = (expByMonth[j.jm]||0) + t.amount;
+  });
+
+  var monthsWithData = [];
+  for (var m=1; m<=12; m++) {
+    if (incByMonth[m] || expByMonth[m]) monthsWithData.push(m);
+  }
+  if (!monthsWithData.length) {
+    el.innerHTML = '<div class="empty" style="padding:14px;"><p style="font-size:12px;">داده‌ای برای این سال نیست</p></div>';
+    return;
+  }
+
+  // اگر فقط یک ماه داده داریم، نمودار خطی معنی نداره — پیام بده
+  var W = 320, H = 200, padL = 8, padR = 8, padT = 16, padB = 28;
+  var plotW = W - padL - padR, plotH = H - padT - padB;
+
+  var maxVal = 1;
+  monthsWithData.forEach(function(m){
+    maxVal = Math.max(maxVal, incByMonth[m]||0, expByMonth[m]||0);
+  });
+
+  // نقاط x به‌ترتیب ماه‌های دارای داده، فاصله‌ی مساوی
+  var n = monthsWithData.length;
+  function xAt(i){ return padL + (n===1 ? plotW/2 : (i/(n-1))*plotW); }
+  function yAt(v){ return padT + plotH - (v/maxVal)*plotH; }
+
+  function buildLine(byMonth, color) {
+    var pts = monthsWithData.map(function(m,i){ return [xAt(i), yAt(byMonth[m]||0)]; });
+    var path = pts.map(function(p,i){ return (i===0?'M':'L') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
+    var line = '<path d="' + path + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+    var dots = pts.map(function(p){ return '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="3.5" fill="' + color + '"/>'; }).join('');
+    return line + dots;
+  }
+
+  var incColor = '#14B8A6', expColor = '#EF4444';
+  var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="max-width:100%;display:block;">';
+  // خطوط راهنمای افقی (۴ خط)
+  for (var g=0; g<=3; g++) {
+    var gy = padT + (g/3)*plotH;
+    svg += '<line x1="' + padL + '" y1="' + gy.toFixed(1) + '" x2="' + (W-padR) + '" y2="' + gy.toFixed(1) + '" stroke="rgba(0,0,0,0.06)" stroke-width="1"/>';
+  }
+  svg += buildLine(incByMonth, incColor);
+  svg += buildLine(expByMonth, expColor);
+  // برچسب ماه‌ها روی محور x
+  monthsWithData.forEach(function(m,i){
+    svg += '<text x="' + xAt(i).toFixed(1) + '" y="' + (H-10) + '" font-size="10" fill="var(--text-sub)" text-anchor="middle">' + J.monthName(m).slice(0,4) + '</text>';
+  });
+  svg += '</svg>';
+
+  // راهنما
+  var legend = '<div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-size:12px;">' +
+    '<span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:3px;background:' + incColor + ';border-radius:2px;"></span>درآمد</span>' +
+    '<span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:3px;background:' + expColor + ';border-radius:2px;"></span>هزینه</span>' +
+    '</div>';
+
+  var hint = (n===1) ? '<div style="font-size:10px;color:var(--text-sub);text-align:center;margin-top:6px;">فقط یک ماه داده موجود است؛ با ثبت ماه‌های بیشتر روند بهتر دیده می‌شود</div>' : '';
+
+  el.innerHTML = svg + legend + hint;
 }
 
 // Pie chart: expense share for the whole selected Jalali year (top 9 + others)
@@ -2563,7 +2783,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.6.0';
+var CURRENT_VERSION = '1.7.0';
 
 // ═══════════════════════════════════════
 // SERVICE WORKER — پشتیبانی آفلاین
