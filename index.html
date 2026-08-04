@@ -328,10 +328,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="accounts-grid" id="accountsGrid"></div>
   <div class="sec-title">صندوق‌های تخصیصی</div>
   <div id="fundsSection"></div>
-  <div class="sec-title" style="display:flex;align-items:center;justify-content:space-between;">
-    <span>📒 دفتر قروض</span>
-    <button onclick="openLoanModal()" style="background:var(--aqua);border:none;border-radius:9px;padding:6px 12px;font-size:12px;color:#0D4A47;font-weight:700;cursor:pointer;font-family:inherit;">+ ثبت قرض</button>
-  </div>
+  <div class="sec-title">📒 دفتر قروض</div>
   <div id="loansSection"></div>
   <div class="card">
     <div class="card-bar"></div>
@@ -395,8 +392,8 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="rep-box inc-box"><div class="rb-label">درآمد</div><div class="rb-val" id="rep-income">۰</div></div>
     <div class="rep-box exp-box"><div class="rb-label">هزینه</div><div class="rb-val" id="rep-expense">۰</div></div>
   </div>
+  <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">میانگین‌ها <span id="avgScopeLabel" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></div><div id="avgStats"></div></div></div>
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">هزینه بر اساس دسته‌بندی</div><div id="catChart"></div></div></div>
-  <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">وضعیت صندوق‌ها</div><div id="fundsReport"></div></div></div>
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">سهم هزینه‌ها از کل سال <span id="pieYearLabel" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></div><div id="expensePie"></div></div></div>
 </div>
 
@@ -423,7 +420,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.5.2</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.6.0</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
     <input type="file" id="importFile" accept=".json,.gz,.json.gz" style="display:none" onchange="importData(event)">
@@ -1376,6 +1373,8 @@ function renderLoans() {
   if (!el) return;
   var loans = DB.loans || [];
 
+  var addBtn = '<button data-lact="add" style="background:var(--aqua);border:none;border-radius:9px;padding:7px 14px;font-size:12px;color:#0D4A47;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;">+ ثبت قرض</button>';
+
   // خلاصه به تفکیک ارز — فقط ارزهایی که طلب/بدهی باز دارند
   var curList = ['IRR','USD','AED'];
   var rows = '';
@@ -1392,56 +1391,70 @@ function renderLoans() {
         '<div style="font-size:15px;font-weight:700;color:var(--danger);direction:ltr;">' + toCurrency(deb, cur) + '</div></div>' +
       '</div>';
   });
-  var summary = rows || '<div style="margin-bottom:8px;"></div>';
 
+  // ردیف هدر: عنوان سمت راست + دکمه ثبت قرض سمت چپ (هم‌راستا با دکمه‌های پرداخت صندوق)
+  var header = '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;' + (loans.length?'border-bottom:1px solid rgba(0,0,0,0.06);':'') + '">' +
+      '<span style="font-size:13px;font-weight:600;color:var(--text-main);">خلاصه قروض</span>' + addBtn +
+    '</div>';
+
+  var body = '';
   if (!loans.length) {
-    el.innerHTML = summary + '<div class="empty" style="padding:16px;"><p style="font-size:12px;">قرضی ثبت نشده</p></div>';
-    return;
+    body = '<div style="padding:14px;">' + (rows || '') + '<div class="empty" style="padding:8px;"><p style="font-size:12px;">قرضی ثبت نشده</p></div></div>';
+  } else {
+    // مرتب‌سازی: باز اول (به ترتیب تاریخ نزولی)، بعد تسویه‌شده‌ها
+    var sorted = loans.slice().sort(function(a,b){
+      if (a.status !== b.status) return a.status==='open' ? -1 : 1;
+      return new Date(b.date) - new Date(a.date);
+    });
+
+    var loanRows = '';
+    sorted.forEach(function(l) {
+      var isGiven = l.type === 'given';
+      var settled = l.status === 'settled';
+      var badge = isGiven
+        ? '<span style="font-size:10px;background:rgba(39,174,96,0.15);color:var(--aqua-dark);padding:2px 7px;border-radius:6px;">طلب</span>'
+        : '<span style="font-size:10px;background:rgba(192,57,43,0.12);color:var(--danger);padding:2px 7px;border-radius:6px;">بدهی</span>';
+      var statusBadge = settled
+        ? '<span style="font-size:10px;background:rgba(120,120,120,0.15);color:var(--text-sub);padding:2px 7px;border-radius:6px;">✓ تسویه</span>'
+        : '';
+      var paid = l.principal - l.remaining;
+      var pct = l.principal > 0 ? (paid / l.principal * 100) : 0;
+      var barColor = isGiven ? 'var(--aqua)' : 'var(--danger)';
+
+      // دکمه اکشن سمت چپ، هم‌راستا با دکمه‌های پرداخت صندوق
+      var actionBtn = settled
+        ? '<button data-id="' + l.id + '" data-lact="del" style="width:30px;height:30px;border-radius:9px;border:1px solid rgba(255,80,80,0.3);background:rgba(255,80,80,0.1);cursor:pointer;font-size:13px;flex-shrink:0;">🗑️</button>'
+        : '<div style="display:flex;gap:5px;flex-shrink:0;">' +
+            '<button data-id="' + l.id + '" data-lact="repay" style="background:var(--aqua);border:none;border-radius:9px;padding:7px 12px;font-size:12px;color:#0D4A47;font-weight:700;cursor:pointer;font-family:inherit;">' + (isGiven?'💵 دریافت':'💸 پرداخت') + '</button>' +
+            '<button data-id="' + l.id + '" data-lact="del" style="width:30px;height:30px;border-radius:9px;border:1px solid rgba(255,80,80,0.3);background:rgba(255,80,80,0.1);cursor:pointer;font-size:13px;">🗑️</button>' +
+          '</div>';
+
+      loanRows += '<div style="padding:12px 14px;border-top:1px solid rgba(0,0,0,0.05);' + (settled?'opacity:0.65;':'') + '">' +
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:7px;">' +
+          '<div style="min-width:0;">' +
+            '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">' +
+              '<span style="font-weight:700;font-size:13px;">' + l.counterparty + '</span>' + badge + statusBadge +
+            '</div>' +
+            '<div style="display:flex;gap:12px;font-size:11px;color:var(--text-sub);direction:ltr;">' +
+              '<span>باقی: <b style="color:' + (isGiven?'var(--aqua-dark)':'var(--danger)') + ';">' + toCurrency(l.remaining, l.currency||'IRR') + '</b></span>' +
+              '<span>کل: ' + toCurrency(l.principal, l.currency||'IRR') + ' ' + curLabel(l.currency||'IRR') + '</span>' +
+            '</div>' +
+          '</div>' +
+          actionBtn +
+        '</div>' +
+        '<div style="height:6px;background:rgba(0,0,0,0.06);border-radius:4px;overflow:hidden;"><div style="height:100%;width:' + pct.toFixed(0) + '%;background:' + barColor + ';"></div></div>' +
+        '<div style="font-size:10px;color:var(--text-sub);margin-top:5px;">' + J.format(l.date) + (l.note ? ' • ' + l.note : '') + '</div>' +
+      '</div>';
+    });
+    body = (rows ? '<div style="padding:12px 14px 0;">' + rows + '</div>' : '') + loanRows;
   }
 
-  // مرتب‌سازی: باز اول (به ترتیب تاریخ نزولی)، بعد تسویه‌شده‌ها
-  var sorted = loans.slice().sort(function(a,b){
-    if (a.status !== b.status) return a.status==='open' ? -1 : 1;
-    return new Date(b.date) - new Date(a.date);
-  });
-
-  var html = '';
-  sorted.forEach(function(l) {
-    var isGiven = l.type === 'given';
-    var settled = l.status === 'settled';
-    var badge = isGiven
-      ? '<span style="font-size:10px;background:rgba(39,174,96,0.15);color:var(--aqua-dark);padding:2px 7px;border-radius:6px;">طلب</span>'
-      : '<span style="font-size:10px;background:rgba(192,57,43,0.12);color:var(--danger);padding:2px 7px;border-radius:6px;">بدهی</span>';
-    var statusBadge = settled
-      ? '<span style="font-size:10px;background:rgba(120,120,120,0.15);color:var(--text-sub);padding:2px 7px;border-radius:6px;">✓ تسویه</span>'
-      : '';
-    var paid = l.principal - l.remaining;
-    var pct = l.principal > 0 ? (paid / l.principal * 100) : 0;
-    var barColor = isGiven ? 'var(--aqua)' : 'var(--danger)';
-
-    html += '<div class="card" style="margin-bottom:8px;' + (settled?'opacity:0.65;':'') + '"><div class="card-body" style="padding:12px;">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
-        '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
-          '<span style="font-weight:700;font-size:13px;">' + l.counterparty + '</span>' + badge + statusBadge +
-        '</div>' +
-        '<div style="display:flex;gap:5px;">' +
-          (settled ? '' : '<button data-id="' + l.id + '" data-lact="repay" style="background:var(--aqua);border:none;border-radius:7px;padding:5px 10px;font-size:11px;color:#0D4A47;font-weight:700;cursor:pointer;font-family:inherit;">' + (isGiven?'دریافت':'پرداخت') + '</button>') +
-          '<button data-id="' + l.id + '" data-lact="del" style="width:26px;height:26px;border-radius:7px;border:1px solid rgba(255,80,80,0.3);background:rgba(255,80,80,0.1);cursor:pointer;font-size:12px;">🗑️</button>' +
-        '</div>' +
-      '</div>' +
-      '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-sub);margin-bottom:5px;direction:ltr;">' +
-        '<span>باقی‌مانده: <b style="color:' + (isGiven?'var(--aqua-dark)':'var(--danger)') + ';">' + toCurrency(l.remaining, l.currency||'IRR') + '</b></span>' +
-        '<span>کل: ' + toCurrency(l.principal, l.currency||'IRR') + ' ' + curLabel(l.currency||'IRR') + '</span>' +
-      '</div>' +
-      '<div style="height:6px;background:rgba(0,0,0,0.06);border-radius:4px;overflow:hidden;"><div style="height:100%;width:' + pct.toFixed(0) + '%;background:' + barColor + ';"></div></div>' +
-      '<div style="font-size:10px;color:var(--text-sub);margin-top:5px;">' + J.format(l.date) + (l.note ? ' • ' + l.note : '') + '</div>' +
-    '</div></div>';
-  });
-  el.innerHTML = summary + html;
+  el.innerHTML = '<div class="card"><div class="card-bar"></div>' + header + body + '</div>';
 
   el.onclick = function(e) {
     var btn = e.target.closest('[data-lact]'); if (!btn) return;
-    if (btn.dataset.lact === 'repay') openRepayment(btn.dataset.id);
+    if (btn.dataset.lact === 'add') openLoanModal();
+    else if (btn.dataset.lact === 'repay') openRepayment(btn.dataset.id);
     else if (btn.dataset.lact === 'del') deleteLoan(btn.dataset.id);
   };
 }
@@ -1867,21 +1880,97 @@ function renderReports() {
     chart.innerHTML = cHtml;
   }
 
-  var displayFunds = DB.funds;
-  var fr = document.getElementById('fundsReport');
-  if (!displayFunds.length) { fr.innerHTML = '<div class="empty"><p>صندوقی انتخاب نشده</p></div>'; }
-  else {
-    var frHtml = '';
-    displayFunds.forEach(function(f) {
-      var pct = f.totalIn > 0 ? Math.min(100, (getFundBalance(f.id)/f.totalIn)*100) : 0;
-      frHtml += '<div class="fund-item"><div class="fund-top"><div class="fund-name">' + f.icon + ' ' + f.name + ' (' + f.pct + '٪)</div><div class="fund-bal">' + toFa(addCommas(Math.round(getFundBalance(f.id)))) + ' ریال</div></div>' +
-        '<div class="fund-bar-wrap"><div class="fund-bar-fill" style="width:' + pct.toFixed(0) + '%"></div></div>' +
-        '<div class="fund-meta"><span>واریز: ' + toFa(addCommas(Math.round(f.totalIn||0))) + '</span><span>برداشت: ' + toFa(addCommas(Math.round(f.totalOut||0))) + '</span></div></div>';
-    });
-    fr.innerHTML = frHtml;
+  renderAvgStats(selYear);
+  renderExpensePie(selYear);
+}
+
+// میانگین‌های درآمد/هزینه بر اساس کل سال انتخاب‌شده
+// مخرج ماهانه: تعداد ماه‌های دارای تراکنش | مخرج روزانه: روزهای سپری‌شده در بازه
+function renderAvgStats(selYear) {
+  var el = document.getElementById('avgStats');
+  if (!el) return;
+  var lbl = document.getElementById('avgScopeLabel');
+  if (lbl) lbl.textContent = '(کل سال ' + toFa(String(selYear)) + ')';
+
+  // تراکنش‌های درآمد/هزینه‌ی سال (قرض‌ها مستثنی — چون income/expense/fund-out صریح چک می‌شود)
+  var yearTxs = DB.transactions.filter(function(t) {
+    if (!(t.type==='income' || t.type==='expense' || t.type==='fund-out')) return false;
+    var d = new Date(t.date);
+    return J.toJalali(d.getFullYear(), d.getMonth()+1, d.getDate()).jy === selYear;
+  });
+
+  if (!yearTxs.length) {
+    el.innerHTML = '<div class="empty" style="padding:12px;"><p style="font-size:12px;">داده‌ای برای این سال نیست</p></div>';
+    return;
   }
 
-  renderExpensePie(selYear);
+  var totalIncome = yearTxs.filter(function(t){ return t.type==='income'; }).reduce(function(s,t){ return s+t.amount; }, 0);
+  var totalExpense = yearTxs.filter(function(t){ return t.type==='expense'||t.type==='fund-out'; }).reduce(function(s,t){ return s+t.amount; }, 0);
+
+  // ماه‌های دارای تراکنش (برای درآمد و هزینه جدا)
+  function monthsWith(types) {
+    var set = {};
+    yearTxs.forEach(function(t) {
+      if (types.indexOf(t.type) === -1) return;
+      var d = new Date(t.date);
+      set[J.toJalali(d.getFullYear(), d.getMonth()+1, d.getDate()).jm] = true;
+    });
+    return Object.keys(set).length;
+  }
+  var incMonths = monthsWith(['income']) || 1;
+  var expMonths = monthsWith(['expense','fund-out']) || 1;
+
+  // روزهای سپری‌شده در بازه‌ی سال: از ابتدای سال تا امروز (اگر سال جاری) یا کل روزهای سال
+  var today = J.today();
+  var elapsedDays;
+  if (selYear === today.jy) {
+    // تعداد روز سپری‌شده از ابتدای سال شمسی تا امروز
+    elapsedDays = J.dayOfYear ? J.dayOfYear(today) : approxDayOfYear(today);
+  } else if (selYear < today.jy) {
+    elapsedDays = isLeapJalali(selYear) ? 366 : 365;
+  } else {
+    elapsedDays = 1;
+  }
+  if (!elapsedDays || elapsedDays < 1) elapsedDays = 1;
+
+  var avgIncMonthly = totalIncome / incMonths;
+  var avgExpMonthly = totalExpense / expMonths;
+  var avgIncDaily = totalIncome / elapsedDays;
+  var avgExpDaily = totalExpense / elapsedDays;
+
+  function statRow(label, value, cls) {
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.05);">' +
+      '<span style="font-size:12px;color:var(--text-sub);">' + label + '</span>' +
+      '<span style="font-size:14px;font-weight:700;direction:ltr;' + (cls||'') + '">' + toFa(addCommas(Math.round(value))) + ' ریال</span>' +
+      '</div>';
+  }
+
+  el.innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+      '<div style="background:rgba(39,174,96,0.08);border:1px solid rgba(39,174,96,0.2);border-radius:12px;padding:10px 12px;">' +
+        '<div style="font-size:12px;font-weight:700;color:var(--aqua-dark);margin-bottom:4px;">درآمد</div>' +
+        statRow('میانگین ماهانه', avgIncMonthly, 'color:var(--aqua-dark);') +
+        statRow('میانگین روزانه', avgIncDaily, 'color:var(--aqua-dark);') +
+      '</div>' +
+      '<div style="background:rgba(192,57,43,0.06);border:1px solid rgba(192,57,43,0.2);border-radius:12px;padding:10px 12px;">' +
+        '<div style="font-size:12px;font-weight:700;color:var(--danger);margin-bottom:4px;">هزینه</div>' +
+        statRow('میانگین ماهانه', avgExpMonthly, 'color:var(--danger);') +
+        statRow('میانگین روزانه', avgExpDaily, 'color:var(--danger);') +
+      '</div>' +
+    '</div>' +
+    '<div style="font-size:10px;color:var(--text-sub);margin-top:8px;text-align:center;">میانگین ماهانه بر اساس ماه‌های دارای تراکنش • میانگین روزانه بر اساس ' + toFa(String(elapsedDays)) + ' روز</div>';
+}
+
+// تعداد روز سپری‌شده از ابتدای سال شمسی (تقریبی اما دقیق برای این کاربرد)
+function approxDayOfYear(j) {
+  var days = 0;
+  for (var m = 1; m < j.jm; m++) days += (m <= 6 ? 31 : 30);
+  return days + j.jd;
+}
+function isLeapJalali(jy) {
+  // الگوریتم ۳۳ ساله‌ی تقریبی
+  var r = jy % 33;
+  return [1,5,9,13,17,22,26,30].indexOf(r) !== -1;
 }
 
 // Pie chart: expense share for the whole selected Jalali year (top 9 + others)
@@ -2474,7 +2563,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.5.2';
+var CURRENT_VERSION = '1.6.0';
 
 // ═══════════════════════════════════════
 // SERVICE WORKER — پشتیبانی آفلاین
