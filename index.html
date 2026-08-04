@@ -423,7 +423,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.5.1</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.5.2</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
     <input type="file" id="importFile" accept=".json,.gz,.json.gz" style="display:none" onchange="importData(event)">
@@ -520,7 +520,7 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="form-group"><label class="form-label">مبلغ (ریال)</label><input type="text" inputmode="numeric" class="form-input" id="fund-pay-amount" placeholder="مبلغ پرداختی" oninput="sanitizeNumberInput(this)"></div>
     <div class="form-group"><label class="form-label">تاریخ</label><input type="date" class="form-input" id="fund-pay-date"></div>
     <div class="form-group"><label class="form-label">پرداخت از حساب</label><select class="form-select" id="fund-pay-account"><option value="">-- انتخاب حساب --</option></select></div>
-    <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="fund-pay-desc" placeholder="مثال: زکات ماه فروردین"></div>
+    <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="fund-pay-desc" placeholder="مثال: زکات ماه فروردین" list="fund-pay-desc-suggestions" autocomplete="off"><datalist id="fund-pay-desc-suggestions"></datalist></div>
     <input type="hidden" id="fund-pay-id">
     <div class="hint-box">
       💡 این مبلغ هم از حساب بانکی انتخابی کسر می‌شود و هم از موجودی صندوق.
@@ -1163,6 +1163,7 @@ function openFundPayment(fundId) {
   document.getElementById('fund-pay-amount').value = '';
   document.getElementById('fund-pay-desc').value = '';
   document.getElementById('fund-pay-date').value = todayGregorian();
+  populateDescSuggestions('fund-out', 'fund-pay-desc-suggestions');
   // Populate bank accounts
   var accSel = document.getElementById('fund-pay-account');
   accSel.innerHTML = '<option value="">-- انتخاب حساب بانکی --</option>' +
@@ -2473,7 +2474,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.5.1';
+var CURRENT_VERSION = '1.5.2';
 
 // ═══════════════════════════════════════
 // SERVICE WORKER — پشتیبانی آفلاین
