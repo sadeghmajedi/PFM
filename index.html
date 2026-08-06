@@ -422,10 +422,12 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.7.0</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.8.0</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
+    <div class="settings-item" onclick="document.getElementById('smsImportFile').click()"><span class="si-label">🏦 ورود پیامک بانک (CSV)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
     <input type="file" id="importFile" accept=".json,.gz,.json.gz" style="display:none" onchange="importData(event)">
+    <input type="file" id="smsImportFile" accept=".csv,.txt" style="display:none" onchange="importBankSMS(event)">
   </div></div>
 </div>
 
@@ -559,6 +561,18 @@ html { height:100%; height:-webkit-fill-available; }
     <button class="btn-primary" onclick="submitRepayment()">ثبت بازپرداخت</button>
     <button class="btn-secondary" onclick="fullSettleLoan()" style="background:rgba(39,174,96,0.15);color:var(--aqua-dark);border:1px solid rgba(39,174,96,0.3);">تسویه کامل</button>
     <button class="btn-secondary" onclick="closeModal('modal-repay')">انصراف</button>
+  </div>
+</div>
+
+<!-- Bank SMS Import Review Modal -->
+<div class="modal-overlay" id="modal-sms-import" onclick="closeModalOutside(event,'modal-sms-import')">
+  <div class="modal-sheet" style="max-height:90vh;">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🏦 بررسی پیامک‌های بانک</div>
+    <div id="sms-import-summary" style="font-size:12px;color:var(--text-sub);margin-bottom:10px;"></div>
+    <div id="sms-import-list" style="max-height:50vh;overflow-y:auto;margin-bottom:12px;"></div>
+    <button class="btn-primary" id="sms-import-confirm" onclick="confirmBankSMSImport()">ثبت تراکنش‌های تأییدشده</button>
+    <button class="btn-secondary" onclick="closeModal('modal-sms-import')">انصراف</button>
   </div>
 </div>
 
@@ -823,6 +837,15 @@ function loadDB() {
   if (!DB.loans) { DB.loans = []; needsSave = true; }
   // Migrate: هشدارهای محوشده بودجه
   if (!DB.alertDismissals) { DB.alertDismissals = {}; needsSave = true; }
+  // Migrate: دسته‌ی «نیازمند ویرایش» برای ورود پیامک بانک
+  if (!DB.categories.find(function(c){ return c.id==='cat_review'; })) {
+    DB.categories.push({id:'cat_review',name:'نیازمند ویرایش',icon:'📝'});
+    needsSave = true;
+  }
+  if (!DB.incomeCategories.find(function(c){ return c.id==='ic_review'; })) {
+    DB.incomeCategories.push({id:'ic_review',name:'نیازمند ویرایش',icon:'📝'});
+    needsSave = true;
+  }
   if (needsSave) saveDB();
 }
 
@@ -2690,6 +2713,286 @@ function exportPDF() {
   w.document.close();
 }
 
+// ═══════════════════════════════════════
+// BANK SMS IMPORT — ورود تراکنش از پیامک بانک (CSV یا متن خام)
+// فرمت CSV مورد انتظار: account,type,amount,balance,date(1405/05/14),time(11:09)
+// لایه‌ی دفاعی: پیام‌های رمز/OTP و پیام‌های بدون «مانده» رد می‌شوند
+// ═══════════════════════════════════════
+var pendingSMSRows = [];
+
+function normalizeDigits(s) {
+  if (!s) return '';
+  return String(s)
+    .replace(/[۰-۹]/g, function(d){ return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); })
+    .replace(/[٠-٩]/g, function(d){ return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); });
+}
+
+function looksLikeOTP(text) {
+  // لایه‌ی دفاعی: رد صریح پیام‌های رمز/ورود
+  return /رمز|پویا|کلمه\s*عبور|یکبار\s*مصرف|ورود|کد\s*تایید|OTP|verification/i.test(text);
+}
+
+function matchAccountByNumber(accNumRaw) {
+  var accNum = normalizeDigits(accNumRaw).replace(/\D/g, '');
+  if (!accNum) return null;
+  // تطبیق: شماره‌ی حساب باید در نام حساب PFM موجود باشد
+  return DB.accounts.find(function(a){
+    var nameDigits = normalizeDigits(a.name).replace(/\D/g, '');
+    return nameDigits.indexOf(accNum) !== -1 || accNum.indexOf(nameDigits) !== -1 && nameDigits.length >= 6;
+  }) || null;
+}
+
+// تجزیه‌ی یک بلوک پیامک خام به فیلدها (پشتیبان، وقتی CSV نیست)
+function parseSMSBlock(block) {
+  var text = normalizeDigits(block);
+  if (looksLikeOTP(text)) return null;
+  // باید هم نوع تراکنش و هم «مانده» داشته باشد
+  var typeMatch = text.match(/(برداشت|واریز)/);
+  var hasBalance = /مانده/.test(text);
+  if (!typeMatch || !hasBalance) return null;
+
+  var accMatch = text.match(/حساب[\s:]*([0-9]{5,})/);
+  var amtMatch = text.match(/(برداشت|واریز)[\s:]*([0-9,]+)/);
+  var balMatch = text.match(/مانده[\s:]*([0-9,]+)/);
+  var dateMatch = text.match(/([0-9]{2})\/([0-9]{2})\/([0-9]{2})[-\s]*([0-9]{2}):([0-9]{2})/);
+  if (!accMatch || !amtMatch || !balMatch) return null;
+
+  var type = typeMatch[1] === 'واریز' ? 'income' : 'expense';
+  var amount = parseInt(amtMatch[2].replace(/,/g, ''), 10);
+  var balance = parseInt(balMatch[1].replace(/,/g, ''), 10);
+  var jy, jm, jd, hh='00', mn='00';
+  if (dateMatch) {
+    // فرمت YY/MM/DD → 1400+YY
+    jy = 1400 + parseInt(dateMatch[1], 10);
+    jm = parseInt(dateMatch[2], 10);
+    jd = parseInt(dateMatch[3], 10);
+    hh = dateMatch[4]; mn = dateMatch[5];
+  }
+  return { accNum: accMatch[1], type: type, amount: amount, balance: balance, jy: jy, jm: jm, jd: jd, hh: hh, mn: mn };
+}
+
+// تجزیه‌ی یک ردیف CSV
+function parseCSVRow(cols) {
+  // account,type,amount,balance,date,time
+  if (cols.length < 4) return null;
+  var accNum = normalizeDigits(cols[0]).replace(/\D/g, '');
+  var typeRaw = (cols[1]||'').trim();
+  if (looksLikeOTP(typeRaw)) return null;
+  var type = /واریز/.test(typeRaw) ? 'income' : (/برداشت/.test(typeRaw) ? 'expense' : null);
+  if (!type) return null;
+  var amount = parseInt(normalizeDigits(cols[2]).replace(/[^0-9]/g, ''), 10);
+  var balance = parseInt(normalizeDigits(cols[3]).replace(/[^0-9]/g, ''), 10);
+  if (!accNum || !amount) return null;
+  var jy, jm, jd, hh='00', mn='00';
+  if (cols[4]) {
+    var dparts = normalizeDigits(cols[4]).split(/[\/\-]/);
+    if (dparts.length === 3) {
+      var y = parseInt(dparts[0], 10);
+      jy = y < 100 ? 1400 + y : y;
+      jm = parseInt(dparts[1], 10);
+      jd = parseInt(dparts[2], 10);
+    }
+  }
+  if (cols[5]) {
+    var tparts = normalizeDigits(cols[5]).split(':');
+    if (tparts.length >= 2) { hh = tparts[0]; mn = tparts[1]; }
+  }
+  return { accNum: accNum, type: type, amount: amount, balance: isNaN(balance)?null:balance, jy: jy, jm: jm, jd: jd, hh: hh, mn: mn };
+}
+
+function importBankSMS(e) {
+  var file = e.target.files[0]; if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var content = ev.target.result;
+    processSMSContent(content);
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function processSMSContent(content) {
+  var parsed = [];
+  var lines = content.split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean);
+
+  // تشخیص: آیا CSV است (کاما دارد و ستون‌بندی منظم) یا متن خام پیامک
+  var looksCSV = lines.length > 0 && lines.some(function(l){ return l.split(',').length >= 4; });
+
+  if (looksCSV) {
+    lines.forEach(function(line){
+      // رد سرستون احتمالی
+      if (/^(account|حساب|شماره)/i.test(line) && /type|نوع/i.test(line)) return;
+      var cols = line.split(',');
+      var r = parseCSVRow(cols);
+      if (r) parsed.push(r);
+    });
+  } else {
+    // متن خام: بلوک‌ها با خط خالی جدا می‌شوند، یا هر ۴ خط یک پیامک
+    var blocks = content.split(/\n\s*\n/).map(function(b){ return b.trim(); }).filter(Boolean);
+    if (blocks.length <= 1) {
+      // شاید همه در یک بلوک؛ سعی کن هر ۴ خط را یک پیامک بگیری
+      for (var i=0; i<lines.length; i+=4) {
+        var block = lines.slice(i, i+4).join('\n');
+        var r = parseSMSBlock(block);
+        if (r) parsed.push(r);
+      }
+    } else {
+      blocks.forEach(function(b){ var r = parseSMSBlock(b); if (r) parsed.push(r); });
+    }
+  }
+
+  if (!parsed.length) {
+    alert('هیچ تراکنش معتبری در فایل پیدا نشد.\nمطمئن شوید فایل شامل پیامک‌های تراکنش (برداشت/واریز با مانده) است.');
+    return;
+  }
+
+  // پردازش هر ردیف: تطبیق حساب، تشخیص تکراری، اعتبارسنجی مانده
+  pendingSMSRows = parsed.map(function(r, idx) {
+    var acc = matchAccountByNumber(r.accNum);
+    var dateISO = null, dateOK = false;
+    if (r.jy && r.jm && r.jd) {
+      dateISO = J.toGregorian(r.jy, r.jm, r.jd) + 'T' + (r.hh||'00') + ':' + (r.mn||'00') + ':00';
+      dateOK = true;
+    } else {
+      dateISO = todayGregorian() + 'T00:00:00';
+    }
+    // تشخیص تکراری: همان حساب + مبلغ + نوع + تاریخ (روز)
+    var dup = false;
+    if (acc) {
+      var dayStr = dateISO.split('T')[0];
+      dup = DB.transactions.some(function(t){
+        return t.accountId===acc.id && t.amount===r.amount &&
+               ((r.type==='income' && t.type==='income') || (r.type==='expense' && t.type==='expense')) &&
+               (t.date||'').split('T')[0] === dayStr;
+      });
+    }
+    return {
+      idx: idx, accNum: r.accNum, account: acc, type: r.type,
+      amount: r.amount, balance: r.balance, dateISO: dateISO, dateOK: dateOK,
+      dup: dup, include: !!acc && !dup   // پیش‌فرض: فقط اگر حساب پیدا شد و تکراری نبود
+    };
+  });
+
+  renderSMSImportReview();
+  openModal('modal-sms-import');
+}
+
+function renderSMSImportReview() {
+  var listEl = document.getElementById('sms-import-list');
+  var sumEl = document.getElementById('sms-import-summary');
+  var matched = pendingSMSRows.filter(function(r){ return r.account; }).length;
+  var dups = pendingSMSRows.filter(function(r){ return r.dup; }).length;
+  var unmatched = pendingSMSRows.filter(function(r){ return !r.account; }).length;
+
+  sumEl.innerHTML = 'یافت‌شده: <b>' + toFa(pendingSMSRows.length) + '</b> • قابل ثبت: <b style="color:var(--aqua-dark);">' + toFa(matched-dups) + '</b>' +
+    (dups ? ' • تکراری: <b style="color:#9a7d0a;">' + toFa(dups) + '</b>' : '') +
+    (unmatched ? ' • حساب نامشخص: <b style="color:var(--danger);">' + toFa(unmatched) + '</b>' : '');
+
+  var html = pendingSMSRows.map(function(r) {
+    var isInc = r.type === 'income';
+    var typeLabel = isInc ? 'واریز' : 'برداشت';
+    var typeColor = isInc ? 'var(--aqua-dark)' : 'var(--danger)';
+    var accName = r.account ? r.account.name : ('❓ ' + r.accNum + ' (حساب پیدا نشد)');
+    var dateLabel = r.dateOK ? J.format(r.dateISO) : 'بدون تاریخ';
+
+    // اعتبارسنجی مانده
+    var validationHtml = '';
+    if (r.account && r.balance != null && r.dateOK) {
+      var computed = computeBalanceUpTo(r.account.id, r.dateISO, r.idx);
+      var diff = r.balance - computed;
+      if (Math.abs(diff) < 1) {
+        validationHtml = '<div style="font-size:10px;color:var(--aqua-dark);margin-top:3px;">✓ مانده با برنامه می‌خواند</div>';
+      } else if (diff < 0) {
+        validationHtml = '<div style="font-size:10px;color:#9a7d0a;margin-top:3px;">⚠️ مانده بانک ' + toFa(addCommas(Math.abs(diff))) + ' کمتر است (احتمالاً تراکنش‌های زیر ۳۰۰هزار)</div>';
+      } else {
+        validationHtml = '<div style="font-size:10px;color:var(--danger);margin-top:3px;">⚠️ مانده بانک ' + toFa(addCommas(diff)) + ' بیشتر است (احتمالاً تراکنش جاافتاده)</div>';
+      }
+    }
+
+    var disabledAttr = (!r.account) ? 'disabled' : '';
+    var rowBg = r.dup ? 'rgba(225,179,36,0.08)' : (!r.account ? 'rgba(192,57,43,0.06)' : 'transparent');
+
+    return '<div style="padding:10px;border:1px solid rgba(0,0,0,0.08);border-radius:10px;margin-bottom:8px;background:' + rowBg + ';">' +
+      '<div style="display:flex;align-items:flex-start;gap:8px;">' +
+        '<input type="checkbox" data-sms-idx="' + r.idx + '" ' + (r.include?'checked':'') + ' ' + disabledAttr + ' style="margin-top:3px;width:18px;height:18px;flex-shrink:0;">' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="display:flex;justify-content:space-between;gap:8px;">' +
+            '<span style="font-size:12px;font-weight:700;">' + accName + '</span>' +
+            '<span style="font-size:13px;font-weight:700;color:' + typeColor + ';direction:ltr;white-space:nowrap;">' + (isInc?'+':'-') + toFa(addCommas(r.amount)) + '</span>' +
+          '</div>' +
+          '<div style="font-size:11px;color:var(--text-sub);margin-top:2px;">' + typeLabel + ' • ' + dateLabel + (r.dup?' • <b style="color:#9a7d0a;">تکراری</b>':'') + '</div>' +
+          validationHtml +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  listEl.innerHTML = html;
+
+  listEl.querySelectorAll('[data-sms-idx]').forEach(function(cb){
+    cb.addEventListener('change', function(){
+      var i = parseInt(this.dataset.smsIdx, 10);
+      var row = pendingSMSRows.find(function(r){ return r.idx===i; });
+      if (row) row.include = this.checked;
+    });
+  });
+}
+
+// موجودی محاسبه‌شده‌ی حساب تا لحظه‌ی یک تراکنش (برای اعتبارسنجی مانده)
+function computeBalanceUpTo(accId, dateISO, excludeSMSIdx) {
+  var acc = DB.accounts.find(function(a){ return a.id===accId; });
+  if (!acc) return 0;
+  var seed = (acc.seedBalance !== undefined) ? acc.seedBalance : acc.balance;
+  var cutoff = new Date(dateISO).getTime();
+  var sum = 0;
+  DB.transactions.forEach(function(t){
+    if (new Date(t.date).getTime() > cutoff) return;
+    if (t.type==='income' && t.accountId===accId) sum += t.amount;
+    else if ((t.type==='expense'||t.type==='fund-out') && t.accountId===accId) sum -= t.amount;
+    else if ((t.type==='loan-given'||t.type==='loan-repaid') && t.accountId===accId) sum -= t.amount;
+    else if ((t.type==='loan-taken'||t.type==='loan-collected') && t.accountId===accId) sum += t.amount;
+    else if (t.type==='transfer') {
+      if (t.fromAccountId===accId) sum -= (t.amount + (t.fee||0));
+      if (t.toAccountId===accId) sum += t.amount;
+    }
+  });
+  // این تراکنش خودش (که هنوز ثبت نشده) را هم لحاظ کن
+  var self = pendingSMSRows.find(function(r){ return r.idx===excludeSMSIdx; });
+  if (self && self.account && self.account.id===accId) {
+    sum += (self.type==='income' ? self.amount : -self.amount);
+  }
+  return seed + sum;
+}
+
+function confirmBankSMSImport() {
+  var toAdd = pendingSMSRows.filter(function(r){ return r.include && r.account; });
+  if (!toAdd.length) { alert('هیچ تراکنشی برای ثبت انتخاب نشده'); return; }
+
+  var reviewCatExp = 'cat_review';
+  var reviewCatInc = 'ic_review';
+  var added = 0;
+  toAdd.forEach(function(r, k){
+    var tx = {
+      id: 'tx' + Date.now() + '_' + k,
+      type: r.type,
+      amount: r.amount,
+      accountId: r.account.id,
+      date: r.dateISO,
+      desc: (r.type==='income' ? 'واریز بانکی' : 'برداشت بانکی') + ' (پیامک)'
+    };
+    if (r.type==='income') tx.incCatId = reviewCatInc;
+    else tx.catId = reviewCatExp;
+    DB.transactions.push(tx);
+    added++;
+  });
+
+  saveDB();
+  closeModal('modal-sms-import');
+  renderAll();
+  alert('✓ ' + toFa(added) + ' تراکنش در دسته‌ی «نیازمند ویرایش» ثبت شد.\nمی‌توانید از صفحه تراکنش‌ها دسته‌ی درست را برایشان انتخاب کنید.');
+  pendingSMSRows = [];
+}
+
 function importData(e) {
   var file = e.target.files[0]; if (!file) return;
   var isGzip = /\.gz$/i.test(file.name) || file.type === 'application/gzip';
@@ -2783,7 +3086,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.7.0';
+var CURRENT_VERSION = '1.8.0';
 
 // ═══════════════════════════════════════
 // SERVICE WORKER — پشتیبانی آفلاین
