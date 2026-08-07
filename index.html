@@ -422,7 +422,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.8.0</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.8.2</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="document.getElementById('smsImportFile').click()"><span class="si-label">🏦 ورود پیامک بانک (CSV)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
@@ -1887,10 +1887,9 @@ function renderAccounts() {
   } else {
     var fHtml = '<div class="card"><div class="card-bar"></div><div class="card-body">';
     DB.funds.forEach(function(f) {
-      var g = f.incomeGroup==='monthly'?'ماهیانه':f.incomeGroup==='extra'?'اضافی':'همه';
       fHtml += '<div class="list-item">' +
         '<div><div style="font-weight:600;">' + f.icon + ' ' + f.name + '</div>' +
-        '<div style="font-size:11px;color:rgba(255,255,255,0.5);">' + f.pct + '٪ · ' + g + '</div></div>' +
+        '<div style="font-size:11px;color:rgba(255,255,255,0.5);">' + fundPctLabel(f) + '</div></div>' +
         '<div class="li-actions">' +
         '<button class="icon-btn" data-id="' + f.id + '" data-action="ef">✏️</button>' +
         '<button class="icon-btn danger" data-id="' + f.id + '" data-action="df">🗑️</button>' +
@@ -2325,10 +2324,25 @@ function renderSettings() {
   var al = document.getElementById('allocationList');
   var aHtml = '';
   DB.funds.forEach(function(f) {
-    var g = f.incomeGroup==='monthly'?'درآمد ماهیانه':f.incomeGroup==='extra'?'درآمد اضافی':'همه درآمدها';
-    aHtml += '<div class="list-item"><div><div style="font-weight:600;">' + f.icon + ' ' + f.name + '</div><div style="font-size:11px;color:rgba(255,255,255,0.5);">' + g + '</div></div><div style="font-size:17px;font-weight:700;color:var(--lemon);">' + f.pct + '٪</div></div>';
+    aHtml += '<div class="list-item"><div><div style="font-weight:600;">' + f.icon + ' ' + f.name + '</div><div style="font-size:11px;color:rgba(255,255,255,0.5);">' + fundGroupLabel(f) + '</div></div><div style="font-size:17px;font-weight:700;color:var(--lemon);">' + fundPctLabel(f) + '</div></div>';
   });
   al.innerHTML = aHtml || '<div style="color:rgba(255,255,255,0.5);font-size:12px;padding:8px 0;">صندوقی ثبت نشده</div>';
+}
+
+// نمایش درصد و گروه صندوق — سازگار با هر دو ساختار (pct قدیمی و rates جدید)
+function fundPctLabel(f) {
+  if (f.rates) {
+    var parts = [];
+    if (f.rates.monthly) parts.push(toFa(f.rates.monthly) + '٪ ماهیانه');
+    if (f.rates.extra) parts.push(toFa(f.rates.extra) + '٪ اضافی');
+    if (f.rates.other) parts.push(toFa(f.rates.other) + '٪ سایر');
+    return parts.length ? parts.join(' + ') : '۰٪';
+  }
+  return toFa(f.pct || 0) + '٪';
+}
+function fundGroupLabel(f) {
+  if (f.rates) return 'بر اساس نوع درآمد';
+  return f.incomeGroup==='monthly' ? 'درآمد ماهیانه' : f.incomeGroup==='extra' ? 'درآمد اضافی' : 'همه درآمدها';
 }
 
 // ═══════════════════════════════════════
@@ -2551,7 +2565,7 @@ function exportReportPDF() {
   }).join('');
 
   var fundsHtml = DB.funds.map(function(f) {
-    return '<tr><td>' + f.icon + ' ' + f.name + '</td><td>' + addCommas(Math.round(getFundBalance(f.id))) + ' ریال</td><td>' + f.pct + '٪</td></tr>';
+    return '<tr><td>' + f.icon + ' ' + f.name + '</td><td>' + addCommas(Math.round(getFundBalance(f.id))) + ' ریال</td><td>' + fundPctLabel(f) + '</td></tr>';
   }).join('');
 
   var w = window.open('','_blank');
@@ -2771,6 +2785,19 @@ function parseSMSBlock(block) {
   return { accNum: accMatch[1], type: type, amount: amount, balance: balance, jy: jy, jm: jm, jd: jd, hh: hh, mn: mn };
 }
 
+// تجزیه‌ی خط CSV با پشتیبانی از کوتیشن (تا کاماهای داخل عدد "20,300,000" اشتباه نشکنند)
+function splitCSVLine(line) {
+  var result = [], cur = '', inQuotes = false;
+  for (var i=0; i<line.length; i++) {
+    var ch = line[i];
+    if (ch === '"') { inQuotes = !inQuotes; continue; }
+    if (ch === ',' && !inQuotes) { result.push(cur); cur = ''; continue; }
+    cur += ch;
+  }
+  result.push(cur);
+  return result.map(function(s){ return s.trim(); });
+}
+
 // تجزیه‌ی یک ردیف CSV
 function parseCSVRow(cols) {
   // account,type,amount,balance,date,time
@@ -2815,14 +2842,22 @@ function processSMSContent(content) {
   var parsed = [];
   var lines = content.split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean);
 
-  // تشخیص: آیا CSV است (کاما دارد و ستون‌بندی منظم) یا متن خام پیامک
-  var looksCSV = lines.length > 0 && lines.some(function(l){ return l.split(',').length >= 4; });
+  // تشخیص نوع فایل:
+  // متن خام پیامک شامل کلمات کلیدی «حساب» و «مانده» چسبیده به عدد است.
+  // CSV تولیدشده توسط Shortcut این کلمات را ندارد (فیلدها با کاما جدا شده‌اند).
+  // چون اعداد فارسی جداکننده‌ی هزارگان (کاما) دارند، نمی‌توان صرفاً روی وجود کاما تکیه کرد.
+  var hasSMSKeywords = /حساب/.test(content) && /مانده/.test(content);
+  var looksCSV = !hasSMSKeywords && lines.some(function(l){
+    // یک ردیف CSV واقعی: بعد از حذف اعداد کاما دار، همچنان حداقل ۳ کاما دارد
+    var stripped = l.replace(/\d{1,3}(,\d{3})+/g, 'N'); // اعداد کاما دار → N
+    return stripped.split(',').length >= 4;
+  });
 
   if (looksCSV) {
     lines.forEach(function(line){
       // رد سرستون احتمالی
       if (/^(account|حساب|شماره)/i.test(line) && /type|نوع/i.test(line)) return;
-      var cols = line.split(',');
+      var cols = splitCSVLine(line);
       var r = parseCSVRow(cols);
       if (r) parsed.push(r);
     });
@@ -3086,7 +3121,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.8.0';
+var CURRENT_VERSION = '1.8.2';
 
 // ═══════════════════════════════════════
 // SERVICE WORKER — پشتیبانی آفلاین
