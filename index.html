@@ -422,7 +422,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.8.4</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.8.5</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="document.getElementById('smsImportFile').click()"><span class="si-label">🏦 ورود پیامک بانک (CSV)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
@@ -2491,6 +2491,7 @@ function openEditTx(id) {
   var catGroup = document.getElementById('edit-cat-group');
   if (tx.type === 'expense') {
     catGroup.style.display = 'block';
+    document.getElementById('edit-group-wrap').style.display = 'none';
     document.getElementById('edit-cats').innerHTML = DB.categories.map(function(c){
       var chipCls = c.id===tx.catId ? ' sel' : '';
       return '<span class="chip' + chipCls + '" data-id="' + c.id + '" data-gid="edit-cats" onclick="selChip(this,this.dataset.gid)">' + c.icon + ' ' + c.name + '</span>';
@@ -2501,8 +2502,12 @@ function openEditTx(id) {
       var chipCls = c.id===tx.incCatId ? ' sel' : '';
       return '<span class="chip' + chipCls + '" data-id="' + c.id + '" data-gid="edit-cats" onclick="selChip(this,this.dataset.gid)">' + c.icon + ' ' + c.name + '</span>';
     }).join('');
+    // نمایش و مقداردهی گروه دریافتی
+    document.getElementById('edit-group-wrap').style.display = 'block';
+    document.getElementById('edit-group').value = tx.group || 'monthly';
   } else {
     catGroup.style.display = 'none';
+    document.getElementById('edit-group-wrap').style.display = 'none';
   }
   openModal('modal-edit-tx');
 }
@@ -2546,6 +2551,10 @@ function submitEditTx() {
     var selIncCat = document.querySelector('#edit-cats .chip.sel');
     if (selIncCat) tx.incCatId = selIncCat.dataset.id;
 
+    // گروه دریافتی جدید را بخوان (تعیین‌کننده‌ی درصد تخصیص صندوق‌هاست)
+    var newGroup = document.getElementById('edit-group').value || 'monthly';
+    tx.group = newGroup;
+
     // ۳. مقادیر جدید را ثبت کن
     tx.amount = newAmount;
     tx.desc = newDesc;
@@ -2553,7 +2562,7 @@ function submitEditTx() {
     tx.date = newDateISO;
 
     // ۴. تخصیص صندوق‌ها را بر اساس مبلغ و گروه جدید بازبساز
-    var group = tx.group || 'monthly';
+    var group = newGroup;
     tx.allocations = [];
     DB.funds.forEach(function(f){
       var rate = f.rates ? (f.rates[group]||0) : ((f.incomeGroup===group||f.incomeGroup==='all') ? (f.pct||0) : 0);
@@ -3168,7 +3177,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.8.4';
+var CURRENT_VERSION = '1.8.5';
 
 // ═══════════════════════════════════════
 // SERVICE WORKER — پشتیبانی آفلاین
@@ -3303,6 +3312,7 @@ setTimeout(function() {
     <div class="form-group"><label class="form-label">تاریخ</label><input type="date" class="form-input" id="edit-date"></div>
     <div class="form-group"><label class="form-label">حساب</label><select class="form-select" id="edit-account"></select></div>
     <div class="form-group" id="edit-cat-group" style="display:none;"><label class="form-label">دسته‌بندی</label><div class="chips" id="edit-cats"></div></div>
+    <div class="form-group" id="edit-group-wrap" style="display:none;"><label class="form-label">گروه دریافتی</label><select class="form-select" id="edit-group"><option value="monthly">ماهیانه</option><option value="extra">اضافی</option><option value="other">سایر</option><option value="none">هیچکدام</option></select></div>
     <button class="btn-primary" onclick="submitEditTx()">ذخیره تغییرات</button>
     <button class="btn-secondary" onclick="closeModal('modal-edit-tx')">انصراف</button>
   </div>
