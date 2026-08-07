@@ -422,7 +422,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.8.2</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.8.3</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="document.getElementById('smsImportFile').click()"><span class="si-label">🏦 ورود پیامک بانک (CSV)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
@@ -697,21 +697,17 @@ var J = {
     return t.jy + '-' + String(t.jm).padStart(2,'0');
   },
   toGregorian: function(jy, jm, jd) {
-    // Convert Jalali to Gregorian for date input
-    var jy2 = jy - 979, jm2 = jm - 1, jd2 = jd - 1;
-    var j_day_no = 365*jy2 + Math.floor(jy2/4) - Math.floor(jy2/100) + Math.floor(jy2/400);
-    for (var i=0; i<jm2; i++) j_day_no += [31,31,31,31,31,31,30,30,30,30,30,29][i];
-    j_day_no += jd2;
-    var g_day_no = j_day_no + 79;
-    var gy = 1600 + 400*Math.floor(g_day_no/146097); g_day_no %= 146097;
-    var leap = true;
-    if (g_day_no >= 36525) { g_day_no--; gy += 100*Math.floor(g_day_no/36524); g_day_no %= 36524; if (g_day_no >= 365) g_day_no++; else leap = false; }
-    gy += 4*Math.floor(g_day_no/1461); g_day_no %= 1461;
-    if (g_day_no >= 366) { leap = false; g_day_no--; gy += Math.floor(g_day_no/365); g_day_no %= 365; }
-    var gm_days = [31,leap?29:28,31,30,31,30,31,31,30,31,30,31];
-    var gm = 0, gd = 0;
-    for (var i=0; i<12; i++) { if (g_day_no < gm_days[i]) { gm = i+1; gd = g_day_no+1; break; } g_day_no -= gm_days[i]; }
-    return gy + '-' + String(gm).padStart(2,'0') + '-' + String(gd).padStart(2,'0');
+    // تبدیل شمسی به میلادی بر پایه‌ی toJalali (که در کل اپ استفاده و تست شده)
+    // شروع از ۱ مارس سال میلادی متناظر (قبل از نوروز) و پیش‌روی روزانه تا تطبیق
+    var date = new Date(Date.UTC(jy + 621, 2, 1));
+    for (var i = 0; i < 400; i++) {
+      var j = J.toJalali(date.getUTCFullYear(), date.getUTCMonth()+1, date.getUTCDate());
+      if (j.jy === jy && j.jm === jm && j.jd === jd) {
+        return date.getUTCFullYear() + '-' + String(date.getUTCMonth()+1).padStart(2,'0') + '-' + String(date.getUTCDate()).padStart(2,'0');
+      }
+      date.setUTCDate(date.getUTCDate() + 1);
+    }
+    return null;
   }
 };
 
@@ -1714,8 +1710,11 @@ function populateCatFilter() {
   if (txFilter === 'income') list = DB.incomeCategories || [];
   else if (txFilter === 'expense') list = DB.categories || [];
   else list = (DB.categories || []).concat(DB.incomeCategories || []);
+  // حذف تکراری‌ها بر اساس نام (مثل «نیازمند ویرایش» که هم در هزینه هم درآمد هست)
+  var seen = {};
+  var uniq = list.filter(function(c){ if (seen[c.name]) return false; seen[c.name] = true; return true; });
   sel.innerHTML = '<option value="all">همه دسته‌بندی‌ها</option>' +
-    list.map(function(c){ return '<option value="' + c.id + '">' + c.icon + ' ' + c.name + '</option>'; }).join('');
+    uniq.map(function(c){ return '<option value="' + c.id + '">' + c.icon + ' ' + c.name + '</option>'; }).join('');
   sel.value = 'all';
   sel.style.display = (txFilter === 'fund') ? 'none' : '';
 }
@@ -1925,7 +1924,16 @@ function renderTransactions() {
   if (txFilter === 'fund') txs = txs.filter(function(t){ return t.type==='fund-in'||t.type==='fund-out'; });
   else if (txFilter !== 'all') txs = txs.filter(function(t){ return t.type===txFilter; });
   if (txAccountFilter && txAccountFilter !== 'all') txs = txs.filter(function(t){ return t.accountId===txAccountFilter; });
-  if (txCatFilter && txCatFilter !== 'all') txs = txs.filter(function(t){ return t.catId===txCatFilter || t.incCatId===txCatFilter; });
+  if (txCatFilter && txCatFilter !== 'all') {
+    // نام دسته‌ی انتخاب‌شده را پیدا کن و همه‌ی دسته‌های هم‌نام (هزینه + درآمد) را تطبیق بده
+    var selCat = (DB.categories||[]).concat(DB.incomeCategories||[]).find(function(c){ return c.id===txCatFilter; });
+    var selName = selCat ? selCat.name : null;
+    var matchIds = {};
+    (DB.categories||[]).concat(DB.incomeCategories||[]).forEach(function(c){
+      if (c.id===txCatFilter || (selName && c.name===selName)) matchIds[c.id] = true;
+    });
+    txs = txs.filter(function(t){ return matchIds[t.catId] || matchIds[t.incCatId]; });
+  }
   if (txFilter === 'fund' && txFundFilter && txFundFilter !== 'all') txs = txs.filter(function(t){ return t.fundId===txFundFilter; });
   if (txSearchQuery) {
     var q = txSearchQuery.toLowerCase().replace(/[،,]/g,'');
@@ -2465,6 +2473,7 @@ function openEditTx(id) {
   document.getElementById('edit-tx-type').value = tx.type;
   document.getElementById('edit-amount').value = addCommas(tx.amount);
   document.getElementById('edit-desc').value = tx.desc || '';
+  populateDescSuggestions(tx.type, 'edit-desc-suggestions');
   // Set date
   var d = new Date(tx.date);
   document.getElementById('edit-date').value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -3121,7 +3130,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.8.2';
+var CURRENT_VERSION = '1.8.3';
 
 // ═══════════════════════════════════════
 // SERVICE WORKER — پشتیبانی آفلاین
@@ -3252,7 +3261,7 @@ setTimeout(function() {
     <input type="hidden" id="edit-tx-id">
     <input type="hidden" id="edit-tx-type">
     <div class="form-group"><label class="form-label">مبلغ (ریال)</label><input type="text" inputmode="numeric" class="form-input" id="edit-amount" placeholder="مبلغ" oninput="sanitizeNumberInput(this)"></div>
-    <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="edit-desc" placeholder="توضیح تراکنش"></div>
+    <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="edit-desc" placeholder="توضیح تراکنش" list="edit-desc-suggestions" autocomplete="off"><datalist id="edit-desc-suggestions"></datalist></div>
     <div class="form-group"><label class="form-label">تاریخ</label><input type="date" class="form-input" id="edit-date"></div>
     <div class="form-group"><label class="form-label">حساب</label><select class="form-select" id="edit-account"></select></div>
     <div class="form-group" id="edit-cat-group" style="display:none;"><label class="form-label">دسته‌بندی</label><div class="chips" id="edit-cats"></div></div>
