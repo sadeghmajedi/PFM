@@ -422,7 +422,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.8.3</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.8.4</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="document.getElementById('smsImportFile').click()"><span class="si-label">🏦 ورود پیامک بانک (CSV)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
@@ -2495,6 +2495,12 @@ function openEditTx(id) {
       var chipCls = c.id===tx.catId ? ' sel' : '';
       return '<span class="chip' + chipCls + '" data-id="' + c.id + '" data-gid="edit-cats" onclick="selChip(this,this.dataset.gid)">' + c.icon + ' ' + c.name + '</span>';
     }).join('');
+  } else if (tx.type === 'income') {
+    catGroup.style.display = 'block';
+    document.getElementById('edit-cats').innerHTML = (DB.incomeCategories||[]).map(function(c){
+      var chipCls = c.id===tx.incCatId ? ' sel' : '';
+      return '<span class="chip' + chipCls + '" data-id="' + c.id + '" data-gid="edit-cats" onclick="selChip(this,this.dataset.gid)">' + c.icon + ' ' + c.name + '</span>';
+    }).join('');
   } else {
     catGroup.style.display = 'none';
   }
@@ -2514,28 +2520,60 @@ function submitEditTx() {
   var tx = DB.transactions.find(function(t){ return t.id===id; });
   if (!tx) return;
 
-  // Reverse old balance effect
-  var oldAcc = tx.accountId ? DB.accounts.find(function(a){ return a.id===tx.accountId; }) : null;
-  if (oldAcc) {
-    if (tx.type==='income') oldAcc.balance -= tx.amount;
-    else if (tx.type==='expense') oldAcc.balance += tx.amount;
-  }
+  // نکته: موجودی حساب real-time از getAccountBalance محاسبه می‌شود،
+  // پس acc.balance را مستقیم دستکاری نمی‌کنیم.
 
-  // Apply new balance effect
-  var newAcc = DB.accounts.find(function(a){ return a.id===newAccountId; });
-  if (newAcc) {
-    if (txType==='income') newAcc.balance += newAmount;
-    else if (txType==='expense') newAcc.balance -= newAmount;
-  }
+  // اگر درآمد است و مبلغ یا گروه تغییر کرده، تخصیص صندوق‌ها باید بازسازی شود
+  if (tx.type === 'income') {
+    // ۱. اثر تخصیص‌های قدیمی را برگردان: تراکنش‌های fund-in مرتبط را حذف و totalIn را کم کن
+    (tx.allocations || []).forEach(function(al){
+      var fund = DB.funds.find(function(f){ return f.id===al.fundId; });
+      if (fund) fund.totalIn = Math.max(0, (fund.totalIn||0) - al.amount);
+    });
+    // حذف تراکنش‌های fund-in قدیمی این درآمد — تطبیق دقیق بر اساس allocations (صندوق+مبلغ+تاریخ)
+    var oldDate = tx.date;
+    var oldAllocs = (tx.allocations || []).slice();
+    DB.transactions = DB.transactions.filter(function(t){
+      if (t.type !== 'fund-in') return true;
+      if (t.date !== oldDate) return true;
+      // اگر این fund-in با یکی از تخصیص‌های قدیمی (همان صندوق و مبلغ) مطابقت دارد، حذفش کن
+      var matchIdx = oldAllocs.findIndex(function(al){ return al.fundId===t.fundId && al.amount===t.amount; });
+      if (matchIdx !== -1) { oldAllocs.splice(matchIdx, 1); return false; }
+      return true;
+    });
 
-  // Update tx
-  tx.amount = newAmount;
-  tx.desc = newDesc;
-  tx.accountId = newAccountId;
-  tx.date = newDateISO;
-  if (txType==='expense') {
-    var selCat = document.querySelector('#edit-cats .chip.sel');
-    if (selCat) tx.catId = selCat.dataset.id;
+    // ۲. دسته‌ی درآمد جدید را بخوان
+    var selIncCat = document.querySelector('#edit-cats .chip.sel');
+    if (selIncCat) tx.incCatId = selIncCat.dataset.id;
+
+    // ۳. مقادیر جدید را ثبت کن
+    tx.amount = newAmount;
+    tx.desc = newDesc;
+    tx.accountId = newAccountId;
+    tx.date = newDateISO;
+
+    // ۴. تخصیص صندوق‌ها را بر اساس مبلغ و گروه جدید بازبساز
+    var group = tx.group || 'monthly';
+    tx.allocations = [];
+    DB.funds.forEach(function(f){
+      var rate = f.rates ? (f.rates[group]||0) : ((f.incomeGroup===group||f.incomeGroup==='all') ? (f.pct||0) : 0);
+      if (rate > 0) {
+        var v = Math.round(newAmount * rate / 100);
+        f.totalIn = (f.totalIn||0) + v;
+        tx.allocations.push({fundId:f.id, amount:v});
+        DB.transactions.push({id:'tx'+Date.now()+Math.random(),type:'fund-in',amount:v,fundId:f.id,desc:rate+'٪ از: '+newDesc,date:newDateISO});
+      }
+    });
+  } else {
+    // هزینه یا سایر انواع قابل‌ویرایش
+    tx.amount = newAmount;
+    tx.desc = newDesc;
+    tx.accountId = newAccountId;
+    tx.date = newDateISO;
+    if (txType==='expense') {
+      var selCat = document.querySelector('#edit-cats .chip.sel');
+      if (selCat) tx.catId = selCat.dataset.id;
+    }
   }
 
   saveDB(); closeModal('modal-edit-tx'); renderAll();
@@ -3130,7 +3168,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.8.3';
+var CURRENT_VERSION = '1.8.4';
 
 // ═══════════════════════════════════════
 // SERVICE WORKER — پشتیبانی آفلاین
