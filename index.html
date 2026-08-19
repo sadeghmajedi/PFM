@@ -423,7 +423,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.8.9</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.9.0</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="document.getElementById('smsImportFile').click()"><span class="si-label">🏦 ورود پیامک بانک (CSV)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
@@ -2624,6 +2624,7 @@ function openEditTx(id) {
   // تبدیل به انتقال فقط برای درآمد/هزینه معنا دارد و به حداقل دو حساب نیاز دارد
   convWrap.style.display = ((tx.type==='expense'||tx.type==='income') && DB.accounts.length > 1) ? 'block' : 'none';
   document.getElementById('edit-convert-list').innerHTML = '';
+  setupLoanLink(tx);
   if (tx.type === 'expense') {
     catGroup.style.display = 'block';
     document.getElementById('edit-group-wrap').style.display = 'none';
@@ -3219,6 +3220,148 @@ function mergeIntoTransfer(idA, idB) {
   alert('✓ انتقال ثبت شد و دو تراکنش قبلی حذف شدند.');
 }
 
+// ═══ اتصال یک تراکنش پیامکی به دفتر قروض ═══
+// چهار حالت ممکن، بر اساس جهت پول:
+//   هزینه  → قرض دادم (قرض جدید)      | پرداخت بدهی من (بازپرداخت قرضِ گرفته‌شده)
+//   درآمد  → قرض گرفتم (قرض جدید)     | برگشت قرضی که داده بودم (بازپرداخت قرضِ داده‌شده)
+function setupLoanLink(tx) {
+  var wrap = document.getElementById('edit-loan-wrap');
+  var isExp = (tx.type === 'expense');
+  var isInc = (tx.type === 'income');
+  if (!isExp && !isInc) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+
+  var opts = '<option value="">— این تراکنش قرض نیست —</option>';
+  if (isExp) {
+    opts += '<option value="new-given">🤝 قرض دادم (ثبت قرض جدید)</option>';
+    opts += '<option value="repay-taken">💳 پرداخت بدهی من (بازپرداخت)</option>';
+  } else {
+    opts += '<option value="new-taken">🤝 قرض گرفتم (ثبت قرض جدید)</option>';
+    opts += '<option value="repay-given">💰 برگشت قرضی که داده بودم</option>';
+  }
+  document.getElementById('edit-loan-mode').innerHTML = opts;
+  document.getElementById('edit-loan-mode').value = '';
+  document.getElementById('edit-loan-party').value = '';
+  updateLoanLinkUI();
+}
+
+function updateLoanLinkUI() {
+  var mode = document.getElementById('edit-loan-mode').value;
+  var newBox = document.getElementById('edit-loan-new');
+  var repBox = document.getElementById('edit-loan-repay');
+  var hint   = document.getElementById('edit-loan-hint');
+  var btn    = document.getElementById('edit-loan-btn');
+
+  newBox.style.display = 'none';
+  repBox.style.display = 'none';
+  hint.style.display   = 'none';
+  btn.style.display    = mode ? 'block' : 'none';
+  if (!mode) return;
+
+  if (mode.indexOf('new-') === 0) {
+    newBox.style.display = 'block';
+    hint.style.display = 'block';
+    hint.innerHTML = '💡 یک قرض جدید در دفتر قروض ساخته می‌شود و این تراکنش به آن وصل می‌گردد. از گزارش درآمد/هزینه خارج خواهد شد.';
+    return;
+  }
+
+  // بازپرداخت: فقط قرض‌های بازِ هم‌جهت و هم‌ارز
+  var id = document.getElementById('edit-tx-id').value;
+  var tx = DB.transactions.find(function(t){ return t.id===id; });
+  if (!tx) return;
+  var acc = DB.accounts.find(function(a){ return a.id===(document.getElementById('edit-account').value || tx.accountId); });
+  var cur = acc ? acc.currency : 'IRR';
+  var wantType = (mode === 'repay-taken') ? 'taken' : 'given';
+
+  var open = (DB.loans||[]).filter(function(l){
+    return l.type === wantType && l.status !== 'settled' && (l.currency||'IRR') === cur && l.remaining > 0;
+  });
+
+  repBox.style.display = 'block';
+  hint.style.display = 'block';
+  if (!open.length) {
+    document.getElementById('edit-loan-target').innerHTML = '<option value="">— قرض بازی یافت نشد —</option>';
+    hint.innerHTML = '⚠️ هیچ قرض بازِ هم‌ارز (' + curLabel(cur) + ') از این نوع در دفتر قروض نیست. اول قرض را در داشبورد ثبت کنید.';
+    btn.style.display = 'none';
+    return;
+  }
+  document.getElementById('edit-loan-target').innerHTML = open.map(function(l){
+    return '<option value="' + l.id + '">' + l.counterparty + ' — باقی‌مانده: ' +
+           toCurrency(l.remaining, l.currency||'IRR') + ' ' + curLabel(l.currency||'IRR') + '</option>';
+  }).join('');
+  hint.innerHTML = '💡 مبلغ این تراکنش به‌عنوان بازپرداخت ثبت می‌شود و از باقی‌مانده‌ی قرض کم می‌گردد.';
+}
+
+function applyLoanLink() {
+  var mode = document.getElementById('edit-loan-mode').value;
+  if (!mode) return;
+  var id = document.getElementById('edit-tx-id').value;
+  var tx = DB.transactions.find(function(t){ return t.id===id; });
+  if (!tx) return;
+  var acc = DB.accounts.find(function(a){ return a.id===tx.accountId; });
+  var cur = acc ? acc.currency : 'IRR';
+  // مبلغ را از فیلد زنده می‌خوانیم تا اگر کاربر آن را اصلاح کرده باشد، همان لحاظ شود
+  var amount = getNumericValue('edit-amount') || tx.amount;
+  if (!amount || amount <= 0) { alert('مبلغ معتبر نیست'); return; }
+  tx.amount = amount;
+  var newDesc = document.getElementById('edit-desc').value.trim();
+  var newAccId = document.getElementById('edit-account').value;
+  if (newAccId) { tx.accountId = newAccId; acc = DB.accounts.find(function(a){ return a.id===newAccId; }); cur = acc ? acc.currency : cur; }
+  var dv = document.getElementById('edit-date').value;
+  if (dv) tx.date = dv + 'T' + (new Date(tx.date).toTimeString().split(' ')[0] || '00:00:00');
+
+  // ─── ثبت قرض جدید ───
+  if (mode.indexOf('new-') === 0) {
+    var party = document.getElementById('edit-loan-party').value.trim();
+    if (!party) { alert('نام طرف حساب را وارد کنید'); return; }
+    var lType = (mode === 'new-given') ? 'given' : 'taken';
+    if (!confirm('این تراکنش به یک قرض جدید تبدیل شود؟\n\n' +
+        (lType==='given' ? 'قرض به ' : 'قرض از ') + party + '\n' +
+        'مبلغ: ' + toCurrency(amount, cur) + ' ' + curLabel(cur))) return;
+
+    var loanId = 'loan' + Date.now();
+    DB.loans.push({
+      id: loanId, type: lType, counterparty: party,
+      principal: amount, remaining: amount, currency: cur,
+      accountId: tx.accountId, date: tx.date,
+      status: 'open', note: tx.desc || '', repayments: []
+    });
+    tx.type = (lType === 'given') ? 'loan-given' : 'loan-taken';
+    tx.loanId = loanId;
+    tx.desc = (lType === 'given' ? 'قرض به ' : 'قرض از ') + party;
+    delete tx.catId; delete tx.incCatId; delete tx.fundId; delete tx.group;
+    saveDB(); closeModal('modal-edit-tx'); renderAll();
+    alert('✓ قرض جدید در دفتر قروض ثبت شد.');
+    return;
+  }
+
+  // ─── بازپرداخت یک قرض موجود ───
+  var loanId2 = document.getElementById('edit-loan-target').value;
+  var loan = (DB.loans||[]).find(function(l){ return l.id===loanId2; });
+  if (!loan) { alert('قرض انتخاب نشده است'); return; }
+  if (amount > loan.remaining + 0.001) {
+    alert('مبلغ این تراکنش از باقی‌مانده‌ی قرض بیشتر است.\nباقی‌مانده: ' +
+      toCurrency(loan.remaining, loan.currency||'IRR') + ' ' + curLabel(loan.currency||'IRR') +
+      '\n\nاگر بخشی از آن بازپرداخت است، اول مبلغ تراکنش را اصلاح کنید.');
+    return;
+  }
+  var isGiven = (loan.type === 'given');
+  if (!confirm('این تراکنش به‌عنوان بازپرداخت ثبت شود؟\n\n' +
+      loan.counterparty + '\nمبلغ: ' + toCurrency(amount, cur) + ' ' + curLabel(cur) +
+      '\nباقی‌مانده پس از ثبت: ' + toCurrency(loan.remaining - amount, cur) + ' ' + curLabel(cur))) return;
+
+  loan.remaining = Math.round((loan.remaining - amount) * 100) / 100;
+  loan.repayments.push({ date: tx.date, amount: amount, accountId: tx.accountId });
+  if (loan.remaining <= 0.001) { loan.remaining = 0; loan.status = 'settled'; }
+
+  tx.type = isGiven ? 'loan-collected' : 'loan-repaid';
+  tx.loanId = loan.id;
+  tx.desc = (isGiven ? 'بازپرداخت از ' : 'پرداخت بدهی به ') + loan.counterparty;
+  delete tx.catId; delete tx.incCatId; delete tx.fundId; delete tx.group;
+  saveDB(); closeModal('modal-edit-tx'); renderAll();
+  alert('✓ بازپرداخت ثبت شد.' + (loan.status==='settled' ? '\nاین قرض تسویه شد. ✅' : ''));
+}
+
 function importBankSMS(e) {
   var file = e.target.files[0]; if (!file) return;
   var reader = new FileReader();
@@ -3624,7 +3767,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.8.9';
+var CURRENT_VERSION = '1.9.0';
 
 // ═══════════════════════════════════════
 // SERVICE WORKER — پشتیبانی آفلاین
@@ -3759,7 +3902,7 @@ setTimeout(function() {
     <div class="form-group"><label class="form-label">مبلغ (ریال)</label><input type="text" inputmode="numeric" class="form-input" id="edit-amount" placeholder="مبلغ" oninput="sanitizeNumberInput(this)"></div>
     <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="edit-desc" placeholder="توضیح تراکنش" list="edit-desc-suggestions" autocomplete="off"><datalist id="edit-desc-suggestions"></datalist></div>
     <div class="form-group"><label class="form-label">تاریخ</label><input type="date" class="form-input" id="edit-date"></div>
-    <div class="form-group"><label class="form-label">حساب</label><select class="form-select" id="edit-account"></select></div>
+    <div class="form-group"><label class="form-label">حساب</label><select class="form-select" id="edit-account" onchange="updateLoanLinkUI()"></select></div>
     <div class="form-group" id="edit-cat-group" style="display:none;"><label class="form-label">دسته‌بندی</label><div class="chips" id="edit-cats"></div></div>
     <div class="form-group" id="edit-fund-wrap" style="display:none;"><label class="form-label">کسر از صندوق (اختیاری)</label><select class="form-select" id="edit-tx-fund"></select><div class="hint-box" style="margin-top:6px;">💡 اگر صندوقی انتخاب شود، این مبلغ علاوه بر حساب، از موجودی آن صندوق هم کم می‌شود. دسته‌بندی هزینه دست‌نخورده می‌ماند.</div></div>
     <div class="form-group" id="edit-group-wrap" style="display:none;"><label class="form-label">گروه دریافتی</label><select class="form-select" id="edit-group"><option value="monthly">ماهیانه</option><option value="extra">اضافی</option><option value="other">سایر</option><option value="none">هیچکدام</option></select></div>
@@ -3767,6 +3910,20 @@ setTimeout(function() {
       <label class="form-label">این تراکنش در واقع انتقال بین‌حسابی است؟</label>
       <button class="btn-secondary" onclick="findTransferCandidates()" style="margin-top:0;">⇔️ پیدا کردن تراکنش متناظر</button>
       <div id="edit-convert-list" style="margin-top:8px;"></div>
+    </div>
+    <div class="form-group" id="edit-loan-wrap" style="display:none;">
+      <label class="form-label">اتصال به دفتر قروض</label>
+      <select class="form-select" id="edit-loan-mode" onchange="updateLoanLinkUI()">
+        <option value="">— این تراکنش قرض نیست —</option>
+      </select>
+      <div id="edit-loan-new" style="display:none;margin-top:8px;">
+        <input type="text" class="form-input" id="edit-loan-party" placeholder="نام شخص یا شرکت">
+      </div>
+      <div id="edit-loan-repay" style="display:none;margin-top:8px;">
+        <select class="form-select" id="edit-loan-target"></select>
+      </div>
+      <div id="edit-loan-hint" class="hint-box" style="display:none;margin-top:8px;"></div>
+      <button class="btn-secondary" id="edit-loan-btn" onclick="applyLoanLink()" style="display:none;margin-top:8px;">🤝 ثبت در دفتر قروض</button>
     </div>
     <button class="btn-primary" onclick="submitEditTx()">ذخیره تغییرات</button>
     <button class="btn-secondary" onclick="closeModal('modal-edit-tx')">انصراف</button>
