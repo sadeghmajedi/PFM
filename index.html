@@ -423,7 +423,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.9.0</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.9.1</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="document.getElementById('smsImportFile').click()"><span class="si-label">🏦 ورود پیامک بانک (CSV)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
@@ -1511,6 +1511,27 @@ function renderLoans() {
             '<button data-id="' + l.id + '" data-lact="del" style="width:30px;height:30px;border-radius:9px;border:1px solid rgba(255,80,80,0.3);background:rgba(255,80,80,0.1);cursor:pointer;font-size:13px;">🗑️</button>' +
           '</div>';
 
+      // فهرست بازپرداخت‌ها با امکان حذف تک‌تک
+      var repHtml = '';
+      var reps = (l.repayments || []).slice().sort(function(a,b){ return new Date(b.date) - new Date(a.date); });
+      if (reps.length) {
+        repHtml = '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed rgba(0,0,0,0.08);">' +
+          '<div style="font-size:10px;color:var(--text-sub);margin-bottom:5px;">' + (isGiven?'دریافت‌ها':'پرداخت‌ها') + ' (' + toFa(reps.length) + ')</div>' +
+          reps.map(function(rp){
+            var rAcc = DB.accounts.find(function(a){ return a.id===rp.accountId; });
+            return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 0;">' +
+              '<div style="min-width:0;font-size:11px;color:var(--text-mid);">' +
+                J.format(rp.date) + (rAcc ? ' • ' + rAcc.name : '') +
+              '</div>' +
+              '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">' +
+                '<span style="font-size:11px;font-weight:700;direction:ltr;">' + toCurrency(rp.amount, l.currency||'IRR') + '</span>' +
+                '<button data-id="' + l.id + '" data-rdate="' + rp.date + '" data-lact="delrep" style="width:22px;height:22px;border-radius:6px;border:1px solid rgba(255,80,80,0.3);background:rgba(255,80,80,0.1);cursor:pointer;font-size:10px;line-height:1;">🗑️</button>' +
+              '</div>' +
+            '</div>';
+          }).join('') +
+        '</div>';
+      }
+
       loanRows += '<div style="padding:12px 14px;border-top:1px solid rgba(0,0,0,0.05);' + (settled?'opacity:0.65;':'') + '">' +
         '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:7px;">' +
           '<div style="min-width:0;">' +
@@ -1526,6 +1547,7 @@ function renderLoans() {
         '</div>' +
         '<div style="height:6px;background:rgba(0,0,0,0.06);border-radius:4px;overflow:hidden;"><div style="height:100%;width:' + pct.toFixed(0) + '%;background:' + barColor + ';"></div></div>' +
         '<div style="font-size:10px;color:var(--text-sub);margin-top:5px;">' + J.format(l.date) + (l.note ? ' • ' + l.note : '') + '</div>' +
+        repHtml +
       '</div>';
     });
     body = (rows ? '<div style="padding:12px 14px 0;">' + rows + '</div>' : '') + loanRows;
@@ -1538,7 +1560,41 @@ function renderLoans() {
     if (btn.dataset.lact === 'add') openLoanModal();
     else if (btn.dataset.lact === 'repay') openRepayment(btn.dataset.id);
     else if (btn.dataset.lact === 'del') deleteLoan(btn.dataset.id);
+    else if (btn.dataset.lact === 'delrep') deleteRepayment(btn.dataset.id, btn.dataset.rdate);
   };
+}
+
+// حذف یک بازپرداخت: تراکنش مربوطه، رکورد بازپرداخت، و برگرداندن باقی‌مانده و وضعیت قرض
+function deleteRepayment(loanId, repDate) {
+  var loan = (DB.loans||[]).find(function(l){ return l.id===loanId; });
+  if (!loan) return;
+  var idx = (loan.repayments||[]).findIndex(function(r){ return r.date === repDate; });
+  if (idx === -1) return;
+  var rep = loan.repayments[idx];
+  var cur = loan.currency || 'IRR';
+  var isGiven = loan.type === 'given';
+
+  if (!confirm('این ' + (isGiven?'دریافت':'پرداخت') + ' حذف شود؟\n\n' +
+      toCurrency(rep.amount, cur) + ' ' + curLabel(cur) + ' • ' + J.format(rep.date) + '\n' +
+      'باقی‌مانده پس از حذف: ' + toCurrency(loan.remaining + rep.amount, cur) + ' ' + curLabel(cur) +
+      '\n\nتراکنش مربوطه هم از فهرست تراکنش‌ها حذف می‌شود.')) return;
+
+  // تراکنش متناظر: هم‌قرض، هم‌تاریخ، هم‌مبلغ و از نوع بازپرداخت
+  var repTypes = isGiven ? ['loan-collected'] : ['loan-repaid'];
+  var txIdx = DB.transactions.findIndex(function(t){
+    return t.loanId === loanId && repTypes.indexOf(t.type) !== -1 &&
+           t.date === rep.date && Math.round(t.amount) === Math.round(rep.amount);
+  });
+  if (txIdx !== -1) DB.transactions.splice(txIdx, 1);
+
+  loan.repayments.splice(idx, 1);
+  loan.remaining = Math.round((loan.remaining + rep.amount) * 100) / 100;
+  if (loan.remaining > 0.001) loan.status = 'open';   // اگر تسویه شده بود، دوباره باز می‌شود
+
+  saveDB(); renderAll();
+  if (txIdx === -1) {
+    alert('✓ بازپرداخت حذف شد.\n⚠️ تراکنش متناظری در فهرست پیدا نشد (احتمالاً قبلاً حذف شده بود).');
+  }
 }
 
 // ═══════════════════════════════════════
@@ -3767,7 +3823,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.9.0';
+var CURRENT_VERSION = '1.9.1';
 
 // ═══════════════════════════════════════
 // SERVICE WORKER — پشتیبانی آفلاین
