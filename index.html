@@ -397,6 +397,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">روند درآمد و هزینه ماهانه <span id="trendYearLabel" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></div><div id="trendChart"></div></div></div>
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">هزینه بر اساس دسته‌بندی</div><div id="catChart"></div></div></div>
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">سهم هزینه‌ها از کل سال <span id="pieYearLabel" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></div><div id="expensePie"></div></div></div>
+  <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">خرج‌کرد صندوق‌ها</div><div id="fundSpendChart"></div></div></div>
 </div>
 
 <!-- PAGE: SETTINGS -->
@@ -422,7 +423,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.8.8</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.8.9</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="document.getElementById('smsImportFile').click()"><span class="si-label">🏦 ورود پیامک بانک (CSV)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
@@ -528,9 +529,10 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="form-group"><label class="form-label">تاریخ</label><input type="date" class="form-input" id="fund-pay-date"></div>
     <div class="form-group"><label class="form-label">پرداخت از حساب</label><select class="form-select" id="fund-pay-account"><option value="">-- انتخاب حساب --</option></select></div>
     <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="fund-pay-desc" placeholder="مثال: زکات ماه فروردین" list="fund-pay-desc-suggestions" autocomplete="off"><datalist id="fund-pay-desc-suggestions"></datalist></div>
+    <div class="form-group"><label class="form-label">دسته‌بندی هزینه</label><div class="chips" id="fund-pay-cats"></div></div>
     <input type="hidden" id="fund-pay-id">
     <div class="hint-box">
-      💡 این مبلغ هم از حساب بانکی انتخابی کسر می‌شود و هم از موجودی صندوق.
+      💡 این مبلغ هم از حساب بانکی انتخابی کسر می‌شود و هم از موجودی صندوق. دسته‌بندی تعیین می‌کند این هزینه در گزارش‌ها زیر کدام عنوان بیاید.
     </div>
     <button class="btn-primary" onclick="submitFundPayment()">ثبت پرداخت</button>
     <button class="btn-secondary" onclick="closeModal('modal-fund-pay')">انصراف</button>
@@ -1240,6 +1242,9 @@ function openFundPayment(fundId) {
     DB.accounts.filter(function(a){ return a.currency==='IRR'; }).map(function(a){
       return '<option value="' + a.id + '">' + a.name + '</option>';
     }).join('');
+  document.getElementById('fund-pay-cats').innerHTML = DB.categories.map(function(c){
+    return '<span class="chip" data-id="' + c.id + '" data-gid="fund-pay-cats" onclick="selChip(this,this.dataset.gid)">' + c.icon + ' ' + c.name + '</span>';
+  }).join('');
   openModal('modal-fund-pay');
 }
 function submitFundPayment() {
@@ -1264,11 +1269,15 @@ function submitFundPayment() {
   // و getAccountBalance همین تراکنش را (چون accountId دارد) برای کسر از حساب بانکی لحاظ می‌کند.
   // قبلاً این تابع دو تراکنش (expense + fund-out) ثبت می‌کرد که باعث کسر دوبرابر و نمایش تکراری در لیست می‌شد.
   f.totalOut = (f.totalOut||0) + amount;
-  DB.transactions.push({
+  var selFpCat = document.querySelector('#fund-pay-cats .chip.sel');
+  var fpTx = {
     id:'tx'+Date.now(), type:'fund-out', amount:amount,
     accountId:accountId, fundId:fundId,
     desc:desc, date:dateISO
-  });
+  };
+  // دسته‌بندی اختیاری — اگر تعیین شود، در گزارش زیر همان دسته می‌نشیند نه زیر نام صندوق
+  if (selFpCat) fpTx.catId = selFpCat.dataset.id;
+  DB.transactions.push(fpTx);
   saveDB(); closeModal('modal-fund-pay'); renderAll();
 }
 
@@ -2107,7 +2116,7 @@ function renderReports() {
   document.getElementById('rep-income').textContent = toFa(addCommas(Math.round(income)));
   document.getElementById('rep-expense').textContent = toFa(addCommas(Math.round(expense)));
 
-  // Category chart — expenses + fund-out grouped
+  // Category chart — هزینه‌ها و پرداخت‌های صندوق، همه بر اساس دسته‌بندی
   var catTotals = {};
   filteredTxs.filter(function(t){ return t.type==='expense'; }).forEach(function(t) {
     var cat = DB.categories.find(function(c){ return c.id===t.catId; }) || {name:'سایر',icon:'⭐'};
@@ -2117,8 +2126,15 @@ function renderReports() {
   filteredTxs.filter(function(t){
     return t.type === 'fund-out';
   }).forEach(function(t) {
-    var fund = DB.funds.find(function(f){ return f.id===t.fundId; });
-    var k = (fund ? fund.icon : '💰') + ' پرداخت: ' + (fund ? fund.name : 'صندوق');
+    // پرداخت صندوقِ دسته‌دار زیر همان دسته می‌نشیند؛
+    // پرداخت‌های قدیمیِ بدون دسته مثل قبل زیر نام صندوق می‌مانند.
+    var cat = t.catId ? DB.categories.find(function(c){ return c.id===t.catId; }) : null;
+    var k;
+    if (cat) { k = cat.icon + ' ' + cat.name; }
+    else {
+      var fund = DB.funds.find(function(f){ return f.id===t.fundId; });
+      k = (fund ? fund.icon : '💰') + ' پرداخت: ' + (fund ? fund.name : 'صندوق');
+    }
     catTotals[k] = (catTotals[k]||0) + t.amount;
   });
   var max = Math.max.apply(null, Object.values(catTotals).concat([1]));
@@ -2135,6 +2151,34 @@ function renderReports() {
   renderAvgStats(selYear);
   renderTrendChart(selYear);
   renderExpensePie(selYear);
+  renderFundSpend(filteredTxs);
+}
+
+// خرج‌کرد صندوق‌ها — دید مکمل گزارش دسته‌بندی.
+// هر تراکنشی که به صندوقی وصل است اینجا می‌آید (چه fund-out، چه هزینه‌ی دارای fundId).
+// این جدول جدا از نمودار دسته‌بندی است و چیزی را دوباره نمی‌شمارد.
+function renderFundSpend(filteredTxs) {
+  var el = document.getElementById('fundSpendChart');
+  if (!el) return;
+  var totals = {};
+  filteredTxs.forEach(function(t){
+    if (!t.fundId) return;
+    if (t.type !== 'fund-out' && t.type !== 'expense') return;
+    totals[t.fundId] = (totals[t.fundId]||0) + t.amount;
+  });
+  var entries = Object.entries(totals).sort(function(a,b){ return b[1]-a[1]; });
+  if (!entries.length) {
+    el.innerHTML = '<div class="empty"><p>در این بازه از صندوقی خرج نشده</p></div>';
+    return;
+  }
+  var max = Math.max.apply(null, entries.map(function(e){ return e[1]; }).concat([1]));
+  el.innerHTML = entries.map(function(kv){
+    var f = DB.funds.find(function(x){ return x.id===kv[0]; });
+    var label = (f ? f.icon + ' ' + f.name : '💰 صندوق حذف‌شده');
+    return '<div class="bar-row"><div class="bar-label">' + label + '</div>' +
+           '<div class="bar-wrap"><div class="bar-fill" style="width:' + (kv[1]/max*100).toFixed(1) + '%"></div></div>' +
+           '<div class="bar-val">' + toFa(addCommas(Math.round(kv[1]))) + '</div></div>';
+  }).join('');
 }
 
 // میانگین‌های درآمد/هزینه بر اساس کل سال انتخاب‌شده
@@ -2322,8 +2366,13 @@ function renderExpensePie(selYear) {
     totals[k] = (totals[k]||0) + t.amount;
   });
   yearTxs.filter(function(t){ return t.type==='fund-out'; }).forEach(function(t) {
-    var fund = DB.funds.find(function(f){ return f.id===t.fundId; });
-    var k = (fund ? fund.icon : '💰') + ' پرداخت: ' + (fund ? fund.name : 'صندوق');
+    var cat = t.catId ? DB.categories.find(function(c){ return c.id===t.catId; }) : null;
+    var k;
+    if (cat) { k = cat.icon + ' ' + cat.name; }
+    else {
+      var fund = DB.funds.find(function(f){ return f.id===t.fundId; });
+      k = (fund ? fund.icon : '💰') + ' پرداخت: ' + (fund ? fund.name : 'صندوق');
+    }
     totals[k] = (totals[k]||0) + t.amount;
   });
 
@@ -2598,6 +2647,14 @@ function openEditTx(id) {
     // نمایش و مقداردهی گروه دریافتی
     document.getElementById('edit-group-wrap').style.display = 'block';
     document.getElementById('edit-group').value = tx.group || 'monthly';
+  } else if (tx.type === 'fund-out') {
+    // پرداخت از صندوق هم دسته‌بندی می‌پذیرد تا در گزارش زیر دسته‌ی خودش بنشیند
+    catGroup.style.display = 'block';
+    document.getElementById('edit-group-wrap').style.display = 'none';
+    document.getElementById('edit-cats').innerHTML = DB.categories.map(function(c){
+      var chipCls = c.id===tx.catId ? ' sel' : '';
+      return '<span class="chip' + chipCls + '" data-id="' + c.id + '" data-gid="edit-cats" onclick="selChip(this,this.dataset.gid)">' + c.icon + ' ' + c.name + '</span>';
+    }).join('');
   } else {
     catGroup.style.display = 'none';
     document.getElementById('edit-group-wrap').style.display = 'none';
@@ -2678,6 +2735,10 @@ function submitEditTx() {
       // صندوق تخصیصی (اختیاری) — اگر انتخاب شود از موجودی صندوق هم کم می‌شود
       var selFund = document.getElementById('edit-tx-fund').value;
       if (selFund) tx.fundId = selFund; else delete tx.fundId;
+    }
+    if (txType==='fund-out') {
+      var selFoCat = document.querySelector('#edit-cats .chip.sel');
+      if (selFoCat) tx.catId = selFoCat.dataset.id;
     }
   }
 
@@ -3563,7 +3624,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.8.8';
+var CURRENT_VERSION = '1.8.9';
 
 // ═══════════════════════════════════════
 // SERVICE WORKER — پشتیبانی آفلاین
