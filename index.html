@@ -423,7 +423,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.9.1</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.9.2</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="document.getElementById('smsImportFile').click()"><span class="si-label">🏦 ورود پیامک بانک (CSV)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
@@ -578,6 +578,14 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="modal-handle"></div>
     <div class="modal-title">🏦 بررسی پیامک‌های بانک</div>
     <div id="sms-import-summary" style="font-size:12px;color:var(--text-sub);margin-bottom:10px;"></div>
+    <div style="background:rgba(129,216,208,0.1);border:1px solid rgba(129,216,208,0.3);border-radius:10px;padding:10px;margin-bottom:10px;">
+      <label class="form-label" style="margin-bottom:6px;">این پیامک‌ها چه هستند؟</label>
+      <select class="form-select" id="sms-import-mode" onchange="renderSMSImportReview()">
+        <option value="new">🆕 تراکنش‌های جدید — موجودی حساب را تغییر دهند</option>
+        <option value="history">📆 ثبت تاریخچه‌ی گذشته — موجودی فعلی دست‌نخورده بماند</option>
+      </select>
+      <div id="sms-mode-hint" style="font-size:10px;color:var(--text-sub);margin-top:6px;line-height:1.7;"></div>
+    </div>
     <div id="sms-import-list" style="max-height:50vh;overflow-y:auto;margin-bottom:12px;"></div>
     <button class="btn-primary" id="sms-import-confirm" onclick="confirmBankSMSImport()">ثبت تراکنش‌های تأییدشده</button>
     <button class="btn-secondary" onclick="closeModal('modal-sms-import')">انصراف</button>
@@ -3418,6 +3426,47 @@ function applyLoanLink() {
   alert('✓ بازپرداخت ثبت شد.' + (loan.status==='settled' ? '\nاین قرض تسویه شد. ✅' : ''));
 }
 
+function getSMSImportMode() {
+  var el = document.getElementById('sms-import-mode');
+  return el ? el.value : 'new';
+}
+
+// مجموع اثر تراکنش‌ها روی یک حساب، از یک تاریخ به بعد (بدون احتساب موجودی اولیه)
+function sumTxFrom(accId, fromDateStr) {
+  var acc = DB.accounts.find(function(a){ return a.id===accId; });
+  if (!acc) return 0;
+  var savedSeed = acc.seedBalance, savedDate = acc.seedDate;
+  acc.seedBalance = 0; acc.seedDate = fromDateStr;
+  var sum = getAccountBalance(accId);
+  acc.seedBalance = savedSeed; acc.seedDate = savedDate;
+  return sum;
+}
+
+// بازمحاسبه‌ی مبنا پس از ورود تراکنش‌های گذشته.
+// اصل: موجودی فعلی حقیقتِ مرجع است (با بانک تطبیق دارد) و نباید تکان بخورد.
+//   موجودی_اولیه_جدید = موجودی_فعلی_قبل_از_ورود − مجموع تراکنش‌ها از تاریخ مبنای جدید
+// این فرمول از «مانده»ی داخل پیامک استفاده نمی‌کند، بنابراین جا افتادن پیامک‌های
+// زیر ۳۰۰ هزار هیچ انحرافی در موجودی فعلی ایجاد نمی‌کند.
+function computeReanchor(balancesBefore, earliestByAcc) {
+  var changes = [];
+  Object.keys(balancesBefore).forEach(function(accId){
+    var acc = DB.accounts.find(function(a){ return a.id===accId; });
+    if (!acc) return;
+    var oldDate = acc.seedDate || todayGregorian();
+    var earliest = earliestByAcc[accId];
+    var newDate = (earliest && earliest < oldDate) ? earliest : oldDate;
+    var newSeed = Math.round(balancesBefore[accId] - sumTxFrom(accId, newDate));
+    if (newSeed === Math.round(acc.seedBalance) && newDate === oldDate) return;
+    changes.push({
+      accId: accId, name: acc.name,
+      oldSeed: acc.seedBalance, newSeed: newSeed,
+      oldDate: oldDate, newDate: newDate,
+      currency: acc.currency
+    });
+  });
+  return changes;
+}
+
 function importBankSMS(e) {
   var file = e.target.files[0]; if (!file) return;
   var reader = new FileReader();
@@ -3495,6 +3544,16 @@ function processSMSContent(content) {
 
   detectTransferPairs(pendingSMSRows);
   markDuplicateTransfers(pendingSMSRows);
+  // پیش‌فرض هوشمند: اگر تازه‌ترین پیامک هم بیش از ۳ روز قدیمی است، این یک ثبت تاریخچه است
+  var newest = 0;
+  pendingSMSRows.forEach(function(r){
+    if (!r.dateOK) return;
+    var t = new Date(r.dateISO).getTime();
+    if (!isNaN(t) && t > newest) newest = t;
+  });
+  var ageDays = newest ? (Date.now() - newest) / 86400000 : 0;
+  var modeEl = document.getElementById('sms-import-mode');
+  if (modeEl) modeEl.value = (ageDays > 3) ? 'history' : 'new';
   renderSMSImportReview();
   openModal('modal-sms-import');
 }
@@ -3520,6 +3579,13 @@ function markDuplicateTransfers(rows) {
 function renderSMSImportReview() {
   var listEl = document.getElementById('sms-import-list');
   var sumEl = document.getElementById('sms-import-summary');
+  var isHistory = getSMSImportMode() === 'history';
+  var hintEl = document.getElementById('sms-mode-hint');
+  if (hintEl) {
+    hintEl.innerHTML = isHistory
+      ? '📆 موجودی اولیه و تاریخ مبنای هر حساب خودکار بازمحاسبه می‌شوند تا موجودی فعلی <b>دقیقاً</b> همان بماند. قبل از ثبت، تغییرات را می‌بینی.'
+      : '🆕 این تراکنش‌ها به موجودی فعلی اعمال می‌شوند — یعنی موجودی حساب کم یا زیاد خواهد شد.';
+  }
   var matched = pendingSMSRows.filter(function(r){ return r.account; }).length;
   var dups = pendingSMSRows.filter(function(r){ return r.dup; }).length;
   var unmatched = pendingSMSRows.filter(function(r){ return !r.account; }).length;
@@ -3572,7 +3638,9 @@ function renderSMSImportReview() {
 
     // اعتبارسنجی مانده
     var validationHtml = '';
-    if (r.preSeed) {
+    if (isHistory) {
+      validationHtml = '';   // در حالت تاریخچه، مبنا بازمحاسبه می‌شود و مقایسه‌ی مانده بی‌معناست
+    } else if (r.preSeed) {
       validationHtml = '<div style="font-size:10px;color:#9a7d0a;margin-top:3px;">📆 قدیمی‌تر از تاریخ مبنای حساب — فقط در گزارش‌ها ثبت می‌شود، موجودی تغییر نمی‌کند</div>';
     } else if (r.account && r.balance != null && r.dateOK) {
       var computed = computeBalanceUpTo(r.account.id, r.dateISO, r.idx);
@@ -3681,6 +3749,25 @@ function confirmBankSMSImport() {
   });
   if (!toAdd.length && !pairsToAdd.length) { alert('هیچ تراکنشی برای ثبت انتخاب نشده'); return; }
 
+  var isHistory = getSMSImportMode() === 'history';
+  // در حالت تاریخچه، موجودی فعلیِ هر حساب درگیر را قبل از ورود ثبت می‌کنیم
+  // تا بعد از افزودن تراکنش‌ها، مبنا را طوری بازتنظیم کنیم که همین عدد حفظ شود.
+  var balancesBefore = {}, earliestByAcc = {};
+  function touchAcc(accId, dateISO) {
+    if (!accId) return;
+    if (balancesBefore[accId] === undefined) balancesBefore[accId] = getAccountBalance(accId);
+    var d = (dateISO||'').split('T')[0];
+    if (d && (!earliestByAcc[accId] || d < earliestByAcc[accId])) earliestByAcc[accId] = d;
+  }
+  if (isHistory) {
+    toAdd.forEach(function(r){ touchAcc(r.account.id, r.dateISO); });
+    pairsToAdd.forEach(function(r){
+      touchAcc(r.pair.fromAcc.id, r.pair.dateISO);
+      touchAcc(r.pair.toAcc.id, r.pair.dateISO);
+    });
+  }
+  var txCountBefore = DB.transactions.length;
+
   var reviewCatExp = 'cat_review';
   var reviewCatInc = 'ic_review';
   var added = 0;
@@ -3718,6 +3805,36 @@ function confirmBankSMSImport() {
 
   var preSeedCount = toAdd.filter(function(r){ return r.preSeed; }).length;
 
+  // ─── بازتنظیم مبنا در حالت تاریخچه ───
+  var reanchorMsg = '';
+  if (isHistory) {
+    var changes = computeReanchor(balancesBefore, earliestByAcc);
+    if (changes.length) {
+      var lines = changes.map(function(c){
+        var cur = c.currency || 'IRR';
+        var dateLine = (c.newDate !== c.oldDate)
+          ? '\n   تاریخ مبنا: ' + J.format(c.oldDate) + ' ← ' + J.format(c.newDate)
+          : '';
+        return '• ' + c.name +
+          '\n   موجودی اولیه: ' + toCurrency(c.oldSeed, cur) + ' ← ' + toCurrency(c.newSeed, cur) + dateLine;
+      }).join('\n');
+      if (!confirm('برای اینکه موجودی فعلی حساب‌ها دست‌نخورده بماند، مبنای این حساب‌ها بازتنظیم می‌شود:\n\n' +
+          lines + '\n\nادامه می‌دهید؟')) {
+        // برگرداندن تراکنش‌های افزوده‌شده
+        DB.transactions = DB.transactions.slice(0, txCountBefore);
+        return;
+      }
+      changes.forEach(function(c){
+        var acc = DB.accounts.find(function(a){ return a.id===c.accId; });
+        if (!acc) return;
+        acc.seedBalance = c.newSeed;
+        acc.balance = c.newSeed;
+        acc.seedDate = c.newDate;
+      });
+      reanchorMsg = '📆 مبنای ' + toFa(changes.length) + ' حساب بازتنظیم شد — موجودی فعلی تغییر نکرد.\n';
+    }
+  }
+
   saveDB();
   closeModal('modal-sms-import');
   var pasteBox = document.getElementById('smsPasteBox');
@@ -3725,7 +3842,8 @@ function confirmBankSMSImport() {
   renderAll();
   alert('✓ ' + toFa(added) + ' تراکنش در دسته‌ی «نیازمند ویرایش» ثبت شد.\n' +
     (transfersAdded ? ('⇔️ ' + toFa(transfersAdded) + ' انتقال بین‌حسابی ثبت شد (از گزارش درآمد/هزینه مستثنی است).\n') : '') +
-    (preSeedCount ? ('📆 ' + toFa(preSeedCount) + ' مورد قدیمی‌تر از تاریخ مبنا بود و موجودی را تغییر نداد.\n') : '') +
+    reanchorMsg +
+    (!isHistory && preSeedCount ? ('📆 ' + toFa(preSeedCount) + ' مورد قدیمی‌تر از تاریخ مبنا بود و موجودی را تغییر نداد.\n') : '') +
     'می‌توانید از صفحه تراکنش‌ها دسته‌ی درست را برایشان انتخاب کنید.');
   pendingSMSRows = [];
 }
@@ -3823,7 +3941,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.9.1';
+var CURRENT_VERSION = '1.9.2';
 
 // ═══════════════════════════════════════
 // SERVICE WORKER — پشتیبانی آفلاین
