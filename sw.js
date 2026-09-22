@@ -1,5 +1,5 @@
 // PFM Service Worker — پشتیبانی آفلاین
-var CACHE_NAME = 'pfm-cache-v1.9.3';
+var CACHE_NAME = 'pfm-cache-v1.9.4';
 var CACHE_FILES = [
   './',
   './index.html',
@@ -37,8 +37,9 @@ self.addEventListener('fetch', function(event) {
   var url = event.request.url;
 
   if (url.indexOf('version.json') !== -1) {
+    var bustedUrl = url.split('?')[0] + '?_sw=' + Date.now();
     event.respondWith(
-      fetch(event.request).catch(function() {
+      fetch(bustedUrl, { cache: 'no-store' }).catch(function() {
         return caches.match(event.request);
       })
     );

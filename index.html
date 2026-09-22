@@ -423,7 +423,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.9.2</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.9.4</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="document.getElementById('smsImportFile').click()"><span class="si-label">🏦 ورود پیامک بانک (CSV)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
@@ -3941,16 +3941,32 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.9.3';
+var CURRENT_VERSION = '1.9.4';
+
+var versionLabelEl = document.getElementById('versionLabel');
+if (versionLabelEl) versionLabelEl.textContent = 'v' + CURRENT_VERSION;
 
 // ═══════════════════════════════════════
 // SERVICE WORKER — پشتیبانی آفلاین
 // ═══════════════════════════════════════
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
-    navigator.serviceWorker.register('./sw.js').catch(function(err) {
+    // updateViaCache:'none' جلوی این را می‌گیرد که خود sw.js توسط کش HTTP
+    // مرورگر (به‌خصوص iOS Safari) کهنه بماند و SW جدید هرگز دانلود نشود.
+    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(function(reg) {
+      reg.update();
+    }).catch(function(err) {
       console.warn('SW registration failed:', err);
     });
+  });
+
+  // وقتی SW جدید کنترل صفحه را به‌دست می‌گیرد، یک‌بار صفحه را رفرش کن
+  // تا index.html تازه (با نسخه‌ی درست) بلافاصله لود شود.
+  var swControllerReloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function() {
+    if (swControllerReloaded) return;
+    swControllerReloaded = true;
+    window.location.reload();
   });
 }
 
@@ -3964,22 +3980,22 @@ function manualUpdateCheck() {
 
 function checkForUpdate() {
   if (!navigator.onLine) return;
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', VERSION_URL + '?t=' + Date.now(), true);
-  xhr.onload = function() {
-    if (xhr.status!==200) return;
-    try {
-      var data = JSON.parse(xhr.responseText);
+  if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistration) {
+    navigator.serviceWorker.getRegistration().then(function(reg) {
+      if (reg) reg.update();
+    }).catch(function() {});
+  }
+  fetch(VERSION_URL + '?t=' + Date.now(), { cache: 'no-store' })
+    .then(function(res) { return res.ok ? res.json() : null; })
+    .then(function(data) {
       var serverVer = data && data.version ? data.version : null;
       if (!serverVer) return;
       // ذخیره نسخه جدید در localStorage
       localStorage.setItem('pfm_version', serverVer);
       // فقط اگر نسخه سرور از نسخه فعلی اپ جدیدتر بود
       if (serverVer !== CURRENT_VERSION) { showUpdateBadge(data.date||''); }
-    } catch(e) {}
-  };
-  xhr.onerror = function() {};
-  xhr.send();
+    })
+    .catch(function() {});
 }
 
 function showUpdateBadge(date) {
