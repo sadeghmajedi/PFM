@@ -51,6 +51,10 @@ navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
 - fetch مربوط به `version.json` — چه در `index.html` و چه داخل `sw.js` — باید با `cache: 'no-store'` + یک پارامتر cache-busting انجام شود تا هیچ‌وقت از کش (نه کش مرورگر، نه Cache Storage) پاسخ کهنه برنگردد.
 - بعد از فعال‌شدن SW جدید (`controllerchange`)، صفحه باید یک‌بار خودکار reload شود تا `index.html` تازه فوراً بارگذاری شود.
 
+## Git workflow
+
+تغییرات باید مستقیماً روی برنچ `main` انجام و commit/push شوند، نه روی یک برنچ جدا. Pull Request فقط زمانی ساخته شود که کاربر صریحاً درخواست PR کند؛ در غیر این صورت commit مستقیم روی `main` کافی است.
+
 ## داده‌ی کاربر
 
 - کلید اصلی دیتابیس: `localStorage['pfm_db_v3']` (از طریق `saveDB()`/`loadDB()`).
