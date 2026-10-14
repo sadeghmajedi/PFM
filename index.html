@@ -423,7 +423,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.9.4</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.9.5</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="document.getElementById('smsImportFile').click()"><span class="si-label">🏦 ورود پیامک بانک (CSV)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
@@ -1850,6 +1850,22 @@ function populateFundFilter() {
   sel.value = 'all';
   sel.style.display = (txFilter === 'fund') ? '' : 'none';
 }
+// یکسان‌سازی متن برای جستجو و مقایسه: کیبورد عربی و فارسی آیفون «ی»، «ک» و ارقام را
+// با کدهای Unicode متفاوت تولید می‌کنند. فقط در لحظه‌ی مقایسه استفاده می‌شود و
+// هیچ داده‌ای در pfm_db_v3 تغییر نمی‌کند.
+function normalizeFa(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/[\u064A\u0649]/g, '\u06CC')                                       // ي ى → ی
+    .replace(/\u0643/g, '\u06A9')                                               // ك → ک
+    .replace(/[\u0660-\u0669]/g, function(d){ return String(d.charCodeAt(0) - 0x0660); }) // ارقام عربی → لاتین
+    .replace(/[\u06F0-\u06F9]/g, function(d){ return String(d.charCodeAt(0) - 0x06F0); }) // ارقام فارسی → لاتین
+    .replace(/[\u064B-\u065F\u0670\u0640]/g, '')                                // اعراب و کشیده
+    .replace(/[\u200C\u200D\u200E\u200F]/g, '')                                 // نیم‌فاصله و نویسه‌های جهت
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
 function setTxSearch(val) {
   txSearchQuery = val.trim();
   var clearBtn = document.getElementById('tx-search-clear');
@@ -2058,16 +2074,17 @@ function renderTransactions() {
     var selName = selCat ? selCat.name : null;
     var matchIds = {};
     (DB.categories||[]).concat(DB.incomeCategories||[]).forEach(function(c){
-      if (c.id===txCatFilter || (selName && c.name===selName)) matchIds[c.id] = true;
+      if (c.id===txCatFilter || (selName && normalizeFa(c.name)===normalizeFa(selName))) matchIds[c.id] = true;
     });
     txs = txs.filter(function(t){ return matchIds[t.catId] || matchIds[t.incCatId]; });
   }
   if (txFilter === 'fund' && txFundFilter && txFundFilter !== 'all') txs = txs.filter(function(t){ return t.fundId===txFundFilter; });
   if (txSearchQuery) {
-    var q = txSearchQuery.toLowerCase().replace(/[،,]/g,'');
-    var qNumStr = txSearchQuery.replace(/[^0-9]/g,'');
+    var q = normalizeFa(txSearchQuery).replace(/[،,]/g,'');
+    // ارقام فارسی/عربی هم اول به لاتین تبدیل می‌شوند تا جستجوی مبلغ با هر کیبوردی کار کند
+    var qNumStr = normalizeFa(txSearchQuery).replace(/[^0-9]/g,'');
     txs = txs.filter(function(t){
-      var descMatch = (t.desc||'').toLowerCase().indexOf(q) !== -1;
+      var descMatch = normalizeFa(t.desc).indexOf(q) !== -1;
       var amountMatch = qNumStr && String(Math.round(t.amount)).indexOf(qNumStr) !== -1;
       return descMatch || amountMatch;
     });
@@ -3941,7 +3958,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.9.4';
+var CURRENT_VERSION = '1.9.5';
 
 var versionLabelEl = document.getElementById('versionLabel');
 if (versionLabelEl) versionLabelEl.textContent = 'v' + CURRENT_VERSION;
