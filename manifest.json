@@ -6,8 +6,8 @@
   "scope": "/PFM/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#FFFFFF",
-  "theme_color": "#FFFFFF",
+  "background_color": "#AD9CAD",
+  "theme_color": "#2E6171",
   "lang": "fa",
   "dir": "rtl",
   "icons": [

@@ -1,11 +1,12 @@
 // PFM Service Worker — پشتیبانی آفلاین
-var CACHE_NAME = 'pfm-cache-v1.10.1';
+var CACHE_NAME = 'pfm-cache-v1.11.0';
 var CACHE_FILES = [
   './',
   './index.html',
   './manifest.json',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './icon-180.png'
 ];
 
 self.addEventListener('install', function(event) {
