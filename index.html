@@ -8,27 +8,34 @@
 <meta name="apple-mobile-web-app-title" content="PFM">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
-<meta name="theme-color" content="#81D8D0">
+<meta name="theme-color" content="#2E6171">
 <title>مدیریت مالی شخصی</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --aqua: #81D8D0;
-  --aqua-dark: #1A9D95;
-  --aqua-deep: #0D6B65;
-  --aqua-light: #B0EAE6;
-  --aqua-pale: #EAF8F7;
-  --lemon: #FDEE00;
-  --bg: #FAFAF7;
+  /* v1.10.0: پالت جدید (coolors.co/palette/2e6171-556f7a-798086-b79fad-d4afcd)
+     نام‌های --aqua-* برای کم کردن تغییرات حفظ شده‌اند ولی دیگر آبی فیروزه‌ای نیستند:
+     --aqua = رنگ اصلی (#2E6171) و متن روی آن --on-primary (سفید) است. */
+  --aqua: #2E6171;
+  --aqua-dark: #2E6171;
+  --aqua-deep: #1F4552;
+  --aqua-light: #A7BEC6;
+  --aqua-pale: #EDF2F4;
+  --lemon: #D4AFCD;
+  --on-primary: #FFFFFF;
+  --slate: #556F7A;
+  --accent: #B79FAD;
+  --accent-light: #D4AFCD;
+  --bg: #F6F4F6;
   --white: #FFFFFF;
   --danger: #D94040;
   --success: #27AE60;
-  --text-main: #222222;
-  --text-mid: #555555;
-  --text-sub: #999999;
-  --border: #EFEFEA;
-  --border-aqua: #C8F0ED;
+  --text-main: #1E2B31;
+  --text-mid: #46525A;
+  --text-sub: #687177;
+  --border: #E6E2E6;
+  --border-aqua: #D3DFE4;
   --shadow-sm: 0 1px 5px rgba(0,0,0,0.06);
   --shadow: 0 2px 12px rgba(0,0,0,0.08);
   --radius: 18px;
@@ -45,35 +52,35 @@ html { height:100%; height:-webkit-fill-available; }
 #scrollArea { flex:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; padding-bottom:12px; }
 
 /* ── SPLASH ── */
-#splash { position:fixed; inset:0; background:linear-gradient(150deg,#B0EAE6,#81D8D0); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; transition:opacity 0.7s,transform 0.7s; }
+#splash { position:fixed; inset:0; background:linear-gradient(150deg,#F4EFF3,#E6D3E1); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; transition:opacity 0.7s,transform 0.7s; }
 #splash.out { opacity:0; transform:scale(1.04); pointer-events:none; }
-.sp-ring { position:absolute; border-radius:50%; border:1.5px solid rgba(255,255,255,0.35); animation:rp 2.5s ease-in-out infinite; }
+.sp-ring { position:absolute; border-radius:50%; border:1.5px solid rgba(46,97,113,0.22); animation:rp 2.5s ease-in-out infinite; }
 .sp-ring:nth-child(1){width:200px;height:200px;animation-delay:0s}
 .sp-ring:nth-child(2){width:280px;height:280px;animation-delay:0.4s}
 .sp-ring:nth-child(3){width:360px;height:360px;animation-delay:0.8s}
 @keyframes rp{0%,100%{opacity:.15;transform:scale(1)}50%{opacity:.5;transform:scale(1.03)}}
 #splashLogo { animation:pop 0.8s cubic-bezier(0.175,0.885,0.32,1.275) forwards; opacity:0; }
 @keyframes pop{0%{opacity:0;transform:scale(0.3)rotate(-15deg)}70%{opacity:1;transform:scale(1.08)rotate(2deg)}100%{opacity:1;transform:scale(1)rotate(0)}}
-.sp-title { margin-top:26px; font-size:26px; font-weight:700; color:#0D4A47; animation:fu 0.6s 0.6s ease forwards; opacity:0; }
-.sp-sub { margin-top:8px; font-size:15px; color:rgba(13,74,71,0.7); font-weight:500; animation:fu 0.6s 0.8s ease forwards; opacity:0; }
+.sp-title { margin-top:26px; font-size:26px; font-weight:700; color:var(--aqua); animation:fu 0.6s 0.6s ease forwards; opacity:0; }
+.sp-sub { margin-top:8px; font-size:15px; color:rgba(46,97,113,0.75); font-weight:500; animation:fu 0.6s 0.8s ease forwards; opacity:0; }
 @keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes pulse-green{0%,100%{box-shadow:0 4px 12px rgba(39,174,96,0.4)}50%{box-shadow:0 4px 18px rgba(39,174,96,0.65),0 0 0 4px rgba(39,174,96,0.1)}}
 
 /* ── LOCK ── */
-#lockScreen { display:none; position:fixed; inset:0; background:linear-gradient(150deg,#B0EAE6,#81D8D0); z-index:8000; flex-direction:column; align-items:center; justify-content:center; padding:30px 28px; }
+#lockScreen { display:none; position:fixed; inset:0; background:linear-gradient(150deg,#F4EFF3,#E6D3E1); z-index:8000; flex-direction:column; align-items:center; justify-content:center; padding:30px 28px; }
 #lockScreen.vis { display:flex; }
-.lock-app-name { font-size:26px; font-weight:700; color:#0D4A47; margin-top:16px; margin-bottom:5px; text-align:center; }
-.lock-sub { font-size:13px; color:rgba(13,74,71,0.7); margin-bottom:24px; text-align:center; }
+.lock-app-name { font-size:26px; font-weight:700; color:var(--aqua); margin-top:16px; margin-bottom:5px; text-align:center; }
+.lock-sub { font-size:13px; color:rgba(46,97,113,0.75); margin-bottom:24px; text-align:center; }
 .pdots { display:flex; gap:14px; margin-bottom:24px; }
-.pdot { width:14px; height:14px; border-radius:50%; border:2px solid rgba(13,74,71,0.3); background:transparent; transition:all 0.2s; }
-.pdot.on { background:#0D4A47; border-color:#0D4A47; }
+.pdot { width:14px; height:14px; border-radius:50%; border:2px solid rgba(46,97,113,0.35); background:transparent; transition:all 0.2s; }
+.pdot.on { background:var(--aqua); border-color:var(--aqua); }
 .pkeypad { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; width:252px; }
-.pkey { height:60px; border-radius:13px; border:none; cursor:pointer; font-family:'Vazirmatn',sans-serif; font-size:22px; font-weight:600; background:rgba(255,255,255,0.45); color:#0D4A47; border:1px solid rgba(255,255,255,0.6); box-shadow:0 2px 8px rgba(0,0,0,0.08); transition:all 0.15s; }
+.pkey { height:60px; border-radius:13px; border:none; cursor:pointer; font-family:'Vazirmatn',sans-serif; font-size:22px; font-weight:600; background:rgba(255,255,255,0.6); color:var(--aqua); border:1px solid rgba(255,255,255,0.8); box-shadow:0 2px 8px rgba(0,0,0,0.08); transition:all 0.15s; }
 .pkey:active { background:rgba(255,255,255,0.65); transform:scale(0.93); }
 .pkey.empty { background:transparent; border:none; box-shadow:none; cursor:default; }
 .lock-err { color:#8B0000; font-size:12px; margin-top:10px; min-height:18px; text-align:center; }
-.lock-note { font-size:11px; color:rgba(13,74,71,0.55); margin-top:5px; text-align:center; }
-.lock-credit { position:absolute; bottom:calc(20px + var(--safe-bottom)); font-size:13px; font-weight:500; color:#222; text-align:center; line-height:1.7; font-family:'Vazirmatn',sans-serif; }
+.lock-note { font-size:11px; color:rgba(46,97,113,0.6); margin-top:5px; text-align:center; }
+.lock-credit { position:absolute; bottom:calc(20px + var(--safe-bottom)); font-size:13px; font-weight:500; color:var(--text-main); text-align:center; line-height:1.7; font-family:'Vazirmatn',sans-serif; }
 
 /* ── TOP BAR ── */
 .top-bar { background:#fff; border-bottom:3px solid var(--aqua); box-shadow:var(--shadow-sm); padding:12px 14px 10px; padding-top:calc(12px + var(--safe-top)); display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; flex-shrink:0; }
@@ -97,14 +104,14 @@ html { height:100%; height:-webkit-fill-available; }
 
 /* ── CARDS ── */
 .card { background:#fff; border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-sm); margin-bottom:10px; overflow:hidden; }
-.card-bar { height:3px; background:var(--aqua); }
+.card-bar { height:3px; background:linear-gradient(90deg,var(--accent-light),var(--aqua)); }
 .card-body { padding:14px; }
 .card-title { font-size:10px; font-weight:700; color:var(--aqua-dark); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
 
 /* ── NET WORTH ── */
-.net-worth-card { background:var(--aqua); border-radius:var(--radius); padding:20px; margin-bottom:10px; box-shadow:0 6px 24px rgba(129,216,208,0.4); position:relative; }
-.net-worth-card::before { content:''; position:absolute; top:-40px; left:-40px; width:180px; height:180px; border-radius:50%; background:rgba(255,255,255,0.1); pointer-events:none; z-index:0; }
-.nw-label { color:rgba(13,74,71,0.75); font-size:10px; margin-bottom:3px; }
+.net-worth-card { background:linear-gradient(150deg,var(--aqua),var(--slate)); border-radius:var(--radius); padding:20px; margin-bottom:10px; box-shadow:0 6px 24px rgba(46,97,113,0.3); position:relative; }
+.net-worth-card::before { content:''; position:absolute; top:-40px; left:-40px; width:180px; height:180px; border-radius:50%; background:rgba(212,175,205,0.18); pointer-events:none; z-index:0; }
+.nw-label { color:rgba(255,255,255,0.78); font-size:10px; margin-bottom:3px; }
 .nw-amount { color:#fff; font-size:26px; font-weight:700; direction:ltr; text-align:right; }
 .nw-currencies { display:flex; gap:8px; margin-top:10px; }
 .nw-cur { background:rgba(255,255,255,0.25); border:1px solid rgba(255,255,255,0.35); border-radius:10px; padding:6px 10px; }
@@ -112,7 +119,7 @@ html { height:100%; height:-webkit-fill-available; }
 
 /* ── ACCOUNTS GRID ── */
 .accounts-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; align-items:stretch; }
-.account-mini { background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:var(--radius-sm); padding:9px 10px; border-right:3px solid var(--aqua); display:flex; flex-direction:column; gap:5px; min-width:0; }
+.account-mini { background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:var(--radius-sm); padding:9px 10px; border-right:3px solid var(--accent); display:flex; flex-direction:column; gap:5px; min-width:0; }
 .am-header { display:flex; align-items:center; gap:6px; }
 .am-logo { width:20px; height:20px; border-radius:4px; object-fit:contain; flex-shrink:0; }
 .am-logo-emoji { font-size:16px; line-height:1; flex-shrink:0; }
@@ -127,7 +134,7 @@ html { height:100%; height:-webkit-fill-available; }
 .fund-name { font-size:13px; font-weight:600; color:var(--text-main); }
 .fund-bal { font-size:14px; font-weight:700; color:var(--aqua-dark); direction:ltr; }
 .fund-bar-wrap { background:var(--aqua-pale); border-radius:99px; height:4px; overflow:hidden; }
-.fund-bar-fill { background:linear-gradient(90deg,var(--aqua-light),var(--aqua-dark)); height:100%; border-radius:99px; transition:width 0.6s; }
+.fund-bar-fill { background:linear-gradient(90deg,var(--accent-light),var(--aqua)); height:100%; border-radius:99px; transition:width 0.6s; }
 .fund-meta { display:flex; justify-content:space-between; margin-top:5px; font-size:10px; color:var(--text-sub); }
 
 /* ── NET-WORTH ACTION BUTTONS ── */
@@ -137,7 +144,7 @@ html { height:100%; height:-webkit-fill-available; }
 .nw-action-btn span { pointer-events:none; }
 .nw-action-btn.income svg { stroke:#1a9e50; fill:none; stroke-width:2.5; }
 .nw-action-btn.expense svg { stroke:#e03030; fill:none; stroke-width:2.5; }
-.nw-action-btn.transfer svg { stroke:#1a7a9a; fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+.nw-action-btn.transfer svg { stroke:var(--aqua); fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
 
 /* ── TRANSACTIONS ── */
 .tx-item { display:flex; align-items:center; gap:9px; padding:9px 0; border-bottom:1px solid var(--border); }
@@ -153,7 +160,7 @@ html { height:100%; height:-webkit-fill-available; }
 
 /* ── SECTION TITLE ── */
 .sec-title { font-size:12px; font-weight:700; color:var(--text-main); margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; }
-.add-btn { background:var(--aqua); color:#0D4A47; border:none; border-radius:7px; padding:4px 10px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; }
+.add-btn { background:var(--aqua); color:var(--on-primary); border:none; border-radius:7px; padding:4px 10px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; }
 
 /* ── FORMS ── */
 .form-group { margin-bottom:12px; }
@@ -164,12 +171,12 @@ html { height:100%; height:-webkit-fill-available; }
 .form-input[type="number"] { direction:ltr; text-align:right; }
 .form-input[type="date"] { direction:ltr; color:var(--text-main); }
 .form-select option { background:#fff; color:var(--text-main); }
-.btn-primary { width:100%; padding:13px; background:var(--aqua); color:#0D4A47; border:none; border-radius:var(--radius-sm); font-family:inherit; font-size:15px; font-weight:700; cursor:pointer; box-shadow:0 4px 14px rgba(129,216,208,0.4); }
-.btn-primary:active { background:var(--aqua-dark); color:#fff; }
+.btn-primary { width:100%; padding:13px; background:var(--aqua); color:var(--on-primary); border:none; border-radius:var(--radius-sm); font-family:inherit; font-size:15px; font-weight:700; cursor:pointer; box-shadow:0 4px 14px rgba(46,97,113,0.3); }
+.btn-primary:active { background:var(--aqua-deep); color:#fff; }
 .btn-secondary { width:100%; padding:11px; background:#fff; color:var(--text-mid); border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:inherit; font-size:13px; cursor:pointer; margin-top:7px; }
 
 /* ── MODAL ── */
-.modal-overlay { display:none; position:fixed; inset:0; background:rgba(13,74,71,0.2); backdrop-filter:blur(4px); z-index:500; align-items:flex-end; }
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(30,43,49,0.3); backdrop-filter:blur(4px); z-index:500; align-items:flex-end; }
 .modal-overlay.open { display:flex; }
 .modal-sheet { background:#fff; border-radius:22px 22px 0 0; padding:18px 16px calc(18px + var(--safe-bottom)); width:100%; max-height:92vh; overflow-y:auto; animation:su 0.3s ease; box-shadow:0 -4px 32px rgba(0,0,0,0.1); }
 @keyframes su{from{transform:translateY(100%)}to{transform:translateY(0)}}
@@ -179,7 +186,7 @@ html { height:100%; height:-webkit-fill-available; }
 /* ── CHIPS ── */
 .chips { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:12px; }
 .chip { padding:6px 12px; border-radius:99px; font-size:11px; font-weight:500; background:var(--aqua-pale); color:var(--text-main); border:1px solid var(--border-aqua); cursor:pointer; transition:all 0.15s; }
-.chip.sel { background:var(--aqua); color:#0D4A47; border-color:var(--aqua); font-weight:700; }
+.chip.sel { background:var(--aqua); color:var(--on-primary); border-color:var(--aqua); font-weight:700; }
 
 /* ── LIST ── */
 .list-item { display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--border); }
@@ -198,13 +205,13 @@ html { height:100%; height:-webkit-fill-available; }
 .bar-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
 .bar-label { font-size:11px; color:var(--text-main); width:72px; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .bar-wrap { flex:1; background:var(--aqua-pale); border-radius:99px; height:7px; overflow:hidden; }
-.bar-fill { background:linear-gradient(90deg,var(--aqua-light),var(--aqua-dark)); height:100%; border-radius:99px; transition:width 0.6s; }
+.bar-fill { background:linear-gradient(90deg,var(--accent-light),var(--aqua)); height:100%; border-radius:99px; transition:width 0.6s; }
 .bar-val { font-size:10px; color:var(--text-sub); width:55px; text-align:left; direction:ltr; flex-shrink:0; }
 
 /* ── PERIOD TABS ── */
 .ptabs { display:flex; gap:5px; margin-bottom:10px; overflow-x:auto; }
 .ptab { flex-shrink:0; padding:6px 12px; border-radius:99px; font-size:11px; font-weight:600; background:#fff; color:var(--text-mid); border:1px solid var(--border); cursor:pointer; font-family:inherit; }
-.ptab.active { background:var(--aqua); color:#0D4A47; border-color:var(--aqua); }
+.ptab.active { background:var(--aqua); color:var(--on-primary); border-color:var(--aqua); }
 
 /* ── MONTH SELECTOR ── */
 .month-sel { display:flex; gap:8px; margin-bottom:12px; }
@@ -377,8 +384,8 @@ html { height:100%; height:-webkit-fill-available; }
 <!-- PAGE: REPORTS -->
 <div class="page" id="page-reports">
   <div style="display:flex;gap:7px;margin-bottom:10px;">
-    <button onclick="exportReportPDF()" style="flex:1;padding:9px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:10px;color:white;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;">🖨️ گزارش ماه — PDF</button>
-    <button onclick="exportReportExcel()" style="flex:1;padding:9px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:10px;color:white;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;">📊 گزارش ماه — Excel</button>
+    <button onclick="exportReportPDF()" style="flex:1;padding:9px;background:var(--aqua-pale);border:1px solid var(--border-aqua);border-radius:10px;color:var(--aqua);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;">🖨️ گزارش ماه — PDF</button>
+    <button onclick="exportReportExcel()" style="flex:1;padding:9px;background:var(--aqua-pale);border:1px solid var(--border-aqua);border-radius:10px;color:var(--aqua);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;">📊 گزارش ماه — Excel</button>
   </div>
   <div class="month-sel">
     <select id="rep-month" class="form-select" onchange="renderReports()" style="font-size:13px;padding:7px;">
@@ -423,7 +430,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.9.5</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.10.0</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="document.getElementById('smsImportFile').click()"><span class="si-label">🏦 ورود پیامک بانک (CSV)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
@@ -578,7 +585,7 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="modal-handle"></div>
     <div class="modal-title">🏦 بررسی پیامک‌های بانک</div>
     <div id="sms-import-summary" style="font-size:12px;color:var(--text-sub);margin-bottom:10px;"></div>
-    <div style="background:rgba(129,216,208,0.1);border:1px solid rgba(129,216,208,0.3);border-radius:10px;padding:10px;margin-bottom:10px;">
+    <div style="background:rgba(46,97,113,0.06);border:1px solid rgba(46,97,113,0.18);border-radius:10px;padding:10px;margin-bottom:10px;">
       <label class="form-label" style="margin-bottom:6px;">این پیامک‌ها چه هستند؟</label>
       <select class="form-select" id="sms-import-mode" onchange="renderSMSImportReview()">
         <option value="new">🆕 تراکنش‌های جدید — موجودی حساب را تغییر دهند</option>
@@ -1463,7 +1470,7 @@ function renderLoans() {
   if (!el) return;
   var loans = DB.loans || [];
 
-  var addBtn = '<button data-lact="add" style="background:var(--aqua);border:none;border-radius:9px;padding:7px 14px;font-size:12px;color:#0D4A47;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;">+ ثبت قرض</button>';
+  var addBtn = '<button data-lact="add" style="background:var(--aqua);border:none;border-radius:9px;padding:7px 14px;font-size:12px;color:var(--on-primary);font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;">+ ثبت قرض</button>';
 
   // خلاصه به تفکیک ارز — فقط ارزهایی که طلب/بدهی باز دارند
   var curList = ['IRR','USD','AED'];
@@ -1515,7 +1522,7 @@ function renderLoans() {
       var actionBtn = settled
         ? '<button data-id="' + l.id + '" data-lact="del" style="width:30px;height:30px;border-radius:9px;border:1px solid rgba(255,80,80,0.3);background:rgba(255,80,80,0.1);cursor:pointer;font-size:13px;flex-shrink:0;">🗑️</button>'
         : '<div style="display:flex;gap:5px;flex-shrink:0;">' +
-            '<button data-id="' + l.id + '" data-lact="repay" style="background:var(--aqua);border:none;border-radius:9px;padding:7px 12px;font-size:12px;color:#0D4A47;font-weight:700;cursor:pointer;font-family:inherit;">' + (isGiven?'💵 دریافت':'💸 پرداخت') + '</button>' +
+            '<button data-id="' + l.id + '" data-lact="repay" style="background:var(--aqua);border:none;border-radius:9px;padding:7px 12px;font-size:12px;color:var(--on-primary);font-weight:700;cursor:pointer;font-family:inherit;">' + (isGiven?'💵 دریافت':'💸 پرداخت') + '</button>' +
             '<button data-id="' + l.id + '" data-lact="del" style="width:30px;height:30px;border-radius:9px;border:1px solid rgba(255,80,80,0.3);background:rgba(255,80,80,0.1);cursor:pointer;font-size:13px;">🗑️</button>' +
           '</div>';
 
@@ -1944,7 +1951,7 @@ function renderDashboard() {
             '<div style="font-size:15px;font-weight:700;color:var(--aqua-dark);direction:ltr;">' + toFa(addCommas(Math.round(getFundBalance(f.id)))) + ' ریال</div>' +
           '</div>' +
         '</div>' +
-        '<button data-id="' + f.id + '" data-action="fp" style="background:var(--aqua);border:none;border-radius:9px;padding:7px 14px;font-size:12px;color:#0D4A47;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;">💸 پرداخت</button>' +
+        '<button data-id="' + f.id + '" data-action="fp" style="background:var(--aqua);border:none;border-radius:9px;padding:7px 14px;font-size:12px;color:var(--on-primary);font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;">💸 پرداخت</button>' +
         '</div>';
     });
     fundsEl.innerHTML = fHtml;
@@ -2006,7 +2013,7 @@ function renderAccounts() {
       html += '<div class="list-item">' +
         '<div style="display:flex;align-items:center;gap:9px;">' + logoHtml +
         '<div><div style="font-weight:600;font-size:13px;">' + a.name + '</div>' +
-        '<div style="font-size:11px;color:rgba(255,255,255,0.5);">' + a.currency + ' · ' + toCurrency(getAccountBalance(a.id),a.currency) + '</div></div></div>' +
+        '<div style="font-size:11px;color:var(--text-sub);">' + a.currency + ' · ' + toCurrency(getAccountBalance(a.id),a.currency) + '</div></div></div>' +
         '<div class="li-actions">' +
         '<button class="icon-btn" data-id="' + a.id + '" data-action="ea">✏️</button>' +
         '<button class="icon-btn danger" data-id="' + a.id + '" data-action="da">🗑️</button>' +
@@ -2029,7 +2036,7 @@ function renderAccounts() {
     DB.funds.forEach(function(f) {
       fHtml += '<div class="list-item">' +
         '<div><div style="font-weight:600;">' + f.icon + ' ' + f.name + '</div>' +
-        '<div style="font-size:11px;color:rgba(255,255,255,0.5);">' + fundPctLabel(f) + '</div></div>' +
+        '<div style="font-size:11px;color:var(--text-sub);">' + fundPctLabel(f) + '</div></div>' +
         '<div class="li-actions">' +
         '<button class="icon-btn" data-id="' + f.id + '" data-action="ef">✏️</button>' +
         '<button class="icon-btn danger" data-id="' + f.id + '" data-action="df">🗑️</button>' +
@@ -2400,7 +2407,7 @@ function renderTrendChart(selYear) {
     return line + dots;
   }
 
-  var incColor = '#14B8A6', expColor = '#EF4444';
+  var incColor = '#2E6171', expColor = '#D94040';
   var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="max-width:100%;display:block;">';
   // خطوط راهنمای افقی (۴ خط)
   for (var g=0; g<=3; g++) {
@@ -2488,7 +2495,7 @@ function renderExpensePie(selYear) {
     var sweep = s.value/grandTotal*360;
     var start = ang, end = ang + sweep;
     var color = PIE_COLORS[i % PIE_COLORS.length];
-    svg += '<path d="'+slicePath(start, end)+'" fill="'+color+'" stroke="#0D4A47" stroke-width="1.5"/>';
+    svg += '<path d="'+slicePath(start, end)+'" fill="'+color+'" stroke="#FFFFFF" stroke-width="1.5"/>';
     var pct = s.value/grandTotal*100;
     if (sweep > 18) {
       var mid = (start+end)/2;
@@ -2524,7 +2531,7 @@ function renderSettings() {
   DB.categories.forEach(function(c) {
     cHtml += '<div class="list-item"><span>' + c.icon + ' ' + c.name + '</span><button class="icon-btn danger" data-id="' + c.id + '" data-action="dc">🗑</button></div>';
   });
-  cl.innerHTML = cHtml || '<div style="color:rgba(255,255,255,0.5);font-size:12px;padding:8px 0;">دسته‌بندی‌ای ثبت نشده</div>';
+  cl.innerHTML = cHtml || '<div style="color:var(--text-sub);font-size:12px;padding:8px 0;">دسته‌بندی‌ای ثبت نشده</div>';
   cl.querySelectorAll('[data-action="dc"]').forEach(function(btn){ btn.addEventListener('click', function(){ deleteCat(this.dataset.id); }); });
 
   var icl = document.getElementById('incCatList');
@@ -2533,16 +2540,16 @@ function renderSettings() {
     (DB.incomeCategories||[]).forEach(function(c) {
       icHtml += '<div class="list-item"><span>' + c.icon + ' ' + c.name + '</span><button class="icon-btn danger" data-id="' + c.id + '" data-action="dic">🗑</button></div>';
     });
-    icl.innerHTML = icHtml || '<div style="color:rgba(255,255,255,0.5);font-size:12px;padding:8px 0;">دسته‌بندی‌ای ثبت نشده</div>';
+    icl.innerHTML = icHtml || '<div style="color:var(--text-sub);font-size:12px;padding:8px 0;">دسته‌بندی‌ای ثبت نشده</div>';
     icl.querySelectorAll('[data-action="dic"]').forEach(function(btn){ btn.addEventListener('click', function(){ deleteIncCat(this.dataset.id); }); });
   }
 
   var al = document.getElementById('allocationList');
   var aHtml = '';
   DB.funds.forEach(function(f) {
-    aHtml += '<div class="list-item"><div><div style="font-weight:600;">' + f.icon + ' ' + f.name + '</div><div style="font-size:11px;color:rgba(255,255,255,0.5);">' + fundGroupLabel(f) + '</div></div><div style="font-size:17px;font-weight:700;color:var(--lemon);">' + fundPctLabel(f) + '</div></div>';
+    aHtml += '<div class="list-item"><div><div style="font-weight:600;">' + f.icon + ' ' + f.name + '</div><div style="font-size:11px;color:var(--text-sub);">' + fundGroupLabel(f) + '</div></div><div style="font-size:17px;font-weight:700;color:var(--lemon);">' + fundPctLabel(f) + '</div></div>';
   });
-  al.innerHTML = aHtml || '<div style="color:rgba(255,255,255,0.5);font-size:12px;padding:8px 0;">صندوقی ثبت نشده</div>';
+  al.innerHTML = aHtml || '<div style="color:var(--text-sub);font-size:12px;padding:8px 0;">صندوقی ثبت نشده</div>';
 }
 
 // نمایش درصد و گروه صندوق — سازگار با هر دو ساختار (pct قدیمی و rates جدید)
@@ -3256,7 +3263,7 @@ function findTransferCandidates() {
       '<div style="font-size:12px;font-weight:700;">' + (acc?acc.name:'؟') + '</div>' +
       '<div style="font-size:11px;color:var(--text-sub);margin-top:2px;">' + (c.desc||'') + ' • ' + J.format(c.date) + '</div>' +
       '<div style="font-size:11px;color:var(--text-sub);margin-top:2px;direction:ltr;text-align:right;">' + toFa(addCommas(Math.round(c.amount))) + (fee>0 ? ' • کارمزد ' + toFa(addCommas(Math.round(fee))) : '') + '</div>' +
-      '<button data-merge="' + c.id + '" style="margin-top:6px;background:var(--aqua);border:none;border-radius:7px;padding:5px 12px;font-size:11px;color:#0D4A47;font-weight:700;cursor:pointer;font-family:inherit;">ادغام به انتقال</button>' +
+      '<button data-merge="' + c.id + '" style="margin-top:6px;background:var(--aqua);border:none;border-radius:7px;padding:5px 12px;font-size:11px;color:var(--on-primary);font-weight:700;cursor:pointer;font-family:inherit;">ادغام به انتقال</button>' +
       '</div>';
   }).join('');
 
@@ -3621,7 +3628,7 @@ function renderSMSImportReview() {
     if (r.pair && r.pair.role === 'from') {
       var p = r.pair;
       var suggested = !p.exact;
-      var bg = r.dup ? 'rgba(225,179,36,0.08)' : (suggested ? 'rgba(225,179,36,0.06)' : 'rgba(129,216,208,0.12)');
+      var bg = r.dup ? 'rgba(225,179,36,0.08)' : (suggested ? 'rgba(225,179,36,0.06)' : 'rgba(46,97,113,0.07)');
       var note = r.dup
         ? '<div style="font-size:10px;color:#9a7d0a;margin-top:3px;">این انتقال قبلاً ثبت شده است</div>'
         : (suggested
@@ -3958,7 +3965,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.9.5';
+var CURRENT_VERSION = '1.10.0';
 
 var versionLabelEl = document.getElementById('versionLabel');
 if (versionLabelEl) versionLabelEl.textContent = 'v' + CURRENT_VERSION;
