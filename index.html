@@ -28,6 +28,7 @@
   --accent: #B79FAD;
   --accent-light: #D4AFCD;
   --bg: #F6F4F6;
+  --lock-bg: #AD9CAD; /* v1.10.1: زمینه‌ی splash و صفحه‌ی قفل؛ متن روی آن --text-main (کنتراست ۵.۶:۱) — سفید و #2E6171 روی آن کمتر از ۳:۱ است */
   --white: #FFFFFF;
   --danger: #D94040;
   --success: #27AE60;
@@ -52,34 +53,34 @@ html { height:100%; height:-webkit-fill-available; }
 #scrollArea { flex:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; padding-bottom:12px; }
 
 /* ── SPLASH ── */
-#splash { position:fixed; inset:0; background:linear-gradient(150deg,#F4EFF3,#E6D3E1); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; transition:opacity 0.7s,transform 0.7s; }
+#splash { position:fixed; inset:0; background:var(--lock-bg); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; transition:opacity 0.7s,transform 0.7s; }
 #splash.out { opacity:0; transform:scale(1.04); pointer-events:none; }
-.sp-ring { position:absolute; border-radius:50%; border:1.5px solid rgba(46,97,113,0.22); animation:rp 2.5s ease-in-out infinite; }
+.sp-ring { position:absolute; border-radius:50%; border:1.5px solid rgba(255,255,255,0.4); animation:rp 2.5s ease-in-out infinite; }
 .sp-ring:nth-child(1){width:200px;height:200px;animation-delay:0s}
 .sp-ring:nth-child(2){width:280px;height:280px;animation-delay:0.4s}
 .sp-ring:nth-child(3){width:360px;height:360px;animation-delay:0.8s}
 @keyframes rp{0%,100%{opacity:.15;transform:scale(1)}50%{opacity:.5;transform:scale(1.03)}}
 #splashLogo { animation:pop 0.8s cubic-bezier(0.175,0.885,0.32,1.275) forwards; opacity:0; }
 @keyframes pop{0%{opacity:0;transform:scale(0.3)rotate(-15deg)}70%{opacity:1;transform:scale(1.08)rotate(2deg)}100%{opacity:1;transform:scale(1)rotate(0)}}
-.sp-title { margin-top:26px; font-size:26px; font-weight:700; color:var(--aqua); animation:fu 0.6s 0.6s ease forwards; opacity:0; }
-.sp-sub { margin-top:8px; font-size:15px; color:rgba(46,97,113,0.75); font-weight:500; animation:fu 0.6s 0.8s ease forwards; opacity:0; }
+.sp-title { margin-top:26px; font-size:26px; font-weight:700; color:var(--text-main); animation:fu 0.6s 0.6s ease forwards; opacity:0; }
+.sp-sub { margin-top:8px; font-size:15px; color:rgba(30,43,49,0.85); font-weight:500; animation:fu 0.6s 0.8s ease forwards; opacity:0; }
 @keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes pulse-green{0%,100%{box-shadow:0 4px 12px rgba(39,174,96,0.4)}50%{box-shadow:0 4px 18px rgba(39,174,96,0.65),0 0 0 4px rgba(39,174,96,0.1)}}
 
 /* ── LOCK ── */
-#lockScreen { display:none; position:fixed; inset:0; background:linear-gradient(150deg,#F4EFF3,#E6D3E1); z-index:8000; flex-direction:column; align-items:center; justify-content:center; padding:30px 28px; }
+#lockScreen { display:none; position:fixed; inset:0; background:var(--lock-bg); z-index:8000; flex-direction:column; align-items:center; justify-content:center; padding:30px 28px; }
 #lockScreen.vis { display:flex; }
-.lock-app-name { font-size:26px; font-weight:700; color:var(--aqua); margin-top:16px; margin-bottom:5px; text-align:center; }
-.lock-sub { font-size:13px; color:rgba(46,97,113,0.75); margin-bottom:24px; text-align:center; }
+.lock-app-name { font-size:26px; font-weight:700; color:var(--text-main); margin-top:16px; margin-bottom:5px; text-align:center; }
+.lock-sub { font-size:13px; color:rgba(30,43,49,0.85); margin-bottom:24px; text-align:center; }
 .pdots { display:flex; gap:14px; margin-bottom:24px; }
-.pdot { width:14px; height:14px; border-radius:50%; border:2px solid rgba(46,97,113,0.35); background:transparent; transition:all 0.2s; }
-.pdot.on { background:var(--aqua); border-color:var(--aqua); }
+.pdot { width:14px; height:14px; border-radius:50%; border:2px solid rgba(30,43,49,0.4); background:transparent; transition:all 0.2s; }
+.pdot.on { background:var(--text-main); border-color:var(--text-main); }
 .pkeypad { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; width:252px; }
-.pkey { height:60px; border-radius:13px; border:none; cursor:pointer; font-family:'Vazirmatn',sans-serif; font-size:22px; font-weight:600; background:rgba(255,255,255,0.6); color:var(--aqua); border:1px solid rgba(255,255,255,0.8); box-shadow:0 2px 8px rgba(0,0,0,0.08); transition:all 0.15s; }
+.pkey { height:60px; border-radius:13px; border:none; cursor:pointer; font-family:'Vazirmatn',sans-serif; font-size:22px; font-weight:600; background:rgba(255,255,255,0.6); color:var(--text-main); border:1px solid rgba(255,255,255,0.8); box-shadow:0 2px 8px rgba(0,0,0,0.08); transition:all 0.15s; }
 .pkey:active { background:rgba(255,255,255,0.65); transform:scale(0.93); }
 .pkey.empty { background:transparent; border:none; box-shadow:none; cursor:default; }
 .lock-err { color:#8B0000; font-size:12px; margin-top:10px; min-height:18px; text-align:center; }
-.lock-note { font-size:11px; color:rgba(46,97,113,0.6); margin-top:5px; text-align:center; }
+.lock-note { font-size:11px; color:rgba(30,43,49,0.75); margin-top:5px; text-align:center; }
 .lock-credit { position:absolute; bottom:calc(20px + var(--safe-bottom)); font-size:13px; font-weight:500; color:var(--text-main); text-align:center; line-height:1.7; font-family:'Vazirmatn',sans-serif; }
 
 /* ── TOP BAR ── */
@@ -430,7 +431,7 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.10.0</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.10.1</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="document.getElementById('smsImportFile').click()"><span class="si-label">🏦 ورود پیامک بانک (CSV)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
@@ -3965,7 +3966,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.10.0';
+var CURRENT_VERSION = '1.10.1';
 
 var versionLabelEl = document.getElementById('versionLabel');
 if (versionLabelEl) versionLabelEl.textContent = 'v' + CURRENT_VERSION;
