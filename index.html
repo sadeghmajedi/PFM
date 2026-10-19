@@ -92,8 +92,8 @@ html { height:100%; height:-webkit-fill-available; }
 .pkey.empty { background:transparent; border:none; box-shadow:none; cursor:default; }
 .lock-err { color:#8B0000; font-size:12px; margin-top:10px; min-height:18px; text-align:center; }
 .lock-note { font-size:11px; color:rgba(30,43,49,0.75); margin-top:5px; text-align:center; }
-.lock-credit { position:absolute; bottom:calc(20px + var(--safe-bottom)); font-size:13px; font-weight:500; color:var(--text-main); text-align:center; line-height:1.7; font-family:'Vazirmatn',sans-serif; }
-.lock-credit span { font-weight:800; }
+.lock-credit { position:absolute; bottom:calc(20px + var(--safe-bottom)); font-size:13px; font-weight:400; color:var(--text-main); text-align:center; line-height:1.7; font-family:'Vazirmatn',sans-serif; }
+.lock-credit span { font-weight:700; } /* Vazirmatn فقط تا ۷۰۰ بارگذاری می‌شود؛ متن اطراف ۴۰۰ تا تفاوت واضح باشد */
 
 /* ── TOP BAR ── */
 .top-bar { background:#fff; border-bottom:3px solid var(--aqua); box-shadow:var(--shadow-sm); padding:12px 14px 10px; padding-top:calc(12px + var(--safe-top)); display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; flex-shrink:0; }
@@ -130,6 +130,27 @@ html { height:100%; height:-webkit-fill-available; }
 .nw-cur-val { color:#fff; font-size:13px; font-weight:600; direction:ltr; }
 
 /* ── ACCOUNTS GRID ── */
+.desc-sug { display:none; flex-wrap:wrap; gap:6px; max-height:92px; overflow-y:auto; margin-bottom:7px; -webkit-overflow-scrolling:touch; }
+.desc-sug-chip { padding:7px 11px; min-height:34px; border-radius:99px; border:1px solid var(--border-aqua); background:var(--aqua-pale); color:var(--text-main); font-family:inherit; font-size:12px; cursor:pointer; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.desc-sug-chip:active { background:var(--aqua); color:var(--on-primary); }
+.about-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.about-mark { font-size:24px; line-height:1; }
+.about-text { font-size:13px; line-height:1.9; color:var(--text-mid); margin-bottom:6px; }
+.about-text:last-child { margin-bottom:0; }
+/* «سین» با Reem Kufi — فقط حروف س/ی/ن (زیرمجموعه‌ی ۱.۵ کیلوبایتی، SIL OFL 1.1) داخل فایل جاسازی شده تا آفلاین هم درست نمایش داده شود */
+@font-face { font-family:'SinKufi'; font-weight:700; font-display:block; src:url(data:font/woff2;base64,d09GMgABAAAAAAW4AA4AAAAADJQAAAVhAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGkgbgh4chAoGYD9TVEFUKgBECohwhn4BNgIkA0gLKAAEIAWDZgcgG4MKAI7Ctr0xkCThaZLJyX/COd+/S0JIxTDJFDEv3jEzs8LD9/ft3NeygSSQBfqxCXDX6FPAjW8E2U6BhCsmUu9sTO1fyxJQErrGN3U1ukYC48aKSUjy00QK2CFKVNOLn51GNaGnWhtFZXoa+PGrQRg9AADKYziiQ/QMOCMzQkSAT2N3o6sJ0Y9g2AtwY6RgygpESbkmgvHCWlQNwdMujZsgeNG4WwcEEwDEC7UqgEn1YxvxSEUteGysy/qhMsc7EqgXe7wGJqnWAVj32kSAQkfkKFOmZMky5cljY6OTzqpIkSpqqaWBBppppo02SCKATAaQ4bkNUpWiPLSfpXyyX6NVjafw3jEcpKRhJxuryI7azMbxgiZRVLasIaCI5FMmWBvWdjkbR6msbGpoYIgWOuhFmjdt3wl9/lTxYdBL4MeInzaugXFl03bdMKts17olppgHYAAyjMZ3w8/BL+KuQGSujcRYvQOhCaq9lETG7TLJOQAEAIgAIAxAOIAQgBE5IFvQfrhVyB7MJtswj8AIeK1hpbfAcAIROQfBPIsssgs5QDDDHHNsQjYRTDLNLLNwZANSDUAACccscwAZhSxDABlHFiHBexyQ5DAI3PAj6okW7dc1IxJGoUcYIxPiiIiIbAkOx9MgOozIgCEGhHVtBRKFlrmzy2HorQxhGUNwMkmco7ZSSP3YPloVbMVqASicmkaIDAk3LdU/ljHIt2JRPUo6Vy2ydwJxSZMAEAC0Z48AKgEhMgI4IYBXCD1btupGIgCGAKAO2wcAYAAOcMIRwIkgHCCTMZD6klU6l/Ox1O/7v8/+tiKgWOBzrAjQAxUArQH4A8oDAIAGZwbIh1Aiw43mwDAPV61CGqoJDVoTw6MZG7RMcao+5gbOQ4NvXg2aPc9t+uzZTjNWOE1bhUHX85qxB28S92BGTUyMdtC1a15Z1KQf9fEZ5MMr6dDDDMIVnBNFGbMOnV7t7FEavGCDS8391xH/wK2bR0x31kC599a5fLyas3drNHVu3LyZtPYgNZ/putKzulJn2nz35tqABvM+K485QIMPasbux6CD07iS1WN9TvUaBw59xOrVthktDLb3mqJNUCbh5smUwiC/DF2ma3D5SguemjtfWfauYZD9063bXh5+aTvK+71zqhKn8/UnryaMmAet4qPqNIsOAaUl/yTfbWv+9jSuuRqTbFAjnTM4eb1HuAEenK1gdRuiFkbH9Bc17eCy9w0DZsYpLn98gz3q+qgLikJczvgtyBpZP6lPreyU+o1C3Va55xfbZFwh0h8fXM/gdmu7dWpXc6cZkp+VtU0o6f/C4oeD5dCEqboVPz9WtY40WXvTsMyO7MYZlWZ3TW6PhwX86K0HVoceIJEAFSkAB3rrYhIkWgB9AKUnqAwSued4XkzV6Kpo2kpnZC/M9rFKIACDt5O1QkND8neZ81cAXGn7cDwAvPhzK99e/O9U8xfuIBIGAAi+IpahBen3SO/Z49bWFN9ERnDpuwU3iYTHErwF3CubJdK+0nesswSd4x5vyOk6WuWEPP9yH95FAItxtGqRERxPQADFABxVHQFsA15IzLYJGdkJIRfuglDgxS4UeYQHSLhoJRKgD5tQhDbq2TXhXi5LR5301kVrLbXSjSpSuAgxQvZmkSKpqtFD88tW0Vxz7akKdddCa6oSXXTURnNNw7Bm7JXdtNJxlOxK5a/V3rrppKtEYcK01JrVat01EaqpjtqD0lg7a4uuY2+dNBemS4yMEG3HCxCaDmvm3radZiKFCr9vlyRDkXxWST6m0RWCPnNk1qMa+jxM1lpHHajhDyTMaEvdwW2si5qmkvVzN132a4gE) format('woff2'); }
+.kufi { font-family:'SinKufi','Vazirmatn',sans-serif; font-weight:700; color:var(--aqua); font-size:1.12em; }
+.order-btn svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.order-btn { display:inline-flex; align-items:center; gap:4px; background:none; border:1px solid var(--border-aqua); color:var(--aqua); border-radius:8px; padding:6px 10px; min-height:32px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; }
+.dash-hidden { display:none !important; }
+.more-toggle { display:flex; align-items:center; justify-content:center; gap:6px; width:100%; min-height:40px; margin:-2px 0 10px; background:none; border:none; color:var(--aqua); font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; }
+.more-toggle svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2.2; transition:transform .2s; }
+.more-toggle.open svg { transform:rotate(180deg); }
+.reorder-row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); }
+.reorder-row:last-child { border-bottom:none; }
+.reorder-name { flex:1; min-width:0; font-size:13px; font-weight:600; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.reorder-btn { width:44px; height:44px; border-radius:10px; border:1px solid var(--border-aqua); background:var(--aqua-pale); color:var(--aqua); font-size:18px; cursor:pointer; font-family:inherit; }
+.reorder-btn:disabled { opacity:.3; cursor:default; }
 .accounts-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; align-items:stretch; }
 .account-mini { background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:var(--radius-sm); padding:9px 10px; border-right:3px solid var(--accent); display:flex; flex-direction:column; gap:5px; min-width:0; }
 .am-header { display:flex; align-items:center; gap:6px; }
@@ -341,9 +362,12 @@ html { height:100%; height:-webkit-fill-available; }
     </div>
   </div>
   <div id="budgetAlerts"></div>
+  <div class="sec-title">حساب‌ها<button class="order-btn" id="accOrderBtn" onclick="openReorder('accounts')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v15M8 4L4.5 7.5M8 4l3.5 3.5M16 20V5M16 20l-3.5-3.5M16 20l3.5-3.5"/></svg>جابجایی</button></div>
   <div class="accounts-grid" id="accountsGrid"></div>
-  <div class="sec-title">صندوق‌های تخصیصی</div>
+  <div id="accMore"></div>
+  <div class="sec-title">صندوق‌های تخصیصی<button class="order-btn" id="fundOrderBtn" onclick="openReorder('funds')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v15M8 4L4.5 7.5M8 4l3.5 3.5M16 20V5M16 20l-3.5-3.5M16 20l3.5-3.5"/></svg>جابجایی</button></div>
   <div id="fundsSection"></div>
+  <div id="fundMore"></div>
   <div class="sec-title">📒 دفتر قروض</div>
   <div id="loansSection"></div>
   <div class="card">
@@ -438,10 +462,10 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.11.0</span></div>
+    <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel">v1.12.0</span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="document.getElementById('smsImportFile').click()"><span class="si-label">🏦 ورود پیامک بانک (CSV)</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:rgba(255,150,150,1)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
+    <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:var(--danger)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
     <input type="file" id="importFile" accept=".json,.gz,.json.gz" style="display:none" onchange="importData(event)">
     <input type="file" id="smsImportFile" accept=".csv,.txt" style="display:none" onchange="importBankSMS(event)">
     <div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--border);">
@@ -450,6 +474,14 @@ html { height:100%; height:-webkit-fill-available; }
       <button class="btn-primary" onclick="processPastedSMS()" style="margin-top:8px;">تبدیل به تراکنش</button>
       <button class="btn-secondary" onclick="document.getElementById('smsPasteBox').value='';">پاک کردن باکس</button>
     </div>
+  </div></div>
+  <!-- v1.12.0: درباره اپلیکیشن -->
+  <div class="card"><div class="card-bar"></div><div class="card-body">
+    <div class="about-hdr"><div class="card-title" style="margin-bottom:0;">درباره اپلیکیشن</div><span class="kufi about-mark" aria-hidden="true">سین</span></div>
+    <p class="about-text">اپلیکیشن مدیریت مالی شخصی «<span class="kufi">سین</span>» با هدف پایش حساب‌های ریالی و ارزی و کنترل بهتر بر امور مالی شخصی طراحی شده است.</p>
+    <p class="about-text">خالص دارایی را لحظه‌به‌لحظه محاسبه و نمایش می‌دهد. با قابلیت تعریف صندوق‌های تخصیصی، ثبت تراکنش بانکی بر اساس پیامک بانکی، ارائه گزارش‌های ماهانه و هشدار بودجه، به شما کمک می‌کند بدانید پولتان کجا می‌رود.</p>
+    <p class="about-text">تمام اطلاعات فقط روی گوشی خود شما می‌ماند و به هیچ سروری فرستاده نمی‌شود.</p>
+    <p class="about-text">«<span class="kufi">سین</span>» در زبان پهلوی به معنای پرندهٔ شکاری بزرگ است.</p>
   </div></div>
 </div>
 
@@ -512,7 +544,7 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="form-group"><label class="form-label">تاریخ</label><input type="date" class="form-input" id="inc-date"></div>
     <div class="form-group"><label class="form-label">گروه دریافتی</label><select class="form-select" id="inc-group" onchange="updateAllocPreview()"><option value="monthly">ماهیانه</option><option value="extra">اضافی</option><option value="other">سایر</option><option value="none">هیچکدام</option></select></div>
     <div class="form-group"><label class="form-label">واریز به حساب</label><select class="form-select" id="inc-account"></select></div>
-    <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="inc-desc" placeholder="حقوق، اجاره، قرض برگشتی، ..." list="inc-desc-suggestions" autocomplete="off"><datalist id="inc-desc-suggestions"></datalist></div>
+    <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="inc-desc" placeholder="حقوق، اجاره، قرض برگشتی، ..." autocomplete="off"><datalist id="inc-desc-suggestions"></datalist></div>
     <div id="inc-allocations" class="hint-box" style="display:none;"></div>
     <div class="form-group"><label class="form-label">دسته‌بندی دریافت</label><div class="chips" id="inc-cats"></div></div>
     <button class="btn-primary" onclick="submitIncome()">ثبت دریافت</button>
@@ -525,13 +557,30 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-title">💸 ثبت هزینه</div>
+    <div class="form-group"><label class="form-label">نوع پرداخت</label><div class="chips" id="exp-mode">
+      <span class="chip sel" data-mode="normal" onclick="setExpMode('normal')">💸 هزینه</span>
+      <span class="chip" data-mode="fund" onclick="setExpMode('fund')">💼 از صندوق تخصیصی</span>
+      <span class="chip" data-mode="loan" onclick="setExpMode('loan')">📒 دفتر قروض</span>
+    </div></div>
+    <div id="exp-mode-panel" style="display:none;margin-bottom:12px;"></div>
     <div class="form-group"><label class="form-label">مبلغ (ریال)</label><input type="text" inputmode="numeric" class="form-input" id="exp-amount" placeholder="مثال: 500,000" oninput="sanitizeNumberInput(this)"></div>
     <div class="form-group"><label class="form-label">تاریخ</label><input type="date" class="form-input" id="exp-date"></div>
     <div class="form-group"><label class="form-label">دسته‌بندی</label><div class="chips" id="exp-cats"></div></div>
     <div class="form-group"><label class="form-label">پرداخت از حساب</label><select class="form-select" id="exp-account"></select></div>
-    <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="exp-desc" placeholder="توضیح مختصر..." list="exp-desc-suggestions" autocomplete="off"><datalist id="exp-desc-suggestions"></datalist></div>
-    <button class="btn-primary" onclick="submitExpense()">ثبت هزینه</button>
+    <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="exp-desc" placeholder="توضیح مختصر..." autocomplete="off"><datalist id="exp-desc-suggestions"></datalist></div>
+    <button class="btn-primary" id="exp-submit" onclick="submitExpense()">ثبت هزینه</button>
     <button class="btn-secondary" onclick="closeModal('modal-expense')">انصراف</button>
+  </div>
+</div>
+
+<!-- Reorder Modal (v1.12.0) -->
+<div class="modal-overlay" id="modal-reorder" onclick="closeModalOutside(event,'modal-reorder')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="reorder-title">جابجایی</div>
+    <div class="hint-box">💡 با فلش‌ها ترتیب را عوض کنید. همین ترتیب در داشبورد، صفحه‌ی حساب‌ها و فهرست انتخاب حساب‌ها هم اعمال می‌شود.</div>
+    <div id="reorder-list"></div>
+    <button class="btn-secondary" onclick="closeModal('modal-reorder')">بستن</button>
   </div>
 </div>
 
@@ -543,7 +592,7 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="form-group"><label class="form-label">مبلغ (ریال)</label><input type="text" inputmode="numeric" class="form-input" id="fund-pay-amount" placeholder="مبلغ پرداختی" oninput="sanitizeNumberInput(this)"></div>
     <div class="form-group"><label class="form-label">تاریخ</label><input type="date" class="form-input" id="fund-pay-date"></div>
     <div class="form-group"><label class="form-label">پرداخت از حساب</label><select class="form-select" id="fund-pay-account"><option value="">-- انتخاب حساب --</option></select></div>
-    <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="fund-pay-desc" placeholder="مثال: زکات ماه فروردین" list="fund-pay-desc-suggestions" autocomplete="off"><datalist id="fund-pay-desc-suggestions"></datalist></div>
+    <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="fund-pay-desc" placeholder="مثال: زکات ماه فروردین" autocomplete="off"><datalist id="fund-pay-desc-suggestions"></datalist></div>
     <div class="form-group"><label class="form-label">دسته‌بندی هزینه</label><div class="chips" id="fund-pay-cats"></div></div>
     <input type="hidden" id="fund-pay-id">
     <div class="hint-box">
@@ -1071,22 +1120,60 @@ function navigate(page, el) {
 // ═══════════════════════════════════════
 // MODALS
 // ═══════════════════════════════════════
+// ── v1.12.0: پیشنهاد توضیحات ──
+// قبلاً از <datalist> استفاده می‌شد که iOS فقط ۳ گزینه‌اش را بالای کیبورد نشان می‌دهد.
+// حالا تا ۱۲ پیشنهاد به‌صورت چیپ، **بالای** فیلد نمایش داده می‌شود (پایینِ فیلد زیر کیبورد پنهان می‌ماند).
+// مرتب‌سازی: پرتکرارترین، بعد جدیدترین. جستجو مستقل از «ی/ک» عربی و فارسی (normalizeFa).
+var DESC_SUG_MAX = 12;
 function populateDescSuggestions(txType, datalistId) {
-  var dl = document.getElementById(datalistId); if (!dl) return;
-  var freq = {};
+  var inputId = datalistId.replace(/-suggestions$/, '');
+  var input = document.getElementById(inputId); if (!input) return;
+  input.dataset.sugType = txType;
+  var box = document.getElementById(inputId + '-sug');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = inputId + '-sug'; box.className = 'desc-sug';
+    input.parentNode.insertBefore(box, input);
+    input.addEventListener('input', function(){ renderDescSuggestions(input); });
+    input.addEventListener('focus', function(){ renderDescSuggestions(input); });
+    input.addEventListener('blur', function(){ setTimeout(function(){ if (document.activeElement !== input) { box.style.display = 'none'; } }, 150); });
+  }
+  box.style.display = 'none'; box.innerHTML = '';   // فقط وقتی فیلد فوکوس دارد نمایش داده می‌شود
+}
+function descCandidates(txType) {
+  var stat = {};
   DB.transactions.forEach(function(t) {
-    if (t.type === txType && t.desc) {
-      var d = t.desc.trim();
-      if (d) freq[d] = (freq[d] || 0) + 1;
-    }
+    if (t.type !== txType || !t.desc) return;
+    var d = t.desc.trim(); if (!d) return;
+    var k = normalizeFa(d);
+    if (!stat[k]) stat[k] = { text: d, n: 0, last: '' };
+    stat[k].n++;
+    if ((t.date || '') > stat[k].last) { stat[k].last = t.date || ''; stat[k].text = d; }
   });
-  var sorted = Object.keys(freq).sort(function(a,b){ return freq[b] - freq[a]; }).slice(0, 30);
-  dl.innerHTML = sorted.map(function(d){ return '<option value="' + d.replace(/"/g,'&quot;') + '">'; }).join('');
+  return Object.keys(stat).map(function(k){ stat[k].key = k; return stat[k]; })
+    .sort(function(a,b){ return (b.n - a.n) || (b.last > a.last ? 1 : b.last < a.last ? -1 : 0); });
+}
+function renderDescSuggestions(input) {
+  var box = document.getElementById(input.id + '-sug'); if (!box) return;
+  var q = normalizeFa(input.value);
+  var list = descCandidates(input.dataset.sugType)
+    .filter(function(c){ return !q || (c.key.indexOf(q) !== -1 && c.key !== q); })
+    .slice(0, DESC_SUG_MAX);
+  if (!list.length) { box.innerHTML = ''; box.style.display = 'none'; return; }
+  box.style.display = 'flex';
+  box.innerHTML = list.map(function(c){
+    return '<button type="button" class="desc-sug-chip">' + c.text.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</button>';
+  }).join('');
+  Array.prototype.forEach.call(box.children, function(btn, i) {
+    // pointerdown + preventDefault تا فیلد فوکوس (و کیبورد) را از دست ندهد
+    btn.addEventListener('pointerdown', function(e){ e.preventDefault(); });
+    btn.addEventListener('click', function(){ input.value = list[i].text; renderDescSuggestions(input); });
+  });
 }
 
 function openModal(id) {
   document.getElementById(id).classList.add('open');
-  if (id === 'modal-expense') { populateExpCats(); populateExpAccounts(); setDateDefault('exp-date'); populateDescSuggestions('expense','exp-desc-suggestions'); }
+  if (id === 'modal-expense') { setExpMode('normal'); populateExpCats(); populateExpAccounts(); setDateDefault('exp-date'); populateDescSuggestions('expense','exp-desc-suggestions'); }
   if (id === 'modal-income') { populateIncAccounts(); populateIncCats(); setDateDefault('inc-date'); populateDescSuggestions('income','inc-desc-suggestions'); }
 }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -1249,6 +1336,84 @@ function submitExpense() {
   document.getElementById('exp-desc').value = '';
   document.getElementById('exp-date').value = '';
   renderAll();
+}
+
+// ── v1.12.0: دکمه‌ی «هزینه» — پرداخت از صندوق یا از طریق دفتر قروض ──
+// این حالت‌ها منطق جدیدی برای ثبت ندارند: مقادیرِ واردشده به همان پنجره‌های موجود
+// (پرداخت از صندوق، ثبت قرض، بازپرداخت) منتقل می‌شوند و ثبت با همان توابع آزموده‌شده انجام می‌شود.
+function setExpMode(mode) {
+  document.querySelectorAll('#exp-mode .chip').forEach(function(c){ c.classList.toggle('sel', c.dataset.mode === mode); });
+  var panel = document.getElementById('exp-mode-panel');
+  document.getElementById('exp-submit').style.display = mode === 'normal' ? '' : 'none';
+  if (mode === 'normal') { panel.style.display = 'none'; panel.innerHTML = ''; return; }
+  var h = '';
+  if (mode === 'fund') {
+    h += '<div class="form-label" style="margin-bottom:8px;">از کدام صندوق؟</div>';
+    if (!DB.funds.length) h += '<div class="hint-box">صندوقی ثبت نشده</div>';
+    DB.funds.forEach(function(f) {
+      h += '<button class="exp-choice-btn" style="width:100%;margin-bottom:8px;" onclick="expToFund(\'' + f.id + '\')">' +
+        '<span class="exp-choice-icon">' + f.icon + '</span><div><span class="exp-choice-title">' + f.name + '</span>' +
+        '<span class="exp-choice-sub">موجودی: ' + toFa(addCommas(Math.round(getFundBalance(f.id)))) + ' ریال</span></div></button>';
+    });
+  } else {
+    h += '<button class="exp-choice-btn" style="width:100%;margin-bottom:8px;" onclick="expToLoanGiven()">' +
+      '<span class="exp-choice-icon">🤝</span><div><span class="exp-choice-title">قرض دادن (طلب جدید)</span>' +
+      '<span class="exp-choice-sub">از حساب کسر می‌شود ولی جزو هزینه‌ها نیست</span></div></button>';
+    var debts = (DB.loans||[]).filter(function(l){ return l.type === 'taken' && l.status !== 'settled' && l.remaining > 0; });
+    h += '<div class="form-label" style="margin:6px 0 8px;">پرداخت بدهی</div>';
+    if (!debts.length) h += '<div class="hint-box">بدهی بازی در دفتر قروض ثبت نشده</div>';
+    debts.forEach(function(l) {
+      h += '<button class="exp-choice-btn" style="width:100%;margin-bottom:8px;" onclick="expToRepay(\'' + l.id + '\')">' +
+        '<span class="exp-choice-icon">💸</span><div><span class="exp-choice-title">بدهی به ' + l.counterparty + '</span>' +
+        '<span class="exp-choice-sub">باقی‌مانده: ' + toCurrency(l.remaining, l.currency||'IRR') + ' ' + curLabel(l.currency||'IRR') + '</span></div></button>';
+    });
+  }
+  panel.innerHTML = h; panel.style.display = 'block';
+}
+function readExpenseDraft() {
+  var sel = document.querySelector('#exp-cats .chip.sel');
+  return {
+    amount: document.getElementById('exp-amount').value,
+    date: document.getElementById('exp-date').value || todayGregorian(),
+    desc: document.getElementById('exp-desc').value,
+    accountId: document.getElementById('exp-account').value,
+    catId: sel ? sel.dataset.id : null
+  };
+}
+// بعد از انتقال به پنجره‌ی دیگر، فرم هزینه مثل بعد از ثبت عادی خالی می‌شود
+function clearExpenseForm() {
+  document.getElementById('exp-amount').value = '';
+  document.getElementById('exp-desc').value = '';
+  document.getElementById('exp-date').value = '';
+}
+function selectIfPresent(selectId, value) {
+  var el = document.getElementById(selectId); if (!el || !value) return;
+  if (Array.prototype.some.call(el.options, function(o){ return o.value === value; })) el.value = value;
+}
+function expToFund(fundId) {
+  var d = readExpenseDraft(); closeModal('modal-expense'); clearExpenseForm();
+  openFundPayment(fundId);
+  document.getElementById('fund-pay-amount').value = d.amount;
+  document.getElementById('fund-pay-date').value = d.date;
+  document.getElementById('fund-pay-desc').value = d.desc;
+  selectIfPresent('fund-pay-account', d.accountId);
+  if (d.catId) { var c = document.querySelector('#fund-pay-cats .chip[data-id="' + d.catId + '"]'); if (c) c.classList.add('sel'); }
+}
+function expToLoanGiven() {
+  var d = readExpenseDraft(); closeModal('modal-expense'); clearExpenseForm();
+  openLoanModal();
+  document.getElementById('loan-type').value = 'given'; updateLoanTypeUI();
+  document.getElementById('loan-amount').value = d.amount;
+  document.getElementById('loan-date').value = d.date;
+  document.getElementById('loan-note').value = d.desc;
+  selectIfPresent('loan-account', d.accountId);
+}
+function expToRepay(loanId) {
+  var d = readExpenseDraft(); closeModal('modal-expense'); clearExpenseForm();
+  openRepayment(loanId);
+  document.getElementById('repay-amount').value = d.amount;
+  document.getElementById('repay-date').value = d.date;
+  selectIfPresent('repay-account', d.accountId);
 }
 
 function openFundPayment(fundId) {
@@ -1912,6 +2077,45 @@ function getTotalDebt(cur) {
     .reduce(function(s,l){ return s + (l.remaining||0); }, 0);
 }
 
+// ── v1.12.0: داشبورد — فقط چند حساب/صندوق اول نمایش داده می‌شود؛ بقیه با «نمایش بیشتر» ──
+// وضعیت باز/بسته فقط در حافظه است (با هر بار باز شدن اپ دوباره بسته می‌شود).
+var DASH_LIMITS = { accounts: 4, funds: 1 };
+var dashExpanded = { accounts: false, funds: false };
+function renderMoreToggle(elId, kind, total) {
+  var el = document.getElementById(elId); if (!el) return;
+  if (total <= DASH_LIMITS[kind]) { el.innerHTML = ''; return; }
+  var open = dashExpanded[kind];
+  var hiddenCount = total - DASH_LIMITS[kind];
+  el.innerHTML = '<button class="more-toggle' + (open ? ' open' : '') + '" aria-expanded="' + open + '" onclick="toggleDashMore(\'' + kind + '\')">' +
+    (open ? 'نمایش کمتر' : 'نمایش بیشتر (' + toFa(hiddenCount) + ')') +
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button>';
+}
+function toggleDashMore(kind) { dashExpanded[kind] = !dashExpanded[kind]; renderDashboard(); }
+
+// ── v1.12.0: جابجایی حساب‌ها و صندوق‌ها — فقط ترتیب آرایه‌ی DB.accounts / DB.funds عوض می‌شود، نه شکل داده ──
+var reorderKind = null;
+function openReorder(kind) {
+  reorderKind = kind;
+  document.getElementById('reorder-title').textContent = kind === 'accounts' ? 'جابجایی حساب‌ها' : 'جابجایی صندوق‌ها';
+  renderReorderList();
+  openModal('modal-reorder');
+}
+function renderReorderList() {
+  var arr = DB[reorderKind] || [];
+  document.getElementById('reorder-list').innerHTML = arr.map(function(x, i) {
+    var label = reorderKind === 'accounts' ? ('🏦 ' + x.name + ' (' + x.currency + ')') : (x.icon + ' ' + x.name);
+    return '<div class="reorder-row"><span class="reorder-name">' + label + '</span>' +
+      '<button class="reorder-btn" aria-label="بالاتر" onclick="moveOrder(' + i + ',-1)"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
+      '<button class="reorder-btn" aria-label="پایین‌تر" onclick="moveOrder(' + i + ',1)"' + (i === arr.length - 1 ? ' disabled' : '') + '>↓</button></div>';
+  }).join('');
+}
+function moveOrder(i, dir) {
+  var arr = DB[reorderKind]; var j = i + dir;
+  if (!arr || j < 0 || j >= arr.length) return;
+  var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+  saveDB(); renderReorderList(); renderAll();
+}
+
 function renderDashboard() {
   var accountsRial = DB.accounts.filter(function(a){ return a.currency==='IRR'; }).reduce(function(s,a){ return s+getAccountBalance(a.id); }, 0);
   var totalRial = accountsRial + getTotalReceivable('IRR') - getTotalDebt('IRR');
@@ -1933,25 +2137,27 @@ function renderDashboard() {
     grid.innerHTML = '<div class="empty" style="grid-column:span 2"><div class="ei">🏦</div><p>حسابی ثبت نشده</p></div>';
   } else {
     var html = '';
-    DB.accounts.forEach(function(a) {
+    DB.accounts.forEach(function(a, ai) {
       var logoHtml = a.logo
         ? '<img src="' + a.logo + '" class="am-logo">'
         : '<span class="am-logo-emoji">🏦</span>';
-      html += '<div class="account-mini">' +
+      html += '<div class="account-mini' + (ai >= DASH_LIMITS.accounts && !dashExpanded.accounts ? ' dash-hidden' : '') + '">' +
         '<div class="am-header">' + logoHtml + '<div class="am-name">' + a.name + '</div><div class="am-currency">' + a.currency + '</div></div>' +
         '<div class="am-footer"><div class="am-balance">' + toCurrency(getAccountBalance(a.id),a.currency) + '</div></div>' +
         '</div>';
     });
     grid.innerHTML = html;
   }
+  renderMoreToggle('accMore', 'accounts', DB.accounts.length);
+  document.getElementById('accOrderBtn').style.display = DB.accounts.length > 1 ? '' : 'none';
 
   var fundsEl = document.getElementById('fundsSection');
   if (!DB.funds.length) {
     fundsEl.innerHTML = '<div class="empty"><div class="ei">💼</div><p>صندوقی ثبت نشده</p></div>';
   } else {
     var fHtml = '';
-    DB.funds.forEach(function(f) {
-      fHtml += '<div class="fund-item" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;">' +
+    DB.funds.forEach(function(f, fi) {
+      fHtml += '<div class="fund-item' + (fi >= DASH_LIMITS.funds && !dashExpanded.funds ? ' dash-hidden' : '') + '" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;">' +
         '<div style="display:flex;align-items:center;gap:10px;">' +
           '<span style="font-size:22px;">' + f.icon + '</span>' +
           '<div>' +
@@ -1965,6 +2171,8 @@ function renderDashboard() {
     fundsEl.innerHTML = fHtml;
     fundsEl.querySelectorAll('[data-action="fp"]').forEach(function(btn){ btn.addEventListener('click', function(){ openFundPayment(this.dataset.id); }); });
   }
+  renderMoreToggle('fundMore', 'funds', DB.funds.length);
+  document.getElementById('fundOrderBtn').style.display = DB.funds.length > 1 ? '' : 'none';
 
   var recent = DB.transactions.slice()
     .sort(function(a,b){ return new Date(b.date)-new Date(a.date); })
@@ -3973,7 +4181,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.11.0';
+var CURRENT_VERSION = '1.12.0';
 
 var versionLabelEl = document.getElementById('versionLabel');
 if (versionLabelEl) versionLabelEl.textContent = 'v' + CURRENT_VERSION;
@@ -4122,7 +4330,7 @@ setTimeout(function() {
     <input type="hidden" id="edit-tx-id">
     <input type="hidden" id="edit-tx-type">
     <div class="form-group"><label class="form-label">مبلغ (ریال)</label><input type="text" inputmode="numeric" class="form-input" id="edit-amount" placeholder="مبلغ" oninput="sanitizeNumberInput(this)"></div>
-    <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="edit-desc" placeholder="توضیح تراکنش" list="edit-desc-suggestions" autocomplete="off"><datalist id="edit-desc-suggestions"></datalist></div>
+    <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="edit-desc" placeholder="توضیح تراکنش" autocomplete="off"><datalist id="edit-desc-suggestions"></datalist></div>
     <div class="form-group"><label class="form-label">تاریخ</label><input type="date" class="form-input" id="edit-date"></div>
     <div class="form-group"><label class="form-label">حساب</label><select class="form-select" id="edit-account" onchange="updateLoanLinkUI()"></select></div>
     <div class="form-group" id="edit-cat-group" style="display:none;"><label class="form-label">دسته‌بندی</label><div class="chips" id="edit-cats"></div></div>
