@@ -321,6 +321,8 @@ html { height:100%; height:-webkit-fill-available; }
 .cat-row-btns { display:flex; gap:6px; flex-shrink:0; }
 
 /* ── v1.15.0: ریز دسته‌ها، جمع فیلترشده‌ی تراکنش‌ها، جداسازی ارزها در گزارش ── */
+.rep-sec { font-size:13px; color:var(--aqua-deep); margin:4px 2px 10px; }
+#repSecYear { margin-top:22px; padding-top:14px; border-top:1px dashed var(--border); }
 .rep-fx { font-size:12px; color:var(--text-mid); text-align:center; margin:-4px 0 12px; line-height:1.9; }
 .rep-fx:empty { display:none; }
 .cc-cur { font-size:12px; font-weight:700; color:var(--aqua-deep); margin:14px 0 8px; padding-top:10px; border-top:1px dashed var(--border); }
@@ -524,16 +526,19 @@ html { height:100%; height:-webkit-fill-available; }
     </select>
     <select id="rep-year" class="form-select" onchange="renderReports()" style="font-size:13px;padding:7px;"></select>
   </div>
+  <!-- v1.15.2: اول بخش‌های ماه انتخاب‌شده، بعد بخش‌های کل سال -->
+  <div class="sec-title rep-sec" id="repSecMonth">این ماه</div>
   <div class="rep-summary">
     <div class="rep-box inc-box"><div class="rb-label">درآمد</div><div class="rb-val" id="rep-income">۰</div></div>
     <div class="rep-box exp-box"><div class="rb-label">هزینه</div><div class="rb-val" id="rep-expense">۰</div></div>
   </div>
   <div class="rep-fx" id="rep-fx"></div>
+  <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">هزینه بر اساس دسته‌بندی</div><div id="catChart"></div><div class="cb-hint" id="catChartHint">برای دیدن ریز هر دسته، روی آن بزنید</div></div></div>
+  <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">خرج‌کرد صندوق‌ها</div><div id="fundSpendChart"></div></div></div>
+  <div class="sec-title rep-sec" id="repSecYear">کل سال</div>
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">میانگین‌ها <span id="avgScopeLabel" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></div><div id="avgStats"></div></div></div>
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">روند درآمد و هزینه ماهانه <span id="trendYearLabel" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></div><div id="trendChart"></div></div></div>
-  <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">هزینه بر اساس دسته‌بندی</div><div id="catChart"></div><div class="cb-hint" id="catChartHint">برای دیدن ریز هر دسته، روی آن بزنید</div></div></div>
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">سهم هزینه‌ها از کل سال <span id="pieYearLabel" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></div><div id="expensePie"></div></div></div>
-  <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">خرج‌کرد صندوق‌ها</div><div id="fundSpendChart"></div></div></div>
 </div>
 
 <!-- PAGE: SETTINGS -->
@@ -2838,6 +2843,9 @@ function renderReports() {
   });
 
   repSel = { y: selYear, m: selMonth };
+  // v1.15.2: عنوان دو بخش صفحه — ماه انتخاب‌شده و کل همان سال
+  document.getElementById('repSecMonth').textContent = '📅 ' + J.monthName(selMonth) + ' ' + toFa(String(selYear));
+  document.getElementById('repSecYear').textContent = '🗓️ کل سال ' + toFa(String(selYear));
   // v1.15.0: جمع‌ها و نمودارهای گزارش فقط ریالی‌اند؛ ارزهای دیگر جدا (پایین کادرها و پایین نمودار دسته‌ها)
   var filteredTxs = monthTxs.filter(isRialTx);
   var isPay = function(t){ return t.type === 'expense' || t.type === 'fund-out'; };
@@ -4834,13 +4842,16 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.15.1';
+var CURRENT_VERSION = '1.15.2';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.15.2', items:[
+    'صفحه‌ی «گزارش‌ها» مرتب‌تر شد: اول آمار ماه انتخاب‌شده (درآمد و هزینه، هزینه بر اساس دسته‌بندی، خرج‌کرد صندوق‌ها) و بعد آمار کل سال (میانگین‌ها، روند ماهانه، سهم هزینه‌ها)، هر بخش با عنوان ماه یا سال خودش.'
+  ]},
   { v:'1.15.1', items:[
     'گزارش PDF ماه: پرداخت‌های صندوق حالا در «هزینه کل» و جدول دسته‌ها حساب می‌شوند، مثل صفحه‌ی گزارش‌ها.',
     'خروجی‌های Excel (ماه و کامل) ستون «ارز» دارند، نوع تراکنش‌های قرض به فارسی نوشته می‌شود، و برای انتقال حساب مبدأ و مقصد آمده است.',
