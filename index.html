@@ -1728,6 +1728,25 @@ function expGroupOf(t) {
   var fund = DB.funds.find(function(f){ return f.id === t.fundId; });
   return { key: 'f:' + (t.fundId || ''), label: (fund ? fund.icon : '💰') + ' پرداخت: ' + (fund ? fund.name : 'صندوق') };
 }
+
+// ── v1.15.1: مشترک بین خروجی‌ها (Excel/PDF ماه و کامل) ──
+// قبلاً نوع‌های قرض با کد انگلیسی (loan-given …) و بدون واحد ارز خروجی می‌شدند
+var EXPORT_TYPE_MAP = { income:'درآمد', expense:'هزینه', 'fund-in':'واریز صندوق', 'fund-out':'برداشت صندوق', transfer:'انتقال',
+  'loan-given':'قرض دادن', 'loan-taken':'قرض گرفتن', 'loan-collected':'دریافت قرض', 'loan-repaid':'بازپرداخت بدهی' };
+function exportTypeLabel(t) { return EXPORT_TYPE_MAP[t.type] || t.type; }
+// جهت پول برای علامت +/− در خروجی؛ انتقال و نوع ناشناخته بی‌علامت
+function txFlow(t) {
+  if (t.type === 'income' || t.type === 'fund-in' || t.type === 'loan-taken' || t.type === 'loan-collected') return 1;
+  if (t.type === 'expense' || t.type === 'fund-out' || t.type === 'loan-given' || t.type === 'loan-repaid') return -1;
+  return 0;
+}
+function exportAccountLabel(t) {
+  var name = function(id){ var a = id ? DB.accounts.find(function(x){ return x.id === id; }) : null; return a ? a.name : ''; };
+  if (t.type === 'transfer') return name(t.fromAccountId) + ' ← ' + name(t.toAccountId);
+  return name(t.accountId);
+}
+// مبلغ با واحد برای PDF: ریال بدون پسوند (ستون «مبلغ (ریال)»)، ارزی با $ / AED
+function exportAmount(t) { var cur = txCur(t); return cur === 'IRR' ? addCommas(Math.round(t.amount)) : toCurrency(t.amount, cur); }
 function loanAccountOptions(selectedId, curFilter) {
   return '<option value="">-- انتخاب حساب --</option>' +
     DB.accounts.filter(function(a){ return curFilter ? a.currency===curFilter : true; }).map(function(a){
@@ -3549,10 +3568,12 @@ function exportReportPDF() {
   // v1.15.0: جمع‌ها فقط ریالی، مثل صفحه‌ی گزارش‌ها؛ ارزهای دیگر جدا زیر کادرها
   var rialTxs = monthTxs.filter(isRialTx);
   var income = rialTxs.filter(function(t){return t.type==='income';}).reduce(function(s,t){return s+t.amount;},0);
-  var expense = rialTxs.filter(function(t){return t.type==='expense';}).reduce(function(s,t){return s+t.amount;},0);
+  // v1.15.1: پرداخت از صندوق هم هزینه است — مثل کادر «هزینه» و نمودار دسته‌های صفحه‌ی گزارش‌ها
+  var isPayT = function(t){ return t.type==='expense' || t.type==='fund-out'; };
+  var expense = rialTxs.filter(isPayT).reduce(function(s,t){return s+t.amount;},0);
   var fxPdf = {};
   monthTxs.forEach(function(t){
-    if (t.type !== 'income' && t.type !== 'expense') return;
+    if (t.type !== 'income' && !isPayT(t)) return;
     var cur = txCur(t); if (cur === 'IRR') return;
     fxPdf[cur] = fxPdf[cur] || {inc:0, exp:0};
     if (t.type === 'income') fxPdf[cur].inc += t.amount; else fxPdf[cur].exp += t.amount;
@@ -3562,9 +3583,8 @@ function exportReportPDF() {
   }).join('');
 
   var catTotals = {};
-  rialTxs.filter(function(t){return t.type==='expense';}).forEach(function(t) {
-    var cat = DB.categories.find(function(c){return c.id===t.catId;}) || {name:'سایر',icon:'⭐'};
-    var k = cat.icon + ' ' + cat.name;
+  rialTxs.filter(isPayT).forEach(function(t) {
+    var k = expGroupOf(t).label;   // v1.15.1: همان گروه‌بندی صفحه‌ی گزارش‌ها
     catTotals[k] = (catTotals[k]||0) + t.amount;
   });
 
@@ -3624,13 +3644,12 @@ function exportReportExcel() {
     return j.jy + '-' + String(j.jm).padStart(2,'0') === curMonth;
   });
 
-  var rows = [['تاریخ','نوع','مبلغ','توضیحات','دسته‌بندی','حساب']];
-  var typeMap = {income:'درآمد',expense:'هزینه','fund-in':'واریز صندوق','fund-out':'برداشت صندوق',transfer:'انتقال'};
+  // v1.15.1: ستون «ارز» (ارز حساب تراکنش)، برچسب فارسی قرض‌ها، و حساب مبدأ ← مقصد برای انتقال
+  var rows = [['تاریخ','نوع','مبلغ','ارز','توضیحات','دسته‌بندی','حساب']];
   monthTxs.sort(function(a,b){return new Date(b.date)-new Date(a.date);}).forEach(function(t) {
     var cat = t.catId ? DB.categories.find(function(c){return c.id===t.catId;}) : null;
     var fund = t.fundId ? DB.funds.find(function(f){return f.id===t.fundId;}) : null;
-    var acc = t.accountId ? DB.accounts.find(function(a){return a.id===t.accountId;}) : null;
-    rows.push([J.format(t.date), typeMap[t.type]||t.type, t.amount, t.desc||'', cat?(cat.icon+' '+cat.name):(fund?(fund.icon+' '+fund.name):''), acc?acc.name:'']);
+    rows.push([J.format(t.date), exportTypeLabel(t), t.amount, curLabel(txCur(t)), t.desc||'', cat?(cat.icon+' '+cat.name):(fund?(fund.icon+' '+fund.name):''), exportAccountLabel(t)]);
   });
   var bom = '\uFEFF';
   var csv = bom + rows.map(function(r){ return r.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
@@ -3673,13 +3692,12 @@ function exportPlainJSON(jsonStr, fname) {
 }
 
 function exportExcel() {
-  var rows = [['تاریخ','نوع','مبلغ','توضیحات','دسته‌بندی / صندوق','حساب']];
-  var typeMap = {income:'درآمد',expense:'هزینه','fund-in':'واریز صندوق','fund-out':'برداشت صندوق',transfer:'انتقال'};
+  // v1.15.1: ستون «ارز»، برچسب فارسی قرض‌ها، حساب مبدأ ← مقصد برای انتقال
+  var rows = [['تاریخ','نوع','مبلغ','ارز','توضیحات','دسته‌بندی / صندوق','حساب']];
   DB.transactions.slice().sort(function(a,b){return new Date(b.date)-new Date(a.date);}).forEach(function(t) {
     var cat = t.catId ? DB.categories.find(function(c){return c.id===t.catId;}) : null;
     var fund = t.fundId ? DB.funds.find(function(f){return f.id===t.fundId;}) : null;
-    var acc = t.accountId ? DB.accounts.find(function(a){return a.id===t.accountId;}) : null;
-    rows.push([J.format(t.date), typeMap[t.type]||t.type, t.amount, t.desc||'', cat?(cat.icon+' '+cat.name):(fund?(fund.icon+' '+fund.name):''), acc?acc.name:'']);
+    rows.push([J.format(t.date), exportTypeLabel(t), t.amount, curLabel(txCur(t)), t.desc||'', cat?(cat.icon+' '+cat.name):(fund?(fund.icon+' '+fund.name):''), exportAccountLabel(t)]);
   });
   var bom = '\uFEFF';
   var csv = bom + rows.map(function(r){ return r.map(function(c){ var s=String(c).replace(/"/g,'""'); return '"'+s+'"'; }).join(','); }).join('\n');
@@ -3697,20 +3715,21 @@ function exportPDF() {
   var totalRial = DB.accounts.filter(function(a){return a.currency==='IRR';}).reduce(function(s,a){return s+getAccountBalance(a.id);},0);
   var totalUSD = DB.accounts.filter(function(a){return a.currency==='USD';}).reduce(function(s,a){return s+getAccountBalance(a.id);},0);
   var totalAED = DB.accounts.filter(function(a){return a.currency==='AED';}).reduce(function(s,a){return s+getAccountBalance(a.id);},0);
-  var typeMap = {income:'درآمد',expense:'هزینه','fund-in':'واریز صندوق','fund-out':'برداشت صندوق',transfer:'انتقال'};
   var rows = '';
   DB.transactions.slice().sort(function(a,b){return new Date(b.date)-new Date(a.date);}).slice(0,300).forEach(function(t) {
     var cat = t.catId ? DB.categories.find(function(c){return c.id===t.catId;}) : null;
     var fund = t.fundId ? DB.funds.find(function(f){return f.id===t.fundId;}) : null;
-    var color = (t.type==='income'||t.type==='fund-in') ? '#27AE60' : '#C0392B';
-    var sign = (t.type==='income'||t.type==='fund-in') ? '+' : '-';
-    rows += '<tr><td>' + J.format(t.date) + '</td><td>' + (typeMap[t.type]||t.type) + '</td><td style="direction:ltr;text-align:left;color:' + color + ';font-weight:600;">' + sign + addCommas(Math.round(t.amount)) + '</td><td>' + (t.desc||'') + '</td><td>' + (cat?cat.icon+' '+cat.name:(fund?fund.icon+' '+fund.name:'')) + '</td></tr>';
+    // v1.15.1: علامت بر اساس جهت پول (قرض گرفتن و دریافت قرض = ورود)؛ انتقال بی‌علامت؛ مبلغ ارزی با واحدش
+    var flow = txFlow(t);
+    var color = flow > 0 ? '#27AE60' : (flow < 0 ? '#C0392B' : '#555');
+    var sign = flow > 0 ? '+' : (flow < 0 ? '-' : '');
+    rows += '<tr><td>' + J.format(t.date) + '</td><td>' + exportTypeLabel(t) + '</td><td style="direction:ltr;text-align:left;color:' + color + ';font-weight:600;">' + sign + exportAmount(t) + '</td><td>' + escHtml(t.desc||'') + '</td><td>' + (cat?cat.icon+' '+cat.name:(fund?fund.icon+' '+fund.name:'')) + '</td></tr>';
   });
-  var fundsRows = DB.funds.map(function(f){ return '<div class="fbox"><h3>' + f.icon + ' ' + f.name + ' (' + f.pct + '٪)</h3><p>' + addCommas(Math.round(getFundBalance(f.id))) + ' ریال</p></div>'; }).join('');
+  var fundsRows = DB.funds.map(function(f){ return '<div class="fbox"><h3>' + f.icon + ' ' + f.name + ' (' + fundPctLabel(f) + ')</h3><p>' + addCommas(Math.round(getFundBalance(f.id))) + ' ریال</p></div>'; }).join('');
   var w = window.open('','_blank');
   w.document.write('<!DOCTYPE html><html dir="rtl" lang="fa"><head><meta charset="UTF-8"><title>گزارش مالی</title>' +
     '<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet">' +
-    '<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Vazirmatn,sans-serif;padding:24px;color:white;font-size:12px;}' +
+    '<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Vazirmatn,sans-serif;padding:24px;color:#333;font-size:12px;}' +
     'h1{color:#FF7F7F;font-size:18px;margin-bottom:2px;}.sub{color:#999;font-size:11px;margin-bottom:16px;}' +
     '.sumrow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}' +
     '.sbox{background:#FFF0F0;border-radius:8px;padding:10px 14px;border-right:3px solid #FF7F7F;flex:1;min-width:100px;}' +
@@ -3728,7 +3747,7 @@ function exportPDF() {
     (totalUSD ? '<div class="sbox"><h3>دلار</h3><p>$' + addCommas(totalUSD.toFixed(2)) + '</p></div>' : '') +
     (totalAED ? '<div class="sbox"><h3>درهم</h3><p>AED ' + addCommas(totalAED.toFixed(2)) + '</p></div>' : '') + '</div>' +
     (fundsRows ? '<div class="frow">' + fundsRows + '</div>' : '') +
-    '<table><tr><th>تاریخ</th><th>نوع</th><th>مبلغ</th><th>توضیحات</th><th>دسته‌بندی</th></tr>' + rows + '</table>' +
+    '<table><tr><th>تاریخ</th><th>نوع</th><th>مبلغ (ریال، ارزی با واحد)</th><th>توضیحات</th><th>دسته‌بندی</th></tr>' + rows + '</table>' +
     '<button class="pbtn" onclick="window.print()">🖨️ چاپ / PDF</button>' +
     '<button class="cbtn" onclick="window.close()">✕ بستن</button>' +
     '</body></html>');
@@ -4815,13 +4834,18 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.15.0';
+var CURRENT_VERSION = '1.15.1';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.15.1', items:[
+    'گزارش PDF ماه: پرداخت‌های صندوق حالا در «هزینه کل» و جدول دسته‌ها حساب می‌شوند، مثل صفحه‌ی گزارش‌ها.',
+    'خروجی‌های Excel (ماه و کامل) ستون «ارز» دارند، نوع تراکنش‌های قرض به فارسی نوشته می‌شود، و برای انتقال حساب مبدأ و مقصد آمده است.',
+    'خروجی PDF کامل (از تنظیمات): تاریخ، نوع، توضیحات و دسته‌بندی که سفید و نامرئی چاپ می‌شد حالا دیده می‌شود. مبلغ‌های ارزی با واحد خودشان، قرض گرفتن و دریافت قرض با علامت «+»، و درصد صندوق‌ها درست نمایش داده می‌شوند.'
+  ]},
   { v:'1.15.0', items:[
     'در «گزارش‌ها»، روی هر دسته در «هزینه بر اساس دسته‌بندی» بزنید تا ریز آن دسته در ماه انتخاب‌شده باز شود. برای هر آیتم مبلغ، درصد از کل آن دسته و تعداد دفعات نمایش داده می‌شود. آیتم‌ها از روی توضیحات تراکنش‌ها ساخته می‌شوند؛ هرچه توضیحات یکدست‌تر باشد، گزارش دقیق‌تر است.',
     'با زدن هر آیتم، تراکنش‌های آن هم دیده می‌شود. تراکنش‌های بدون توضیح زیر «بدون توضیح» می‌آیند.',
