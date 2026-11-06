@@ -312,7 +312,8 @@ html { height:100%; height:-webkit-fill-available; }
 .ip-tabs::-webkit-scrollbar { display:none; }
 .ip-tab { flex-shrink:0; padding:7px 12px; border-radius:99px; font-family:inherit; font-size:12px; font-weight:600; background:var(--aqua-pale); color:var(--text-main); border:1px solid var(--border-aqua); cursor:pointer; white-space:nowrap; }
 .ip-tab.sel { background:var(--aqua); color:var(--on-primary); border-color:var(--aqua); }
-.ip-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(44px,1fr)); gap:4px; margin-bottom:14px; }
+/* v1.14.1: ارتفاع ثابت (۴٫۵ ردیف، بقیه با اسکرول) تا با عوض شدن گروه، پنجره و فیلد نام بالا و پایین نپرند */
+.ip-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(44px,1fr)); grid-auto-rows:44px; align-content:start; gap:4px; height:212px; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; margin-bottom:14px; }
 .ip-cell { height:44px; border-radius:10px; border:1px solid transparent; background:none; font-size:24px; line-height:1; cursor:pointer; padding:0; -webkit-tap-highlight-color:transparent; }
 .ip-cell:active { background:var(--aqua-pale); }
 .ip-cell.sel { background:var(--aqua-pale); border-color:var(--aqua); }
@@ -1278,8 +1279,33 @@ function openModal(id) {
   if (id === 'modal-income') { populateIncAccounts(); populateIncCats(); setDateDefault('inc-date'); populateDescSuggestions('income','inc-desc-suggestions'); }
   if (id === 'modal-auto-backup') renderAutoBackupList();
 }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModal(id) {
+  var m = document.getElementById(id);
+  // v1.14.1: اگر فیلدی داخل این پنجره فوکوس دارد، اول blur شود تا iOS کیبورد را درست ببندد؛
+  // پنهان کردن پنجره با فیلد فوکوس‌دار، در iOS گاهی صفحه را جابه‌جا رها می‌کند و لمس فیلدها بعد از آن جای درست نمی‌نشیند
+  var a = document.activeElement;
+  if (a && a !== document.body && m.contains(a) && a.blur) a.blur();
+  m.classList.remove('open');
+  resetViewportSoon();
+}
 function closeModalOutside(e, id) { if (e.target.id === id) closeModal(id); }
+
+// ── v1.14.1: برگرداندن جابه‌جایی صفحه بعد از بسته شدن کیبورد iOS ──
+// کل اپ داخل #appShell با position:fixed است و خود سند هیچ‌وقت نباید اسکرول بخورد. iOS هنگام باز شدن کیبورد
+// سند را بالا می‌برد و بعد از بستنش همیشه برنمی‌گرداند؛ آن‌وقت ناحیه‌ی لمس عناصر fixed با جای دیده‌شده‌شان
+// فرق می‌کند (تایپ نشدن در فیلد تا Force Close). وقتی هیچ فیلد تایپی فوکوس ندارد، سند به صفر برمی‌گردد.
+function isTypingField(el) {
+  return !!el && (el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || (el.tagName === 'INPUT' && CLEAR_TYPES[(el.getAttribute('type') || 'text').toLowerCase()]));
+}
+function resetViewport() {
+  if (isTypingField(document.activeElement)) return;
+  var se = document.scrollingElement || document.documentElement;
+  if (window.scrollY || se.scrollTop || document.body.scrollTop) {
+    window.scrollTo(0, 0); se.scrollTop = 0; document.body.scrollTop = 0;
+  }
+}
+function resetViewportSoon() { setTimeout(resetViewport, 80); setTimeout(resetViewport, 400); }   // دومی بعد از انیمیشن بسته شدن کیبورد
+document.addEventListener('focusout', function(e) { if (isTypingField(e.target)) resetViewportSoon(); });
 
 // ── v1.13.0: دکمه‌ی ✕ برای پاک کردن هر فیلد تایپی ──
 // همه‌ی input.form-input (متنی/عددی/رمز) و textarea.form-input یک دکمه‌ی ✕ می‌گیرند.
@@ -2134,9 +2160,11 @@ function renderEmojiTabs() {
   }).join('');
 }
 function renderEmojiGrid() {
-  document.getElementById('ce-grid').innerHTML = EMOJI_GROUPS[ceState.tab].e.split(' ').map(function(e) {
+  var grid = document.getElementById('ce-grid');
+  grid.innerHTML = EMOJI_GROUPS[ceState.tab].e.split(' ').map(function(e) {
     return '<button type="button" class="ip-cell' + (e === ceState.icon ? ' sel' : '') + '" data-e="' + e + '">' + e + '</button>';
   }).join('');
+  grid.scrollTop = 0;   // v1.14.1: جدول ارتفاع ثابت دارد؛ با عوض شدن گروه از بالا شروع شود
 }
 function setCatIcon(icon) {
   ceState.icon = icon;
@@ -2189,8 +2217,14 @@ function openCatEditor(kind, id) {
   document.getElementById('ce-preview').textContent = ceState.icon;
   renderEmojiTabs(); renderEmojiGrid();
   openModal('modal-cat-edit');
-  var tabEl = document.querySelector('#ce-tabs .ip-tab.sel');
-  if (tabEl && tabEl.scrollIntoView) tabEl.scrollIntoView({ block: 'nearest', inline: 'center' });
+  // v1.14.1: به‌جای scrollIntoView (که در iOS ممکن است پنجره و خود صفحه را هم اسکرول کند) فقط ردیف تب‌ها جابه‌جا شود.
+  // با اختلاف مختصات صفحه حساب می‌شود تا علامت scrollLeft در RTL مهم نباشد
+  var tabs = document.getElementById('ce-tabs'), tabEl = tabs.querySelector('.ip-tab.sel');
+  tabs.scrollLeft = 0;
+  if (tabEl) {
+    var tr = tabEl.getBoundingClientRect(), cr = tabs.getBoundingClientRect();
+    tabs.scrollLeft += (tr.left + tr.width / 2) - (cr.left + cr.width / 2);
+  }
 }
 function saveCatEditor() {
   var name = document.getElementById('ce-name').value.trim();
@@ -4607,13 +4641,17 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.14.0';
+var CURRENT_VERSION = '1.14.1';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.14.1', items:[
+    'برای مشکلی که گاهی هنگام ویرایش دسته‌بندی، فیلد نام تایپ نمی‌پذیرفت و لازم بود اپ بسته و دوباره باز شود، اصلاحی انجام شد. اگر باز هم پیش آمد، لطفاً خبر دهید.',
+    'جدول ایموجی‌ها حالا ارتفاع ثابت دارد و با عوض کردن گروه، پنجره بالا و پایین نمی‌پرد؛ بقیه‌ی ایموجی‌های هر گروه با کشیدن جدول دیده می‌شوند.'
+  ]},
   { v:'1.14.0', items:[
     'برای آیکون دسته‌بندی‌ها حالا بیش از ۲۰۰ ایموجی در ۱۰ گروه دارید: خوراک، خانه و قبض‌ها، حمل‌ونقل، سلامت، خرید، آموزش و خانواده، تفریح، کار و درآمد، مذهبی و خیریه، و سایر.',
     'اگر ایموجی موردنظرتان در فهرست نبود، در فیلد «ایموجی دلخواه» آن را با کیبورد ایموجی گوشی تایپ کنید.',
