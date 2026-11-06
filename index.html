@@ -300,6 +300,31 @@ html { height:100%; height:-webkit-fill-available; }
 .ab-date { font-size:13px; font-weight:600; color:var(--text-main); }
 .ab-sub { font-size:11px; color:var(--text-sub); margin-top:1px; }
 .ab-btn { border:1px solid var(--border-aqua); background:var(--aqua-pale); color:var(--aqua-deep); border-radius:9px; padding:8px 10px; min-height:36px; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; flex-shrink:0; }
+
+/* ── v1.14.0: انتخابگر ایموجی دسته‌بندی‌ها ── */
+.ip-head { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.ip-preview { width:52px; height:52px; border-radius:14px; background:var(--aqua-pale); border:1px solid var(--border-aqua); display:flex; align-items:center; justify-content:center; font-size:30px; line-height:1; flex-shrink:0; }
+.ip-custom { flex:1; min-width:0; }
+.ip-custom .form-input { font-size:16px; }
+.ip-err { font-size:11px; color:var(--danger); margin-top:4px; min-height:0; }
+.ip-err:empty { display:none; }
+.ip-tabs { display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; margin-bottom:6px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+.ip-tabs::-webkit-scrollbar { display:none; }
+.ip-tab { flex-shrink:0; padding:7px 12px; border-radius:99px; font-family:inherit; font-size:12px; font-weight:600; background:var(--aqua-pale); color:var(--text-main); border:1px solid var(--border-aqua); cursor:pointer; white-space:nowrap; }
+.ip-tab.sel { background:var(--aqua); color:var(--on-primary); border-color:var(--aqua); }
+.ip-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(44px,1fr)); gap:4px; margin-bottom:14px; }
+.ip-cell { height:44px; border-radius:10px; border:1px solid transparent; background:none; font-size:24px; line-height:1; cursor:pointer; padding:0; -webkit-tap-highlight-color:transparent; }
+.ip-cell:active { background:var(--aqua-pale); }
+.ip-cell.sel { background:var(--aqua-pale); border-color:var(--aqua); }
+.cat-row-name { flex:1; min-width:0; }
+.cat-row-btns { display:flex; gap:6px; flex-shrink:0; }
+
+/* ── v1.14.0: پنجره‌ی «تازه‌های نسخه» بعد از هر آپدیت ── */
+.wn-ver { font-size:13px; font-weight:700; color:var(--aqua-deep); margin:14px 0 6px; }
+.wn-ver:first-child { margin-top:0; }
+.wn-list { list-style:none; margin:0 0 14px; padding:0; }
+.wn-list li { position:relative; font-size:14px; line-height:1.9; color:var(--text-main); padding-right:16px; margin-bottom:4px; }
+.wn-list li::before { content:''; position:absolute; right:2px; top:.8em; width:6px; height:6px; border-radius:50%; background:var(--accent); }
 </style>
 </head>
 <body>
@@ -737,7 +762,7 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="modal-handle"></div>
     <div class="modal-title">💸 دسته‌بندی پرداخت</div>
     <div id="catList"></div>
-    <button class="btn-primary" onclick="openModal('modal-category')" style="margin-top:12px;">+ دسته‌بندی جدید</button>
+    <button class="btn-primary" onclick="openCatEditor('exp')" style="margin-top:12px;">+ دسته‌بندی جدید</button>
     <button class="btn-secondary" onclick="closeModal('modal-cats-exp')">بستن</button>
   </div>
 </div>
@@ -746,7 +771,7 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="modal-handle"></div>
     <div class="modal-title">💵 دسته‌بندی دریافت</div>
     <div id="incCatList"></div>
-    <button class="btn-primary" onclick="openModal('modal-income-category')" style="margin-top:12px;">+ دسته‌بندی جدید</button>
+    <button class="btn-primary" onclick="openCatEditor('inc')" style="margin-top:12px;">+ دسته‌بندی جدید</button>
     <button class="btn-secondary" onclick="closeModal('modal-cats-inc')">بستن</button>
   </div>
 </div>
@@ -763,27 +788,36 @@ html { height:100%; height:-webkit-fill-available; }
   </div>
 </div>
 
-<!-- Category Modal -->
-<div class="modal-overlay" id="modal-category" onclick="closeModalOutside(event,'modal-category')">
+<!-- v1.14.0: یک پنجره‌ی مشترک برای افزودن و ویرایش دسته‌بندی پرداخت و دریافت (جای modal-category و modal-income-category)
+     بعد از modal-cats-exp/inc در DOM می‌آید تا رویشان باز شود -->
+<div class="modal-overlay" id="modal-cat-edit" onclick="closeModalOutside(event,'modal-cat-edit')">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title">دسته‌بندی پرداخت جدید</div>
-    <div class="form-group"><label class="form-label">نام</label><input type="text" class="form-input" id="cat-name" placeholder="مثال: پوشاک"></div>
-    <div class="form-group"><label class="form-label">آیکون</label><div class="chips" id="cat-icon-chips"><span class="chip sel" data-icon="🛒">🛒</span><span class="chip" data-icon="🍔">🍔</span><span class="chip" data-icon="🚗">🚗</span><span class="chip" data-icon="💊">💊</span><span class="chip" data-icon="👕">👕</span><span class="chip" data-icon="🎮">🎮</span><span class="chip" data-icon="📱">📱</span><span class="chip" data-icon="🏥">🏥</span><span class="chip" data-icon="📚">📚</span><span class="chip" data-icon="⚡">⚡</span><span class="chip" data-icon="🏠">🏠</span><span class="chip" data-icon="✂️">✂️</span><span class="chip" data-icon="🎁">🎁</span><span class="chip" data-icon="⭐">⭐</span></div></div>
-    <button class="btn-primary" onclick="submitCategory()">افزودن</button>
-    <button class="btn-secondary" onclick="closeModal('modal-category')">انصراف</button>
+    <div class="modal-title" id="ce-title">دسته‌بندی جدید</div>
+    <div class="form-group"><label class="form-label">نام</label><input type="text" class="form-input" id="ce-name"></div>
+    <div class="form-group"><label class="form-label">آیکون</label>
+      <div class="ip-head">
+        <div class="ip-preview" id="ce-preview">⭐</div>
+        <div class="ip-custom">
+          <input type="text" class="form-input" id="ce-custom" placeholder="یا ایموجی دلخواه را تایپ کنید" autocomplete="off" autocorrect="off" spellcheck="false" oninput="onCustomEmojiInput(this)">
+          <div class="ip-err" id="ce-err"></div>
+        </div>
+      </div>
+      <div class="ip-tabs" id="ce-tabs"></div>
+      <div class="ip-grid" id="ce-grid"></div>
+    </div>
+    <button class="btn-primary" id="ce-save" onclick="saveCatEditor()">افزودن</button>
+    <button class="btn-secondary" onclick="closeModal('modal-cat-edit')">انصراف</button>
   </div>
 </div>
 
-<!-- Income Category Modal -->
-<div class="modal-overlay" id="modal-income-category" onclick="closeModalOutside(event,'modal-income-category')">
+<!-- v1.14.0: تازه‌های نسخه — بعد از باز شدن قفل، یک بار بعد از هر آپدیت -->
+<div class="modal-overlay" id="modal-whats-new" onclick="if(event.target.id==='modal-whats-new')closeWhatsNew()">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title">دسته‌بندی دریافت جدید</div>
-    <div class="form-group"><label class="form-label">نام</label><input type="text" class="form-input" id="inc-cat-name" placeholder="مثال: پاداش"></div>
-    <div class="form-group"><label class="form-label">آیکون</label><div class="chips" id="inc-cat-icon-chips"><span class="chip sel" data-icon="💰">💰</span><span class="chip" data-icon="🏠">🏠</span><span class="chip" data-icon="🔄">🔄</span><span class="chip" data-icon="🏷️">🏷️</span><span class="chip" data-icon="💼">💼</span><span class="chip" data-icon="🤝">🤝</span><span class="chip" data-icon="📈">📈</span><span class="chip" data-icon="🎁">🎁</span><span class="chip" data-icon="⭐">⭐</span></div></div>
-    <button class="btn-primary" onclick="submitIncomeCategory()">افزودن</button>
-    <button class="btn-secondary" onclick="closeModal('modal-income-category')">انصراف</button>
+    <div class="modal-title" id="wn-title">تازه‌های نسخه</div>
+    <div id="wn-body"></div>
+    <button class="btn-primary" onclick="closeWhatsNew()">متوجه شدم</button>
   </div>
 </div>
 
@@ -1107,6 +1141,7 @@ function hideLock() {
   document.getElementById('bottomNav').style.display = 'flex';
   document.getElementById('appShell').style.display = 'flex';
   renderAll();
+  setTimeout(maybeShowWhatsNew, 400);   // v1.14.0
 }
 
 function pinPress(d) {
@@ -1327,8 +1362,6 @@ function selChip(el, gid) {
   el.classList.add('sel');
 }
 document.querySelectorAll('#fund-icon-chips .chip').forEach(function(c){ c.addEventListener('click', function(){ selChip(c,'fund-icon-chips'); }); });
-document.querySelectorAll('#cat-icon-chips .chip').forEach(function(c){ c.addEventListener('click', function(){ selChip(c,'cat-icon-chips'); }); });
-document.querySelectorAll('#inc-cat-icon-chips .chip').forEach(function(c){ c.addEventListener('click', function(){ selChip(c,'inc-cat-icon-chips'); }); });
 
 function convertPersianToEn(str) {
   return str.replace(/[۰-۹]/g, function(d) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); })
@@ -2071,25 +2104,120 @@ function submitFund() {
   renderAll();
 }
 
-function submitCategory() {
-  var name = document.getElementById('cat-name').value.trim();
-  if (!name) { alert('نام را وارد کنید'); return; }
-  var iconEl = document.querySelector('#cat-icon-chips .chip.sel');
-  DB.categories.push({id:'cat'+Date.now(),name:name,icon:iconEl?iconEl.dataset.icon:'⭐'});
-  saveDB(); closeModal('modal-category');
-  document.getElementById('cat-name').value = '';
-  renderAll();
-}
+// ═══════════════════════════════════════
+// CATEGORY EDITOR + EMOJI PICKER (v1.14.0)
+// ═══════════════════════════════════════
+// ایموجی‌ها کاراکتر متنی‌اند (فونت خود سیستم)، پس حجم اپ فقط به اندازه‌ی همین رشته‌ها (~۱ کیلوبایت) بالا می‌رود
+// و در داده هر دسته‌بندی همچنان فقط یک کاراکتر icon دارد — شکل pfm_db_v3 و حجم پشتیبان عوض نمی‌شود.
+// فقط ایموجی‌های Unicode 12 و قدیمی‌تر (iOS 13+) تا روی گوشی‌های قدیمی مربع خالی دیده نشوند.
+var EMOJI_GROUPS = [
+  { n:'خوراک', e:'🛒 🍔 🍕 🌭 🥪 🍞 🥖 🥩 🍗 🐟 🍤 🥚 🥛 🧀 🍎 🍉 🍇 🍌 🥕 🥦 🥗 🍚 🍝 🍜 🍲 🍛 🍰 🎂 🍩 🍪 🍫 🍦 ☕ 🍵 🧃 🥤 🍽️ 🥡' },
+  { n:'خانه و قبض‌ها', e:'🏠 🏡 🏢 🔑 🛋️ 🛏️ 🚪 🚿 🛁 🧹 🧺 🧼 🧽 🔧 🔨 🧰 💡 ⚡ 💧 🔥 ❄️ 📶 📞 📺 🌐 🗑️ 🌱 🪑' },
+  { n:'حمل‌ونقل', e:'🚗 🚕 🚙 🏍️ 🛵 🚲 🚌 🚇 🚆 🚄 ✈️ 🚢 ⛴️ 🚚 ⛽ 🅿️ 🚦 🛣️ 🚧 🧳 🗺️' },
+  { n:'سلامت و زیبایی', e:'💊 🏥 🩺 🩹 💉 🦷 👓 🧴 💇 💈 ✂️ 💅 💄 🏋️ 🧘 🚑 🧪 🌡️' },
+  { n:'خرید و پوشاک', e:'🛍️ 👕 👖 👗 👔 🧥 🧣 🧦 👟 👠 👞 👜 🎒 ⌚ 💍 🕶️ 🧢 📱 💻 🖥️ 🎧 📷' },
+  { n:'آموزش و خانواده', e:'📚 📖 ✏️ 📝 🎓 🏫 🎒 👶 🍼 🧸 👧 👦 👨‍👩‍👧‍👦 👪 🧑‍🏫 🐶 🐱 🐾 🐦 🐠' },
+  { n:'تفریح و سفر', e:'🎮 🎬 🎵 🎤 🎟️ 🎨 🎭 ⚽ 🏀 🏊 🚴 🏖️ 🏕️ ⛰️ 🏨 🎡 🎉 🎈 🧩 ♟️' },
+  { n:'کار و درآمد', e:'💰 💵 💶 💷 💴 💳 🏦 💼 📈 📊 💹 🧾 🏷️ 🤝 🔄 📦 🏭 🏗️ 🚢 ⚓ 📋 🖨️ ⏱️ 🏆' },
+  { n:'مذهبی و خیریه', e:'🕌 🕋 📿 🤲 🙏 🌙 ✨ 🎁 💝 ❤️ 🎗️ 🕯️ 🌹 💐' },
+  { n:'سایر', e:'⭐ 📌 📎 🔖 💸 ⚙️ 🔒 🛡️ ⚖️ 📄 🗂️ 📅 ⏰ 🔔 ❓ ❗ ✅ 🔵 🟢 🟣' }
+];
+var ceState = { kind:'exp', id:null, icon:'⭐', tab:0 };
 
-function submitIncomeCategory() {
-  var name = document.getElementById('inc-cat-name').value.trim();
+function emojiTabFor(icon) {
+  for (var i = 0; i < EMOJI_GROUPS.length; i++) if (EMOJI_GROUPS[i].e.split(' ').indexOf(icon) !== -1) return i;
+  return -1;
+}
+function renderEmojiTabs() {
+  document.getElementById('ce-tabs').innerHTML = EMOJI_GROUPS.map(function(g, i) {
+    return '<button type="button" class="ip-tab' + (i === ceState.tab ? ' sel' : '') + '" data-tab="' + i + '">' + g.n + '</button>';
+  }).join('');
+}
+function renderEmojiGrid() {
+  document.getElementById('ce-grid').innerHTML = EMOJI_GROUPS[ceState.tab].e.split(' ').map(function(e) {
+    return '<button type="button" class="ip-cell' + (e === ceState.icon ? ' sel' : '') + '" data-e="' + e + '">' + e + '</button>';
+  }).join('');
+}
+function setCatIcon(icon) {
+  ceState.icon = icon;
+  document.getElementById('ce-preview').textContent = icon;
+  Array.prototype.forEach.call(document.querySelectorAll('#ce-grid .ip-cell'), function(b) { b.classList.toggle('sel', b.dataset.e === icon); });
+}
+// تک‌ایموجی معتبر از متن تایپ‌شده — آخرین ایموجی را برمی‌گرداند تا تایپ ایموجی تازه جای قبلی را بگیرد.
+// فقط ایموجی پذیرفته می‌شود (نه حرف و عدد و نشانه)؛ پس متن خطرناکی وارد innerHTML نمی‌شود.
+var EMOJI_RE = null;
+try { EMOJI_RE = new RegExp('^(?:\\p{Extended_Pictographic}|\\p{Regional_Indicator}{2}|[#*0-9]\\uFE0F?\\u20E3)', 'u'); } catch (e) {}
+function lastEmojiOf(str) {
+  str = String(str || '').trim();
+  if (!str) return '';
+  var parts;
+  if (window.Intl && Intl.Segmenter) {
+    parts = Array.from(new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(str), function(s){ return s.segment; });
+  } else {
+    parts = [str];   // مرورگر قدیمی: کل متن باید یک ایموجی باشد
+  }
+  var g = parts[parts.length - 1].trim();
+  if (!g || g.length > 16 || /[<>&"'`\s]/.test(g)) return null;
+  if (EMOJI_RE ? !EMOJI_RE.test(g) : /[\w؀-ۿ]/.test(g)) return null;
+  return g;
+}
+function onCustomEmojiInput(el) {
+  var err = document.getElementById('ce-err');
+  if (!el.value.trim()) { err.textContent = ''; return; }
+  var e = lastEmojiOf(el.value);
+  if (!e) { err.textContent = 'فقط یک ایموجی وارد کنید (از کیبورد ایموجی)'; return; }
+  err.textContent = '';
+  if (el.value !== e) el.value = e;
+  setCatIcon(e);
+}
+function openCatEditor(kind, id) {
+  var list = kind === 'inc' ? (DB.incomeCategories || []) : DB.categories;
+  var cat = id ? list.find(function(c){ return c.id === id; }) : null;
+  var defIcon = kind === 'inc' ? '💰' : '🛒';
+  ceState = { kind: kind, id: cat ? cat.id : null, icon: cat ? (cat.icon || '⭐') : defIcon, tab: 0 };
+  var t = emojiTabFor(ceState.icon);
+  ceState.tab = t !== -1 ? t : (kind === 'inc' && !cat ? 7 : 0);
+  var label = kind === 'inc' ? 'دسته‌بندی دریافت' : 'دسته‌بندی پرداخت';
+  document.getElementById('ce-title').textContent = cat ? ('✏️ ویرایش ' + label) : (label + ' جدید');
+  document.getElementById('ce-save').textContent = cat ? 'ذخیره' : 'افزودن';
+  var nm = document.getElementById('ce-name');
+  nm.value = cat ? cat.name : '';
+  nm.placeholder = kind === 'inc' ? 'مثال: پاداش' : 'مثال: پوشاک';
+  // آیکونی که در فهرست نیست (مثلاً قبلاً دلخواه تایپ شده) در فیلد دلخواه دیده شود
+  document.getElementById('ce-custom').value = (cat && t === -1) ? ceState.icon : '';
+  document.getElementById('ce-err').textContent = '';
+  document.getElementById('ce-preview').textContent = ceState.icon;
+  renderEmojiTabs(); renderEmojiGrid();
+  openModal('modal-cat-edit');
+  var tabEl = document.querySelector('#ce-tabs .ip-tab.sel');
+  if (tabEl && tabEl.scrollIntoView) tabEl.scrollIntoView({ block: 'nearest', inline: 'center' });
+}
+function saveCatEditor() {
+  var name = document.getElementById('ce-name').value.trim();
   if (!name) { alert('نام را وارد کنید'); return; }
-  var iconEl = document.querySelector('#inc-cat-icon-chips .chip.sel');
-  DB.incomeCategories.push({id:'ic'+Date.now(),name:name,icon:iconEl?iconEl.dataset.icon:'⭐'});
-  saveDB(); closeModal('modal-income-category');
-  document.getElementById('inc-cat-name').value = '';
+  var custom = document.getElementById('ce-custom').value.trim();
+  if (custom && !lastEmojiOf(custom)) { alert('فیلد «ایموجی دلخواه» فقط یک ایموجی می‌پذیرد'); return; }
+  var list = ceState.kind === 'inc' ? DB.incomeCategories : DB.categories;
+  if (ceState.id) {
+    // تراکنش‌ها با شناسه به دسته‌بندی وصل‌اند؛ تغییر نام/آیکون فقط نمایش آن‌ها را به‌روز می‌کند
+    var cat = list.find(function(c){ return c.id === ceState.id; });
+    if (cat) { cat.name = name; cat.icon = ceState.icon; }
+  } else {
+    list.push({ id: (ceState.kind === 'inc' ? 'ic' : 'cat') + Date.now(), name: name, icon: ceState.icon });
+  }
+  saveDB(); closeModal('modal-cat-edit');
   renderAll();
 }
+document.addEventListener('click', function(e) {
+  var tab = e.target.closest && e.target.closest('#ce-tabs .ip-tab');
+  if (tab) { ceState.tab = +tab.dataset.tab; renderEmojiTabs(); renderEmojiGrid(); return; }
+  var cell = e.target.closest && e.target.closest('#ce-grid .ip-cell');
+  if (cell) {
+    setCatIcon(cell.dataset.e);
+    document.getElementById('ce-custom').value = '';
+    document.getElementById('ce-err').textContent = '';
+  }
+});
 
 function deleteIncCat(id) { if (!confirm('حذف شود؟')) return; DB.incomeCategories=DB.incomeCategories.filter(function(c){return c.id!==id;}); saveDB(); renderAll(); }
 
@@ -2892,19 +3020,21 @@ function renderSettings() {
   var cl = document.getElementById('catList');
   var cHtml = '';
   DB.categories.forEach(function(c) {
-    cHtml += '<div class="list-item"><span>' + c.icon + ' ' + c.name + '</span><button class="icon-btn danger" data-id="' + c.id + '" data-action="dc">🗑</button></div>';
+    cHtml += '<div class="list-item"><span class="cat-row-name">' + c.icon + ' ' + c.name + '</span><span class="cat-row-btns"><button class="icon-btn" data-id="' + c.id + '" data-action="ec" aria-label="ویرایش">✏️</button><button class="icon-btn danger" data-id="' + c.id + '" data-action="dc">🗑</button></span></div>';
   });
   cl.innerHTML = cHtml || '<div style="color:var(--text-sub);font-size:12px;padding:8px 0;">دسته‌بندی‌ای ثبت نشده</div>';
   cl.querySelectorAll('[data-action="dc"]').forEach(function(btn){ btn.addEventListener('click', function(){ deleteCat(this.dataset.id); }); });
+  cl.querySelectorAll('[data-action="ec"]').forEach(function(btn){ btn.addEventListener('click', function(){ openCatEditor('exp', this.dataset.id); }); });   // v1.14.0
 
   var icl = document.getElementById('incCatList');
   if (icl) {
     var icHtml = '';
     (DB.incomeCategories||[]).forEach(function(c) {
-      icHtml += '<div class="list-item"><span>' + c.icon + ' ' + c.name + '</span><button class="icon-btn danger" data-id="' + c.id + '" data-action="dic">🗑</button></div>';
+      icHtml += '<div class="list-item"><span class="cat-row-name">' + c.icon + ' ' + c.name + '</span><span class="cat-row-btns"><button class="icon-btn" data-id="' + c.id + '" data-action="eic" aria-label="ویرایش">✏️</button><button class="icon-btn danger" data-id="' + c.id + '" data-action="dic">🗑</button></span></div>';
     });
     icl.innerHTML = icHtml || '<div style="color:var(--text-sub);font-size:12px;padding:8px 0;">دسته‌بندی‌ای ثبت نشده</div>';
     icl.querySelectorAll('[data-action="dic"]').forEach(function(btn){ btn.addEventListener('click', function(){ deleteIncCat(this.dataset.id); }); });
+    icl.querySelectorAll('[data-action="eic"]').forEach(function(btn){ btn.addEventListener('click', function(){ openCatEditor('inc', this.dataset.id); }); });   // v1.14.0
   }
 
   // v1.13.0: تعداد دسته‌بندی‌ها کنار عنوان؛ بخش «درصدهای تخصیصی» حذف شد (در صفحه‌ی حساب‌ها هست)
@@ -4477,7 +4607,54 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.13.0';
+var CURRENT_VERSION = '1.14.0';
+
+// ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
+// با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
+// هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
+// بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
+var WHATS_NEW = [
+  { v:'1.14.0', items:[
+    'برای آیکون دسته‌بندی‌ها حالا بیش از ۲۰۰ ایموجی در ۱۰ گروه دارید: خوراک، خانه و قبض‌ها، حمل‌ونقل، سلامت، خرید، آموزش و خانواده، تفریح، کار و درآمد، مذهبی و خیریه، و سایر.',
+    'اگر ایموجی موردنظرتان در فهرست نبود، در فیلد «ایموجی دلخواه» آن را با کیبورد ایموجی گوشی تایپ کنید.',
+    'دسته‌بندی‌های قبلی را هم می‌توانید ویرایش کنید (نام و آیکون): تنظیمات ← دسته‌بندی‌ها ← دکمه‌ی ✏️. تراکنش‌های ثبت‌شده با نام و آیکون تازه نمایش داده می‌شوند.',
+    'از این به بعد، بعد از هر به‌روزرسانی، خلاصه‌ی تغییرات نسخه‌ی جدید در همین پنجره نمایش داده می‌شود.'
+  ]}
+];
+var WN_KEY = 'pfm_seen_version';
+function cmpVer(a, b) {
+  var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number);
+  for (var i = 0; i < Math.max(x.length, y.length); i++) { var d = (x[i]||0) - (y[i]||0); if (d) return d > 0 ? 1 : -1; }
+  return 0;
+}
+function markVersionSeen() { try { localStorage.setItem(WN_KEY, CURRENT_VERSION); } catch (e) {} }
+var whatsNewDone = false;
+function maybeShowWhatsNew() {
+  if (whatsNewDone) return;
+  if (document.getElementById('lockScreen').classList.contains('vis')) return;   // بعد از باز کردن قفل
+  whatsNewDone = true;
+  var seen = null; try { seen = localStorage.getItem(WN_KEY); } catch (e) {}
+  // نصب تازه (بدون حساب و تراکنش) پنجره را نمی‌بیند؛ کاربر قدیمی که این کلید را ندارد فقط تازه‌های همین نسخه را می‌بیند
+  if (!seen) {
+    if (!(DB.transactions || []).length && !(DB.accounts || []).length) { markVersionSeen(); return; }
+    seen = '0';
+  }
+  if (cmpVer(seen, CURRENT_VERSION) >= 0) { if (cmpVer(seen, CURRENT_VERSION) > 0) markVersionSeen(); return; }
+  var entries = WHATS_NEW.filter(function(e){ return cmpVer(e.v, seen) > 0 && cmpVer(e.v, CURRENT_VERSION) <= 0; })
+    .sort(function(a, b){ return cmpVer(b.v, a.v); });
+  var shown = seen === '0' ? entries.filter(function(e){ return e.v === CURRENT_VERSION; }) : entries;
+  if (!shown.length) { markVersionSeen(); return; }
+  document.getElementById('wn-title').textContent = shown.length === 1 ? ('🎉 تازه‌های نسخه ' + toFa(shown[0].v)) : '🎉 تازه‌های نسخه‌های جدید';
+  var body = document.getElementById('wn-body'); body.innerHTML = '';
+  shown.forEach(function(e) {
+    if (shown.length > 1) { var h = document.createElement('div'); h.className = 'wn-ver'; h.textContent = 'نسخه ' + toFa(e.v); body.appendChild(h); }
+    var ul = document.createElement('ul'); ul.className = 'wn-list';
+    e.items.forEach(function(t){ var li = document.createElement('li'); li.textContent = t; ul.appendChild(li); });
+    body.appendChild(ul);
+  });
+  openModal('modal-whats-new');
+}
+function closeWhatsNew() { closeModal('modal-whats-new'); markVersionSeen(); }
 
 var versionLabelEl = document.getElementById('versionLabel');
 if (versionLabelEl) versionLabelEl.textContent = 'v' + CURRENT_VERSION;
