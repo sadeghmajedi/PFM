@@ -320,6 +320,39 @@ html { height:100%; height:-webkit-fill-available; }
 .cat-row-name { flex:1; min-width:0; }
 .cat-row-btns { display:flex; gap:6px; flex-shrink:0; }
 
+/* ── v1.15.0: ریز دسته‌ها، جمع فیلترشده‌ی تراکنش‌ها، جداسازی ارزها در گزارش ── */
+.rep-fx { font-size:12px; color:var(--text-mid); text-align:center; margin:-4px 0 12px; line-height:1.9; }
+.rep-fx:empty { display:none; }
+.cc-cur { font-size:12px; font-weight:700; color:var(--aqua-deep); margin:14px 0 8px; padding-top:10px; border-top:1px dashed var(--border); }
+.bar-row.tap { cursor:pointer; border-radius:8px; margin-left:-4px; margin-right:-4px; padding:3px 4px; -webkit-tap-highlight-color:transparent; }
+.bar-row.tap:active { background:var(--aqua-pale); }
+.bar-row.tap .bar-val::after { content:' ‹'; color:var(--aqua); font-weight:700; }
+.cb-hint { font-size:11px; color:var(--text-sub); text-align:center; margin-top:10px; line-height:1.8; }
+.cb-hint:empty { display:none; }
+.cb-summary { display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:13px; color:var(--text-mid); padding:10px 12px; background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:12px; margin-bottom:10px; }
+.cb-summary b { font-size:16px; color:var(--aqua-deep); unicode-bidi:isolate; }
+.cb-item { border-bottom:1px solid var(--border); }
+.cb-item:last-child { border-bottom:none; }
+.cb-row { display:block; width:100%; background:none; border:none; padding:10px 2px; text-align:right; font-family:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.cb-top { display:flex; align-items:baseline; gap:8px; }
+.cb-name { flex:1; min-width:0; font-size:14px; font-weight:600; color:var(--text-main); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cb-name.none { color:var(--text-sub); font-weight:500; }
+.cb-amt { font-size:13px; font-weight:700; color:var(--text-main); direction:ltr; unicode-bidi:isolate; flex-shrink:0; }
+.cb-meta { display:flex; align-items:center; gap:8px; margin-top:5px; }
+.cb-bar { flex:1; height:6px; background:var(--aqua-pale); border-radius:99px; overflow:hidden; }
+.cb-bar span { display:block; height:100%; background:linear-gradient(90deg,var(--accent-light),var(--aqua)); border-radius:99px; }
+.cb-pct { font-size:12px; font-weight:700; color:var(--aqua-deep); width:46px; text-align:left; flex-shrink:0; }
+.cb-cnt { font-size:11px; color:var(--text-sub); width:52px; text-align:left; flex-shrink:0; }
+.cb-txs { display:none; padding:0 8px 10px; }
+.cb-item.open .cb-txs { display:block; }
+.cb-tx { display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--text-mid); padding:5px 0; border-top:1px dashed var(--border); }
+.cb-tx span:last-child { direction:ltr; unicode-bidi:isolate; font-weight:600; color:var(--text-main); }
+.tx-sum { display:flex; flex-wrap:wrap; gap:4px 12px; align-items:center; font-size:12px; color:var(--text-mid); background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:10px; padding:8px 12px; margin-bottom:10px; line-height:1.7; }
+.tx-sum:empty { display:none; }
+.tx-sum b { font-weight:700; unicode-bidi:isolate; }
+.tx-sum .in { color:var(--success); }
+.tx-sum .out { color:var(--danger); }
+
 /* ── v1.14.0: پنجره‌ی «تازه‌های نسخه» بعد از هر آپدیت ── */
 .wn-ver { font-size:13px; font-weight:700; color:var(--aqua-deep); margin:14px 0 6px; }
 .wn-ver:first-child { margin-top:0; }
@@ -472,6 +505,7 @@ html { height:100%; height:-webkit-fill-available; }
     <input type="text" class="form-input" id="tx-search" placeholder="🔍 جستجو در توضیحات یا مبلغ..." oninput="setTxSearch(this.value)" style="padding-left:36px;font-size:13px;">
     <button id="tx-search-clear" onclick="clearTxSearch()" style="display:none;position:absolute;left:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-sub);padding:0;line-height:1;">✕</button>
   </div>
+  <div class="tx-sum" id="txSum"></div>
   <div id="txList"></div>
 </div>
 
@@ -494,9 +528,10 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="rep-box inc-box"><div class="rb-label">درآمد</div><div class="rb-val" id="rep-income">۰</div></div>
     <div class="rep-box exp-box"><div class="rb-label">هزینه</div><div class="rb-val" id="rep-expense">۰</div></div>
   </div>
+  <div class="rep-fx" id="rep-fx"></div>
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">میانگین‌ها <span id="avgScopeLabel" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></div><div id="avgStats"></div></div></div>
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">روند درآمد و هزینه ماهانه <span id="trendYearLabel" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></div><div id="trendChart"></div></div></div>
-  <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">هزینه بر اساس دسته‌بندی</div><div id="catChart"></div></div></div>
+  <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">هزینه بر اساس دسته‌بندی</div><div id="catChart"></div><div class="cb-hint" id="catChartHint">برای دیدن ریز هر دسته، روی آن بزنید</div></div></div>
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">سهم هزینه‌ها از کل سال <span id="pieYearLabel" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></div><div id="expensePie"></div></div></div>
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">خرج‌کرد صندوق‌ها</div><div id="fundSpendChart"></div></div></div>
 </div>
@@ -809,6 +844,18 @@ html { height:100%; height:-webkit-fill-available; }
     </div>
     <button class="btn-primary" id="ce-save" onclick="saveCatEditor()">افزودن</button>
     <button class="btn-secondary" onclick="closeModal('modal-cat-edit')">انصراف</button>
+  </div>
+</div>
+
+<!-- v1.15.0: ریز یک دسته در ماه انتخاب‌شده‌ی گزارش‌ها، بر اساس توضیحات تراکنش‌ها -->
+<div class="modal-overlay" id="modal-cat-break" onclick="closeModalOutside(event,'modal-cat-break')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="cb-title"></div>
+    <div class="cb-summary" id="cb-summary"></div>
+    <div id="cb-list"></div>
+    <div class="cb-hint">آیتم‌ها از روی توضیحات تراکنش‌ها ساخته می‌شوند؛ تفاوت «ی/ک» عربی و فارسی، نیم‌فاصله و فاصله‌ی اضافه نادیده گرفته می‌شود.</div>
+    <button class="btn-secondary" onclick="closeModal('modal-cat-break')">بستن</button>
   </div>
 </div>
 
@@ -1650,6 +1697,36 @@ function curLabel(cur) {
   if (cur === 'USD') return 'دلار';
   if (cur === 'AED') return 'درهم';
   return 'ریال';
+}
+
+// ── v1.15.0: ارز هر تراکنش = ارز حسابش. حساب حذف‌شده یا تراکنش بدون حساب (مثل واریز صندوق) = ریال ──
+// گزارش‌ها تا v1.14.1 مبلغ‌ها را بدون توجه به ارز جمع می‌زدند (۱۰۰ دلار = ۱۰۰ ریال). از v1.15.0
+// جمع‌ها، نمودارها و میانگین‌ها فقط ریالی‌اند و ارزهای دیگر جدا نمایش داده می‌شوند.
+var CUR_ORDER = ['IRR', 'USD', 'AED'];
+function txCur(t) {
+  var id = t.accountId || t.fromAccountId;
+  var a = id ? DB.accounts.find(function(x){ return x.id === id; }) : null;
+  return (a && a.currency) || 'IRR';
+}
+function isRialTx(t) { return txCur(t) === 'IRR'; }
+function hasForeignAccounts() { return DB.accounts.some(function(a){ return a.currency && a.currency !== 'IRR'; }); }
+function fmtCur(n, cur) { return cur === 'IRR' ? toFa(addCommas(Math.round(n))) + ' ریال' : toCurrency(n, cur); }
+function curSort(a, b) { var x = CUR_ORDER.indexOf(a), y = CUR_ORDER.indexOf(b); return (x < 0 ? 9 : x) - (y < 0 ? 9 : y); }
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; });
+}
+function faPct(p) {
+  var s = p >= 10 ? String(Math.round(p)) : (Math.round(p * 10) / 10).toFixed(1).replace(/\.0$/, '');
+  return toFa(s).replace('.', '٫') + '٪';
+}
+// گروه یک پرداخت در گزارش — همان قاعده‌ی نمودار «هزینه بر اساس دسته‌بندی»:
+// هزینه زیر دسته‌اش (یا «سایر»)؛ پرداخت صندوقِ دسته‌دار زیر همان دسته، بدون دسته زیر نام صندوق
+function expGroupOf(t) {
+  var cat = t.catId ? DB.categories.find(function(c){ return c.id === t.catId; }) : null;
+  if (t.type === 'expense') return cat ? { key: 'c:' + cat.id, label: cat.icon + ' ' + cat.name } : { key: 'c:', label: '⭐ سایر' };
+  if (cat) return { key: 'c:' + cat.id, label: cat.icon + ' ' + cat.name };
+  var fund = DB.funds.find(function(f){ return f.id === t.fundId; });
+  return { key: 'f:' + (t.fundId || ''), label: (fund ? fund.icon : '💰') + ' پرداخت: ' + (fund ? fund.name : 'صندوق') };
 }
 function loanAccountOptions(selectedId, curFilter) {
   return '<option value="">-- انتخاب حساب --</option>' +
@@ -2577,6 +2654,27 @@ function renderAccounts() {
   }
 }
 
+// v1.15.0: خط «مجموع» بالای فهرست تراکنش‌ها — با همان فهرستی که فیلترها و جستجو ساخته‌اند.
+// دریافت = income؛ پرداخت = expense و fund-out (مثل گزارش‌ها). انتقال، واریز صندوق و قرض‌ها در جمع نیستند. هر ارز جدا.
+function renderTxSum(txs) {
+  var el = document.getElementById('txSum'); if (!el) return;
+  if (!txs.length) { el.innerHTML = ''; return; }
+  var by = {};
+  txs.forEach(function(t) {
+    var isIn = t.type === 'income', isOut = t.type === 'expense' || t.type === 'fund-out';
+    if (!isIn && !isOut) return;
+    var cur = txCur(t);
+    by[cur] = by[cur] || { inc: 0, pay: 0 };
+    if (isIn) by[cur].inc += t.amount; else by[cur].pay += t.amount;
+  });
+  var html = '<span>مجموع ' + toFa(txs.length) + ' تراکنش</span>';
+  Object.keys(by).sort(curSort).forEach(function(cur) {
+    if (by[cur].inc) html += '<span>دریافت: <b class="in">+' + fmtCur(by[cur].inc, cur) + '</b></span>';
+    if (by[cur].pay) html += '<span>پرداخت: <b class="out">−' + fmtCur(by[cur].pay, cur) + '</b></span>';
+  });
+  el.innerHTML = html;
+}
+
 function renderTransactions() {
   var accFilterSel = document.getElementById('acc-filter-sel');
   if (accFilterSel) {
@@ -2622,6 +2720,7 @@ function renderTransactions() {
     });
   }
 
+  renderTxSum(txs);   // v1.15.0
   var list = document.getElementById('txList');
   if (!txs.length) { list.innerHTML = '<div class="empty"><div class="ei">📋</div><p>تراکنشی یافت نشد</p></div>'; return; }
 
@@ -2719,47 +2818,55 @@ function renderReports() {
     return j.jy + '-' + String(j.jm).padStart(2,'0') === curMonth;
   });
 
-  var filteredTxs = monthTxs;
+  repSel = { y: selYear, m: selMonth };
+  // v1.15.0: جمع‌ها و نمودارهای گزارش فقط ریالی‌اند؛ ارزهای دیگر جدا (پایین کادرها و پایین نمودار دسته‌ها)
+  var filteredTxs = monthTxs.filter(isRialTx);
+  var isPay = function(t){ return t.type === 'expense' || t.type === 'fund-out'; };
 
   var income = filteredTxs.filter(function(t){ return t.type==='income'; }).reduce(function(s,t){ return s+t.amount; }, 0);
-  var expense = filteredTxs.filter(function(t){
-    if (t.type === 'fund-out') return true;
-    return t.type === 'expense';
-  }).reduce(function(s,t){ return s+t.amount; }, 0);
+  var expense = filteredTxs.filter(isPay).reduce(function(s,t){ return s+t.amount; }, 0);
   document.getElementById('rep-income').textContent = toFa(addCommas(Math.round(income)));
   document.getElementById('rep-expense').textContent = toFa(addCommas(Math.round(expense)));
 
-  // Category chart — هزینه‌ها و پرداخت‌های صندوق، همه بر اساس دسته‌بندی
-  var catTotals = {};
-  filteredTxs.filter(function(t){ return t.type==='expense'; }).forEach(function(t) {
-    var cat = DB.categories.find(function(c){ return c.id===t.catId; }) || {name:'سایر',icon:'⭐'};
-    var k = cat.icon + ' ' + cat.name;
-    catTotals[k] = (catTotals[k]||0) + t.amount;
+  var fx = {};
+  monthTxs.forEach(function(t) {
+    if (t.type !== 'income' && !isPay(t)) return;
+    var cur = txCur(t); if (cur === 'IRR') return;
+    fx[cur] = fx[cur] || { inc: 0, pay: 0 };
+    if (t.type === 'income') fx[cur].inc += t.amount; else fx[cur].pay += t.amount;
   });
-  filteredTxs.filter(function(t){
-    return t.type === 'fund-out';
-  }).forEach(function(t) {
-    // پرداخت صندوقِ دسته‌دار زیر همان دسته می‌نشیند؛
-    // پرداخت‌های قدیمیِ بدون دسته مثل قبل زیر نام صندوق می‌مانند.
-    var cat = t.catId ? DB.categories.find(function(c){ return c.id===t.catId; }) : null;
-    var k;
-    if (cat) { k = cat.icon + ' ' + cat.name; }
-    else {
-      var fund = DB.funds.find(function(f){ return f.id===t.fundId; });
-      k = (fund ? fund.icon : '💰') + ' پرداخت: ' + (fund ? fund.name : 'صندوق');
-    }
-    catTotals[k] = (catTotals[k]||0) + t.amount;
+  document.getElementById('rep-fx').innerHTML = Object.keys(fx).sort(curSort).map(function(cur) {
+    var parts = [];
+    if (fx[cur].inc) parts.push('درآمد ' + '<b dir="ltr">' + fmtCur(fx[cur].inc, cur) + '</b>');
+    if (fx[cur].pay) parts.push('هزینه ' + '<b dir="ltr">' + fmtCur(fx[cur].pay, cur) + '</b>');
+    return '<div>' + curLabel(cur) + 'ی این ماه (جدا از جمع ریالی): ' + parts.join(' · ') + '</div>';
+  }).join('');
+
+  // Category chart — هزینه‌ها و پرداخت‌های صندوق بر اساس دسته‌بندی، هر ارز جدا؛ لمس هر ردیف = ریز همان دسته
+  var byCur = {};
+  monthTxs.filter(isPay).forEach(function(t) {
+    var cur = txCur(t), g = expGroupOf(t);
+    byCur[cur] = byCur[cur] || {};
+    byCur[cur][g.key] = byCur[cur][g.key] || { label: g.label, sum: 0 };
+    byCur[cur][g.key].sum += t.amount;
   });
-  var max = Math.max.apply(null, Object.values(catTotals).concat([1]));
   var chart = document.getElementById('catChart');
-  if (!Object.keys(catTotals).length) { chart.innerHTML = '<div class="empty"><p>هزینه‌ای ثبت نشده</p></div>'; }
+  var curs = Object.keys(byCur).sort(curSort);
+  if (!curs.length) { chart.innerHTML = '<div class="empty"><p>هزینه‌ای ثبت نشده</p></div>'; }
   else {
     var cHtml = '';
-    Object.entries(catTotals).sort(function(a,b){ return b[1]-a[1]; }).forEach(function(kv) {
-      cHtml += '<div class="bar-row"><div class="bar-label">' + kv[0] + '</div><div class="bar-wrap"><div class="bar-fill" style="width:' + (kv[1]/max*100).toFixed(1) + '%"></div></div><div class="bar-val">' + toFa(addCommas(Math.round(kv[1]))) + '</div></div>';
+    curs.forEach(function(cur) {
+      var rows = Object.keys(byCur[cur]).map(function(k){ return { key: k, label: byCur[cur][k].label, sum: byCur[cur][k].sum }; })
+        .sort(function(a,b){ return b.sum - a.sum; });
+      var max = Math.max.apply(null, rows.map(function(r){ return r.sum; }).concat([1]));
+      if (cur !== 'IRR' || curs.length > 1) cHtml += '<div class="cc-cur"' + (cur === 'IRR' && cHtml === '' ? ' style="border-top:none;margin-top:0;padding-top:0;"' : '') + '>' + (cur === 'IRR' ? 'ریالی' : curLabel(cur) + 'ی') + '</div>';
+      rows.forEach(function(r) {
+        cHtml += '<div class="bar-row tap" data-ck="' + escHtml(r.key) + '" data-cur="' + cur + '"><div class="bar-label">' + r.label + '</div><div class="bar-wrap"><div class="bar-fill" style="width:' + (r.sum/max*100).toFixed(1) + '%"></div></div><div class="bar-val">' + (cur === 'IRR' ? toFa(addCommas(Math.round(r.sum))) : toCurrency(r.sum, cur)) + '</div></div>';
+      });
     });
     chart.innerHTML = cHtml;
   }
+  document.getElementById('catChartHint').textContent = curs.length ? 'برای دیدن ریز هر دسته، روی آن بزنید' : '';
 
   renderAvgStats(selYear);
   renderTrendChart(selYear);
@@ -2770,6 +2877,58 @@ function renderReports() {
 // خرج‌کرد صندوق‌ها — دید مکمل گزارش دسته‌بندی.
 // هر تراکنشی که به صندوقی وصل است اینجا می‌آید (چه fund-out، چه هزینه‌ی دارای fundId).
 // این جدول جدا از نمودار دسته‌بندی است و چیزی را دوباره نمی‌شمارد.
+// ═══════════════════════════════════════
+// CATEGORY BREAKDOWN (v1.15.0) — ریز یک دسته در ماه انتخاب‌شده، بر اساس توضیحات
+// ═══════════════════════════════════════
+// آیتم = تراکنش‌هایی که توضیحشان بعد از normalizeFa یکی است (ی/ک عربی و فارسی، نیم‌فاصله، فاصله‌ی اضافه نادیده).
+// فقط نمایش است؛ داده دست نمی‌خورد. هر ارز جدا (key + cur از ردیف نمودار می‌آید).
+var repSel = null;
+function openCatBreakdown(key, cur) {
+  if (!repSel) return;
+  var ym = repSel.y + '-' + String(repSel.m).padStart(2, '0');
+  var txs = DB.transactions.filter(function(t) {
+    if (t.type !== 'expense' && t.type !== 'fund-out') return false;
+    if (txCur(t) !== cur || expGroupOf(t).key !== key) return false;
+    var d = new Date(t.date), j = J.toJalali(d.getFullYear(), d.getMonth()+1, d.getDate());
+    return j.jy + '-' + String(j.jm).padStart(2, '0') === ym;
+  }).sort(function(a, b){ return new Date(b.date) - new Date(a.date); });
+  if (!txs.length) return;
+
+  var total = txs.reduce(function(s, t){ return s + t.amount; }, 0);
+  var groups = {}, order = [];
+  txs.forEach(function(t) {
+    var k = normalizeFa(t.desc);
+    if (!groups[k]) { groups[k] = { name: String(t.desc || '').trim(), sum: 0, txs: [] }; order.push(k); }   // نام = توضیحِ جدیدترین تراکنش
+    groups[k].sum += t.amount; groups[k].txs.push(t);
+  });
+  order.sort(function(a, b){ if (!a !== !b) return a ? -1 : 1; return groups[b].sum - groups[a].sum; });   // «بدون توضیح» آخر
+
+  var fmt = function(n){ return cur === 'IRR' ? toFa(addCommas(Math.round(n))) : toCurrency(n, cur); };
+  var multiAcc = txs.some(function(t){ return t.accountId !== txs[0].accountId; });
+  document.getElementById('cb-title').textContent = expGroupOf(txs[0]).label + ' — ' + J.monthName(repSel.m) + ' ' + toFa(String(repSel.y)) + (cur !== 'IRR' ? ' (' + curLabel(cur) + ')' : '');
+  document.getElementById('cb-summary').innerHTML = '<span>جمع ماه · ' + toFa(txs.length) + ' تراکنش</span><b>' + fmtCur(total, cur) + '</b>';
+  document.getElementById('cb-list').innerHTML = order.map(function(k) {
+    var g = groups[k], pct = total ? g.sum / total * 100 : 0;
+    var rows = g.txs.map(function(t) {
+      var acc = multiAcc ? DB.accounts.find(function(a){ return a.id === t.accountId; }) : null;
+      return '<div class="cb-tx"><span>' + J.format(t.date) + (acc ? ' · ' + escHtml(acc.name) : '') + '</span><span>' + fmt(t.amount) + '</span></div>';
+    }).join('');
+    return '<div class="cb-item"><button type="button" class="cb-row">' +
+      '<div class="cb-top"><span class="cb-name' + (k ? '' : ' none') + '">' + (k ? escHtml(g.name) : 'بدون توضیح') + '</span><span class="cb-amt">' + fmt(g.sum) + '</span></div>' +
+      '<div class="cb-meta"><div class="cb-bar"><span style="width:' + pct.toFixed(1) + '%"></span></div><span class="cb-pct">' + faPct(pct) + '</span><span class="cb-cnt">' + toFa(g.txs.length) + ' بار</span></div>' +
+      '</button><div class="cb-txs">' + rows + '</div></div>';
+  }).join('');
+  openModal('modal-cat-break');
+  document.querySelector('#modal-cat-break .modal-sheet').scrollTop = 0;
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest) return;
+  var bar = e.target.closest('#catChart .bar-row.tap');
+  if (bar) { openCatBreakdown(bar.dataset.ck, bar.dataset.cur); return; }
+  var row = e.target.closest('#cb-list .cb-row');
+  if (row) row.parentNode.classList.toggle('open');
+});
+
 function renderFundSpend(filteredTxs) {
   var el = document.getElementById('fundSpendChart');
   if (!el) return;
@@ -2800,11 +2959,12 @@ function renderAvgStats(selYear) {
   var el = document.getElementById('avgStats');
   if (!el) return;
   var lbl = document.getElementById('avgScopeLabel');
-  if (lbl) lbl.textContent = '(کل سال ' + toFa(String(selYear)) + ')';
+  if (lbl) lbl.textContent = '(کل سال ' + toFa(String(selYear)) + (hasForeignAccounts() ? '، ریالی' : '') + ')';
 
   // تراکنش‌های درآمد/هزینه‌ی سال (قرض‌ها مستثنی — چون income/expense/fund-out صریح چک می‌شود)
   var yearTxs = DB.transactions.filter(function(t) {
     if (!(t.type==='income' || t.type==='expense' || t.type==='fund-out')) return false;
+    if (!isRialTx(t)) return false;   // v1.15.0: فقط ریالی
     var d = new Date(t.date);
     return J.toJalali(d.getFullYear(), d.getMonth()+1, d.getDate()).jy === selYear;
   });
@@ -2888,12 +3048,13 @@ function renderTrendChart(selYear) {
   var el = document.getElementById('trendChart');
   if (!el) return;
   var lbl = document.getElementById('trendYearLabel');
-  if (lbl) lbl.textContent = '(' + toFa(String(selYear)) + ')';
+  if (lbl) lbl.textContent = '(' + toFa(String(selYear)) + (hasForeignAccounts() ? '، ریالی' : '') + ')';
 
-  // جمع درآمد و هزینه به تفکیک ماه (۱..۱۲)
+  // جمع درآمد و هزینه به تفکیک ماه (۱..۱۲) — v1.15.0: فقط ریالی
   var incByMonth = {}, expByMonth = {};
   DB.transactions.forEach(function(t) {
     if (t.type!=='income' && t.type!=='expense' && t.type!=='fund-out') return;
+    if (!isRialTx(t)) return;
     var d = new Date(t.date);
     var j = J.toJalali(d.getFullYear(), d.getMonth()+1, d.getDate());
     if (j.jy !== selYear) return;
@@ -2963,10 +3124,11 @@ function renderExpensePie(selYear) {
   var pieEl = document.getElementById('expensePie');
   if (!pieEl) return;
   var yearLabel = document.getElementById('pieYearLabel');
-  if (yearLabel) yearLabel.textContent = '(' + toFa(String(selYear)) + ')';
+  if (yearLabel) yearLabel.textContent = '(' + toFa(String(selYear)) + (hasForeignAccounts() ? '، ریالی' : '') + ')';
 
   // Gather all expense + fund-out for the selected year, grouped like catChart
   var yearTxs = DB.transactions.filter(function(t) {
+    if (!isRialTx(t)) return false;   // v1.15.0: فقط ریالی
     var d = new Date(t.date);
     var j = J.toJalali(d.getFullYear(), d.getMonth()+1, d.getDate());
     return j.jy === selYear;
@@ -3384,11 +3546,23 @@ function exportReportPDF() {
     return j.jy + '-' + String(j.jm).padStart(2,'0') === curMonth;
   });
 
-  var income = monthTxs.filter(function(t){return t.type==='income';}).reduce(function(s,t){return s+t.amount;},0);
-  var expense = monthTxs.filter(function(t){return t.type==='expense';}).reduce(function(s,t){return s+t.amount;},0);
+  // v1.15.0: جمع‌ها فقط ریالی، مثل صفحه‌ی گزارش‌ها؛ ارزهای دیگر جدا زیر کادرها
+  var rialTxs = monthTxs.filter(isRialTx);
+  var income = rialTxs.filter(function(t){return t.type==='income';}).reduce(function(s,t){return s+t.amount;},0);
+  var expense = rialTxs.filter(function(t){return t.type==='expense';}).reduce(function(s,t){return s+t.amount;},0);
+  var fxPdf = {};
+  monthTxs.forEach(function(t){
+    if (t.type !== 'income' && t.type !== 'expense') return;
+    var cur = txCur(t); if (cur === 'IRR') return;
+    fxPdf[cur] = fxPdf[cur] || {inc:0, exp:0};
+    if (t.type === 'income') fxPdf[cur].inc += t.amount; else fxPdf[cur].exp += t.amount;
+  });
+  var fxPdfHtml = Object.keys(fxPdf).sort(curSort).map(function(cur){
+    return '<div class="fx">' + curLabel(cur) + 'ی (جدا از جمع ریالی): درآمد <b dir="ltr">' + toCurrency(fxPdf[cur].inc, cur) + '</b> · هزینه <b dir="ltr">' + toCurrency(fxPdf[cur].exp, cur) + '</b></div>';
+  }).join('');
 
   var catTotals = {};
-  monthTxs.filter(function(t){return t.type==='expense';}).forEach(function(t) {
+  rialTxs.filter(function(t){return t.type==='expense';}).forEach(function(t) {
     var cat = DB.categories.find(function(c){return c.id===t.catId;}) || {name:'سایر',icon:'⭐'};
     var k = cat.icon + ' ' + cat.name;
     catTotals[k] = (catTotals[k]||0) + t.amount;
@@ -3409,7 +3583,7 @@ function exportReportPDF() {
     '<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Vazirmatn,sans-serif;padding:24px;color:#333;font-size:12px;}' +
     'h1{color:#FF7F7F;font-size:18px;margin-bottom:2px;}h2{font-size:13px;color:#555;margin:16px 0 8px;border-bottom:1px solid #FFE8E8;padding-bottom:4px;}' +
     '.sub{color:#999;font-size:11px;margin-bottom:18px;}' +
-    '.sum{display:flex;gap:12px;margin-bottom:6px;}' +
+    '.sum{display:flex;gap:12px;margin-bottom:6px;}.fx{font-size:11px;color:#555;margin:4px 0;}' +
     '.sbox{flex:1;border-radius:10px;padding:12px 14px;}.sbox h3{font-size:9px;color:#999;margin-bottom:3px;}.sbox p{font-size:18px;font-weight:700;}' +
     '.inc{background:#E8F8EE;border-right:3px solid #27AE60;}.inc p{color:#27AE60;}' +
     '.exp{background:#FFF0F0;border-right:3px solid #FF7F7F;}.exp p{color:#FF7F7F;}' +
@@ -3427,7 +3601,7 @@ function exportReportPDF() {
     '<div class="sbox inc"><h3>درآمد کل</h3><p>' + addCommas(Math.round(income)) + '</p></div>' +
     '<div class="sbox exp"><h3>هزینه کل</h3><p>' + addCommas(Math.round(expense)) + '</p></div>' +
     '<div class="sbox bal"><h3>مانده</h3><p>' + addCommas(Math.round(income-expense)) + '</p></div>' +
-    '</div>' +
+    '</div>' + fxPdfHtml +
     (catRows ? '<h2>هزینه بر اساس دسته‌بندی</h2><table><tr><th>دسته‌بندی</th><th>مبلغ</th></tr>' + catRows + '</table>' : '') +
     '<h2>وضعیت صندوق‌های تخصیصی</h2><table><tr><th>صندوق</th><th>موجودی</th><th>درصد</th></tr>' + fundsHtml + '</table>' +
     '<button class="pbtn" onclick="window.print()">🖨️ چاپ / PDF</button>' +
@@ -4641,13 +4815,19 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.14.1';
+var CURRENT_VERSION = '1.15.0';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.15.0', items:[
+    'در «گزارش‌ها»، روی هر دسته در «هزینه بر اساس دسته‌بندی» بزنید تا ریز آن دسته در ماه انتخاب‌شده باز شود. برای هر آیتم مبلغ، درصد از کل آن دسته و تعداد دفعات نمایش داده می‌شود. آیتم‌ها از روی توضیحات تراکنش‌ها ساخته می‌شوند؛ هرچه توضیحات یکدست‌تر باشد، گزارش دقیق‌تر است.',
+    'با زدن هر آیتم، تراکنش‌های آن هم دیده می‌شود. تراکنش‌های بدون توضیح زیر «بدون توضیح» می‌آیند.',
+    'بالای فهرست «تراکنش‌ها» یک خط «مجموع» آمده که با هر فیلتر یا جستجو، تعداد تراکنش‌ها و جمع دریافت‌ها و پرداخت‌ها را نشان می‌دهد. انتقال بین حساب‌ها و تراکنش‌های قرض در این جمع حساب نمی‌شوند.',
+    'جمع‌ها، نمودارها و میانگین‌های «گزارش‌ها» و گزارش PDF ماه حالا فقط ریالی‌اند. قبلاً مبلغ‌های حساب‌های دلاری و درهمی بدون تبدیل با ریال جمع می‌شد؛ حالا این مبلغ‌ها جدا و با واحد خودشان نمایش داده می‌شوند.'
+  ]},
   { v:'1.14.1', items:[
     'برای مشکلی که گاهی هنگام ویرایش دسته‌بندی، فیلد نام تایپ نمی‌پذیرفت و لازم بود اپ بسته و دوباره باز شود، اصلاحی انجام شد. اگر باز هم پیش آمد، لطفاً خبر دهید.',
     'جدول ایموجی‌ها حالا ارتفاع ثابت دارد و با عوض کردن گروه، پنجره بالا و پایین نمی‌پرد؛ بقیه‌ی ایموجی‌های هر گروه با کشیدن جدول دیده می‌شوند.'
