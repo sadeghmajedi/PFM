@@ -784,7 +784,7 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="modal-handle"></div>
     <div class="modal-title">💼 افزودن صندوق</div>
     <div class="form-group"><label class="form-label">نام صندوق</label><input type="text" class="form-input" id="fund-name" placeholder="مثال: زکات، خیریه"></div>
-    <div class="form-group"><label class="form-label">آیکون</label><div class="chips" id="fund-icon-chips"><span class="chip sel" data-icon="🕌">🕌</span><span class="chip" data-icon="💝">💝</span><span class="chip" data-icon="💰">💰</span><span class="chip" data-icon="📈">📈</span><span class="chip" data-icon="🎓">🎓</span><span class="chip" data-icon="✈️">✈️</span><span class="chip" data-icon="🏠">🏠</span><span class="chip" data-icon="⭐">⭐</span></div></div>
+    <div class="form-group"><label class="form-label">آیکون</label><div data-icon-picker="fa"></div></div>
     <div style="background:var(--aqua-pale);border-radius:12px;padding:14px;margin-bottom:12px;">
       <div style="font-size:11px;font-weight:700;color:var(--aqua-deep);margin-bottom:10px;">📊 درصد کسر از هر گروه درآمدی:</div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><label style="font-size:12px;color:var(--text-main);">درآمد ماهیانه</label><div style="display:flex;align-items:center;gap:4px;"><input type="number" id="fund-rate-monthly" value="0" min="0" max="100" step="0.5" style="width:72px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;text-align:center;outline:none;"><span style="font-size:12px;color:var(--text-sub);">٪</span></div></div>
@@ -837,15 +837,7 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="modal-title" id="ce-title">دسته‌بندی جدید</div>
     <div class="form-group"><label class="form-label">نام</label><input type="text" class="form-input" id="ce-name"></div>
     <div class="form-group"><label class="form-label">آیکون</label>
-      <div class="ip-head">
-        <div class="ip-preview" id="ce-preview">⭐</div>
-        <div class="ip-custom">
-          <input type="text" class="form-input" id="ce-custom" placeholder="یا ایموجی دلخواه را تایپ کنید" autocomplete="off" autocorrect="off" spellcheck="false" oninput="onCustomEmojiInput(this)">
-          <div class="ip-err" id="ce-err"></div>
-        </div>
-      </div>
-      <div class="ip-tabs" id="ce-tabs"></div>
-      <div class="ip-grid" id="ce-grid"></div>
+      <div data-icon-picker="ce"></div>
     </div>
     <button class="btn-primary" id="ce-save" onclick="saveCatEditor()">افزودن</button>
     <button class="btn-secondary" onclick="closeModal('modal-cat-edit')">انصراف</button>
@@ -1330,6 +1322,7 @@ function openModal(id) {
   if (id === 'modal-expense') { setExpMode('normal'); populateExpCats(); populateExpAccounts(); setDateDefault('exp-date'); populateDescSuggestions('expense','exp-desc-suggestions'); }
   if (id === 'modal-income') { populateIncAccounts(); populateIncCats(); setDateDefault('inc-date'); populateDescSuggestions('income','inc-desc-suggestions'); }
   if (id === 'modal-auto-backup') renderAutoBackupList();
+  if (id === 'modal-fund') pickerInit('fa', '🕌', 0, false);   // v1.15.3
 }
 function closeModal(id) {
   var m = document.getElementById(id);
@@ -1439,7 +1432,6 @@ function selChip(el, gid) {
   document.querySelectorAll('#' + gid + ' .chip').forEach(function(c){ c.classList.remove('sel'); });
   el.classList.add('sel');
 }
-document.querySelectorAll('#fund-icon-chips .chip').forEach(function(c){ c.addEventListener('click', function(){ selChip(c,'fund-icon-chips'); }); });
 
 function convertPersianToEn(str) {
   return str.replace(/[۰-۹]/g, function(d) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); })
@@ -2219,8 +2211,7 @@ function submitFund() {
   var name = document.getElementById('fund-name').value.trim();
   if (!name) { alert('نام صندوق را وارد کنید'); return; }
   var initial = getNumericValue('fund-initial') || 0;
-  var iconEl = document.querySelector('#fund-icon-chips .chip.sel');
-  var icon = iconEl ? iconEl.dataset.icon : '⭐';
+  var icon = pickerValue('fa'); if (!icon) return;   // v1.15.3: انتخابگر ایموجی مشترک
   var rM = parseFloat(document.getElementById('fund-rate-monthly').value)||0;
   var rE = parseFloat(document.getElementById('fund-rate-extra').value)||0;
   var rO = parseFloat(document.getElementById('fund-rate-other').value)||0;
@@ -2249,29 +2240,68 @@ var EMOJI_GROUPS = [
   { n:'مذهبی و خیریه', e:'🕌 🕋 📿 🤲 🙏 🌙 ✨ 🎁 💝 ❤️ 🎗️ 🕯️ 🌹 💐' },
   { n:'سایر', e:'⭐ 📌 📎 🔖 💸 ⚙️ 🔒 🛡️ ⚖️ 📄 🗂️ 📅 ⏰ 🔔 ❓ ❗ ✅ 🔵 🟢 🟣' }
 ];
-var ceState = { kind:'exp', id:null, icon:'⭐', tab:0 };
+var ceState = { kind:'exp', id:null };
 
+// ── v1.15.3: انتخابگر ایموجی قابل استفاده‌ی دوباره ──
+// هر انتخابگر با یک پیشوند شناخته می‌شود و عناصرش <پیشوند>-preview / -custom / -err / -tabs / -grid هستند:
+// ce = ویرایشگر دسته‌بندی، fa = صندوق جدید، fe = ویرایش صندوق. وضعیت هر کدام در ICON_PICKERS[پیشوند].
+var ICON_PICKERS = {};
 function emojiTabFor(icon) {
   for (var i = 0; i < EMOJI_GROUPS.length; i++) if (EMOJI_GROUPS[i].e.split(' ').indexOf(icon) !== -1) return i;
   return -1;
 }
-function renderEmojiTabs() {
-  document.getElementById('ce-tabs').innerHTML = EMOJI_GROUPS.map(function(g, i) {
-    return '<button type="button" class="ip-tab' + (i === ceState.tab ? ' sel' : '') + '" data-tab="' + i + '">' + g.n + '</button>';
+function renderEmojiTabs(px) {
+  var st = ICON_PICKERS[px];
+  document.getElementById(px + '-tabs').innerHTML = EMOJI_GROUPS.map(function(g, i) {
+    return '<button type="button" class="ip-tab' + (i === st.tab ? ' sel' : '') + '" data-tab="' + i + '">' + g.n + '</button>';
   }).join('');
 }
-function renderEmojiGrid() {
-  var grid = document.getElementById('ce-grid');
-  grid.innerHTML = EMOJI_GROUPS[ceState.tab].e.split(' ').map(function(e) {
-    return '<button type="button" class="ip-cell' + (e === ceState.icon ? ' sel' : '') + '" data-e="' + e + '">' + e + '</button>';
+function renderEmojiGrid(px) {
+  var st = ICON_PICKERS[px], grid = document.getElementById(px + '-grid');
+  grid.innerHTML = EMOJI_GROUPS[st.tab].e.split(' ').map(function(e) {
+    return '<button type="button" class="ip-cell' + (e === st.icon ? ' sel' : '') + '" data-e="' + e + '">' + e + '</button>';
   }).join('');
   grid.scrollTop = 0;   // v1.14.1: جدول ارتفاع ثابت دارد؛ با عوض شدن گروه از بالا شروع شود
 }
-function setCatIcon(icon) {
-  ceState.icon = icon;
-  document.getElementById('ce-preview').textContent = icon;
-  Array.prototype.forEach.call(document.querySelectorAll('#ce-grid .ip-cell'), function(b) { b.classList.toggle('sel', b.dataset.e === icon); });
+function setPickerIcon(px, icon) {
+  ICON_PICKERS[px].icon = icon;
+  document.getElementById(px + '-preview').textContent = icon;
+  Array.prototype.forEach.call(document.querySelectorAll('#' + px + '-grid .ip-cell'), function(b) { b.classList.toggle('sel', b.dataset.e === icon); });
 }
+// آماده کردن انتخابگر: گروهِ آیکون فعلی باز می‌شود (یا defTab)؛ آیکونی که در فهرست نیست (مثلاً قبلاً دلخواه تایپ شده)
+// وقتی keepUnknown روشن است در فیلد «ایموجی دلخواه» دیده می‌شود. بعد از openModal صدا زده شود تا تب وسط بیاید.
+function pickerInit(px, icon, defTab, keepUnknown) {
+  var t = emojiTabFor(icon);
+  ICON_PICKERS[px] = { icon: icon, tab: t !== -1 ? t : (defTab || 0) };
+  document.getElementById(px + '-custom').value = (keepUnknown && t === -1) ? icon : '';
+  document.getElementById(px + '-err').textContent = '';
+  document.getElementById(px + '-preview').textContent = icon;
+  renderEmojiTabs(px); renderEmojiGrid(px);
+  // v1.14.1: به‌جای scrollIntoView (که در iOS ممکن است پنجره و خود صفحه را هم اسکرول کند) فقط ردیف تب‌ها جابه‌جا شود.
+  // با اختلاف مختصات صفحه حساب می‌شود تا علامت scrollLeft در RTL مهم نباشد
+  var tabs = document.getElementById(px + '-tabs'), tabEl = tabs.querySelector('.ip-tab.sel');
+  tabs.scrollLeft = 0;
+  if (tabEl) {
+    var tr = tabEl.getBoundingClientRect(), cr = tabs.getBoundingClientRect();
+    tabs.scrollLeft += (tr.left + tr.width / 2) - (cr.left + cr.width / 2);
+  }
+}
+// آیکون انتخاب‌شده، یا null اگر فیلد دلخواه متن نامعتبر دارد (پیغام هم نشان می‌دهد)
+function pickerValue(px) {
+  var custom = document.getElementById(px + '-custom').value.trim();
+  if (custom && !lastEmojiOf(custom)) { alert('فیلد «ایموجی دلخواه» فقط یک ایموجی می‌پذیرد'); return null; }
+  return ICON_PICKERS[px].icon;
+}
+// HTML انتخابگر — یک‌جا تعریف شده تا هر سه پنجره یکسان باشند
+function iconPickerHtml(px) {
+  return '<div class="ip-head"><div class="ip-preview" id="' + px + '-preview">⭐</div><div class="ip-custom">' +
+    '<input type="text" class="form-input" id="' + px + '-custom" placeholder="یا ایموجی دلخواه را تایپ کنید" autocomplete="off" autocorrect="off" spellcheck="false" oninput="onCustomEmojiInput(this)">' +
+    '<div class="ip-err" id="' + px + '-err"></div></div></div>' +
+    '<div class="ip-tabs" id="' + px + '-tabs"></div><div class="ip-grid" id="' + px + '-grid"></div>';
+}
+document.addEventListener('DOMContentLoaded', function() {
+  Array.prototype.forEach.call(document.querySelectorAll('[data-icon-picker]'), function(el) { el.innerHTML = iconPickerHtml(el.dataset.iconPicker); });
+});
 // تک‌ایموجی معتبر از متن تایپ‌شده — آخرین ایموجی را برمی‌گرداند تا تایپ ایموجی تازه جای قبلی را بگیرد.
 // فقط ایموجی پذیرفته می‌شود (نه حرف و عدد و نشانه)؛ پس متن خطرناکی وارد innerHTML نمی‌شود.
 var EMOJI_RE = null;
@@ -2291,66 +2321,59 @@ function lastEmojiOf(str) {
   return g;
 }
 function onCustomEmojiInput(el) {
-  var err = document.getElementById('ce-err');
+  var px = el.id.replace(/-custom$/, '');
+  var err = document.getElementById(px + '-err');
   if (!el.value.trim()) { err.textContent = ''; return; }
   var e = lastEmojiOf(el.value);
   if (!e) { err.textContent = 'فقط یک ایموجی وارد کنید (از کیبورد ایموجی)'; return; }
   err.textContent = '';
   if (el.value !== e) el.value = e;
-  setCatIcon(e);
+  setPickerIcon(px, e);
 }
 function openCatEditor(kind, id) {
   var list = kind === 'inc' ? (DB.incomeCategories || []) : DB.categories;
   var cat = id ? list.find(function(c){ return c.id === id; }) : null;
   var defIcon = kind === 'inc' ? '💰' : '🛒';
-  ceState = { kind: kind, id: cat ? cat.id : null, icon: cat ? (cat.icon || '⭐') : defIcon, tab: 0 };
-  var t = emojiTabFor(ceState.icon);
-  ceState.tab = t !== -1 ? t : (kind === 'inc' && !cat ? 7 : 0);
+  ceState = { kind: kind, id: cat ? cat.id : null };
   var label = kind === 'inc' ? 'دسته‌بندی دریافت' : 'دسته‌بندی پرداخت';
   document.getElementById('ce-title').textContent = cat ? ('✏️ ویرایش ' + label) : (label + ' جدید');
   document.getElementById('ce-save').textContent = cat ? 'ذخیره' : 'افزودن';
   var nm = document.getElementById('ce-name');
   nm.value = cat ? cat.name : '';
   nm.placeholder = kind === 'inc' ? 'مثال: پاداش' : 'مثال: پوشاک';
-  // آیکونی که در فهرست نیست (مثلاً قبلاً دلخواه تایپ شده) در فیلد دلخواه دیده شود
-  document.getElementById('ce-custom').value = (cat && t === -1) ? ceState.icon : '';
-  document.getElementById('ce-err').textContent = '';
-  document.getElementById('ce-preview').textContent = ceState.icon;
-  renderEmojiTabs(); renderEmojiGrid();
   openModal('modal-cat-edit');
-  // v1.14.1: به‌جای scrollIntoView (که در iOS ممکن است پنجره و خود صفحه را هم اسکرول کند) فقط ردیف تب‌ها جابه‌جا شود.
-  // با اختلاف مختصات صفحه حساب می‌شود تا علامت scrollLeft در RTL مهم نباشد
-  var tabs = document.getElementById('ce-tabs'), tabEl = tabs.querySelector('.ip-tab.sel');
-  tabs.scrollLeft = 0;
-  if (tabEl) {
-    var tr = tabEl.getBoundingClientRect(), cr = tabs.getBoundingClientRect();
-    tabs.scrollLeft += (tr.left + tr.width / 2) - (cr.left + cr.width / 2);
-  }
+  pickerInit('ce', cat ? (cat.icon || '⭐') : defIcon, (kind === 'inc' && !cat) ? 7 : 0, !!cat);
 }
 function saveCatEditor() {
   var name = document.getElementById('ce-name').value.trim();
   if (!name) { alert('نام را وارد کنید'); return; }
-  var custom = document.getElementById('ce-custom').value.trim();
-  if (custom && !lastEmojiOf(custom)) { alert('فیلد «ایموجی دلخواه» فقط یک ایموجی می‌پذیرد'); return; }
+  var icon = pickerValue('ce'); if (!icon) return;
   var list = ceState.kind === 'inc' ? DB.incomeCategories : DB.categories;
   if (ceState.id) {
     // تراکنش‌ها با شناسه به دسته‌بندی وصل‌اند؛ تغییر نام/آیکون فقط نمایش آن‌ها را به‌روز می‌کند
     var cat = list.find(function(c){ return c.id === ceState.id; });
-    if (cat) { cat.name = name; cat.icon = ceState.icon; }
+    if (cat) { cat.name = name; cat.icon = icon; }
   } else {
-    list.push({ id: (ceState.kind === 'inc' ? 'ic' : 'cat') + Date.now(), name: name, icon: ceState.icon });
+    list.push({ id: (ceState.kind === 'inc' ? 'ic' : 'cat') + Date.now(), name: name, icon: icon });
   }
   saveDB(); closeModal('modal-cat-edit');
   renderAll();
 }
 document.addEventListener('click', function(e) {
-  var tab = e.target.closest && e.target.closest('#ce-tabs .ip-tab');
-  if (tab) { ceState.tab = +tab.dataset.tab; renderEmojiTabs(); renderEmojiGrid(); return; }
-  var cell = e.target.closest && e.target.closest('#ce-grid .ip-cell');
+  if (!e.target.closest) return;
+  var tab = e.target.closest('.ip-tabs .ip-tab');
+  if (tab) {
+    var px = tab.parentNode.id.replace(/-tabs$/, '');
+    if (!ICON_PICKERS[px]) return;
+    ICON_PICKERS[px].tab = +tab.dataset.tab; renderEmojiTabs(px); renderEmojiGrid(px); return;
+  }
+  var cell = e.target.closest('.ip-grid .ip-cell');
   if (cell) {
-    setCatIcon(cell.dataset.e);
-    document.getElementById('ce-custom').value = '';
-    document.getElementById('ce-err').textContent = '';
+    var px2 = cell.parentNode.id.replace(/-grid$/, '');
+    if (!ICON_PICKERS[px2]) return;
+    setPickerIcon(px2, cell.dataset.e);
+    document.getElementById(px2 + '-custom').value = '';
+    document.getElementById(px2 + '-err').textContent = '';
   }
 });
 
@@ -3326,6 +3349,7 @@ function openEditFund(id) {
   document.getElementById('edit-fund-rate-extra').value = rates.extra||0;
   document.getElementById('edit-fund-rate-other').value = rates.other||0;
   openModal('modal-edit-fund');
+  pickerInit('fe', f.icon || '⭐', 0, true);   // v1.15.3: آیکون صندوق حالا قابل تغییر است
 }
 function submitEditFund() {
   var id = document.getElementById('edit-fund-id').value;
@@ -3335,8 +3359,9 @@ function submitEditFund() {
   var rM = parseFloat(document.getElementById('edit-fund-rate-monthly').value)||0;
   var rE = parseFloat(document.getElementById('edit-fund-rate-extra').value)||0;
   var rO = parseFloat(document.getElementById('edit-fund-rate-other').value)||0;
+  var icon = pickerValue('fe'); if (!icon) return;
   var f = DB.funds.find(function(f){ return f.id===id; }); if (!f) return;
-  f.name=name; f.seedBalance=initial; f.rates={monthly:rM,extra:rE,other:rO};
+  f.name=name; f.icon=icon; f.seedBalance=initial; f.rates={monthly:rM,extra:rE,other:rO};
   saveDB(); closeModal('modal-edit-fund'); renderAll();
 }
 function deleteFund(id) { if (!confirm('حذف شود؟')) return; DB.funds=DB.funds.filter(function(f){return f.id!==id;}); saveDB(); renderAll(); }
@@ -4842,13 +4867,17 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.15.2';
+var CURRENT_VERSION = '1.15.3';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.15.3', items:[
+    'برای آیکون صندوق‌های تخصیصی هم حالا همان انتخابگر دسته‌بندی‌ها را دارید: بیش از ۲۰۰ ایموجی در ۱۰ گروه، به‌علاوه‌ی فیلد «ایموجی دلخواه».',
+    'آیکون صندوق‌های موجود هم قابل تغییر شد: در صفحه‌ی «حساب‌ها» صندوق را ویرایش کنید.'
+  ]},
   { v:'1.15.2', items:[
     'صفحه‌ی «گزارش‌ها» مرتب‌تر شد: اول آمار ماه انتخاب‌شده (درآمد و هزینه، هزینه بر اساس دسته‌بندی، خرج‌کرد صندوق‌ها) و بعد آمار کل سال (میانگین‌ها، روند ماهانه، سهم هزینه‌ها)، هر بخش با عنوان ماه یا سال خودش.'
   ]},
@@ -5036,6 +5065,7 @@ setTimeout(function() {
     <div class="modal-handle"></div>
     <div class="modal-title">✏️ ویرایش صندوق</div>
     <div class="form-group"><label class="form-label">نام صندوق</label><input type="text" class="form-input" id="edit-fund-name"></div>
+    <div class="form-group"><label class="form-label">آیکون</label><div data-icon-picker="fe"></div></div>
     <div class="form-group"><label class="form-label">موجودی اولیه (ریال)</label><input type="text" inputmode="numeric" class="form-input" id="edit-fund-initial" placeholder="مانده پایه صندوق" oninput="sanitizeNumberInput(this)"></div>
     <div style="background:var(--aqua-pale);border-radius:12px;padding:14px;margin-bottom:12px;">
       <div style="font-size:11px;font-weight:700;color:var(--aqua-deep);margin-bottom:10px;">📊 درصد کسر از هر گروه درآمدی:</div>
