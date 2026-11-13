@@ -3802,6 +3802,9 @@ function normalizeDigits(s) {
     // نرمال‌سازی حروف عربی → فارسی (پیامک بانک ملت «واريز» را با ي عربی می‌فرستد)
     .replace(/ي/g, 'ی').replace(/ك/g, 'ک')
     .replace(/\u200c/g, ' ')            // ZWNJ → فاصله
+    // نویسه‌های نامرئی جهت متن (اقتصاد نوین شماره‌ی حساب را بین U+202A و U+202C می‌فرستد)
+    .replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069\u061c\ufeff]/g, '')
+    .replace(/\u2212/g, '-')            // منفی یونیکد → خط‌تیره
     .replace(/[\u064B-\u0652]/g, '');   // حذف اعراب
 }
 
@@ -3820,10 +3823,70 @@ function matchAccountByNumber(accNumRaw) {
   }) || null;
 }
 
+// تطبیق تقریبی (v1.16.0): اگر شماره‌ی پیامک با رقم‌های نام فقط یک حساب، هم‌طول و فقط در یک رقم
+// فرق داشته باشد. ردیف با هشدار نمایش داده می‌شود تا کاربر قبل از ثبت ببیند.
+function fuzzyMatchAccountByNumber(accNumRaw) {
+  var accNum = normalizeDigits(accNumRaw).replace(/\D/g, '');
+  if (accNum.length < 10) return null;
+  var cands = DB.accounts.filter(function(a){
+    var nameDigits = normalizeDigits(a.name).replace(/\D/g, '');
+    if (nameDigits.length !== accNum.length) return false;
+    var diff = 0;
+    for (var i = 0; i < accNum.length; i++) if (accNum[i] !== nameDigits[i]) diff++;
+    return diff === 1;
+  });
+  return cands.length === 1 ? cands[0] : null;
+}
+
+// ─── بانک اقتصاد نوین (v1.16.0) ───
+// سرخط: «واریز سود:» / «واریز:» / «برداشت:» + شماره‌ی خط‌تیره‌دار (3501-800-1234567-1)
+// مبلغ: «مبلغ :18,016 ریال» یا «+100,000,000ریال» / «-135,910,000ریال»؛ مانده: «مانده :N ریال»
+// تاریخ: «1405/7/23» + «02:58:05»، یا «8/21-20:45» بدون سال (سال جاری؛ اگر هنوز نرسیده، سال قبل)
+var NOVIN_HEAD_RE = /(واریز\s*سود|واریز|برداشت)\s*:\s*([0-9]{2,}(?:-[0-9]+){2,})/;
+function parseNovinSMS(text) {
+  var head = text.match(NOVIN_HEAD_RE);
+  if (!head) return null;
+  var kind = head[1].replace(/\s+/g, '');
+  var accNum = head[2].replace(/\D/g, '');
+  var body = text.slice(head.index + head[0].length);
+  var balMatch = body.match(/مانده\s*:?\s*([0-9][0-9,]*)/);
+  if (!balMatch) return null;
+  var beforeBal = body.slice(0, balMatch.index);
+  var amtMatch = beforeBal.match(/مبلغ\s*:?\s*([0-9][0-9,]*)/) ||
+                 beforeBal.match(/[+\-]\s*([0-9][0-9,]*)\s*ریال/) ||
+                 beforeBal.match(/([0-9][0-9,]*)\s*ریال/);
+  if (!amtMatch) return null;
+  var amount = parseInt(amtMatch[1].replace(/,/g, ''), 10);
+  var balance = parseInt(balMatch[1].replace(/,/g, ''), 10);
+  if (!amount || isNaN(balance)) return null;
+  var jy, jm, jd, hh = '00', mn = '00';
+  var full = body.match(/(1[34][0-9]{2})\/([0-9]{1,2})\/([0-9]{1,2})/);
+  var shortD = body.match(/(?:^|[^0-9\/])([0-9]{1,2})\/([0-9]{1,2})\s*-\s*([0-9]{1,2}):([0-9]{2})/);
+  if (full) {
+    jy = parseInt(full[1], 10); jm = parseInt(full[2], 10); jd = parseInt(full[3], 10);
+    var tm = body.slice(full.index + full[0].length).match(/([0-9]{1,2}):([0-9]{2})/);
+    if (tm) { hh = tm[1]; mn = tm[2]; }
+  } else if (shortD) {
+    jm = parseInt(shortD[1], 10); jd = parseInt(shortD[2], 10);
+    hh = shortD[3]; mn = shortD[4];
+    var t = J.today();
+    jy = t.jy;
+    if (jm > t.jm || (jm === t.jm && jd > t.jd)) jy--;   // تاریخ آینده ⇒ مال سال قبل است
+  }
+  if (hh.length === 1) hh = '0' + hh;
+  return {
+    accNum: accNum, type: kind === 'برداشت' ? 'expense' : 'income',
+    label: kind === 'واریزسود' ? 'interest' : null,
+    amount: amount, balance: balance, jy: jy, jm: jm, jd: jd, hh: hh, mn: mn
+  };
+}
+
 // تجزیه‌ی یک بلوک پیامک خام به فیلدها (پشتیبان، وقتی CSV نیست)
 function parseSMSBlock(block) {
   var text = normalizeDigits(block);
   if (looksLikeOTP(text)) return null;
+  var novin = parseNovinSMS(text);
+  if (novin) return novin;
   // باید هم نوع تراکنش و هم «مانده» داشته باشد
   var typeMatch = text.match(/(برداشت|واریز)/);
   var hasBalance = /مانده/.test(text);
@@ -3891,10 +3954,11 @@ function parseCSVRow(cols) {
   return { accNum: accNum, type: type, amount: amount, balance: isNaN(balance)?null:balance, jy: jy, jm: jm, jd: jd, hh: hh, mn: mn };
 }
 
-// جدا کردن پیامک‌های چسبیده‌به‌هم: نقطه‌ی شروع هر پیامک = «حساب» + شماره
+// جدا کردن پیامک‌های چسبیده‌به‌هم: نقطه‌ی شروع هر پیامک = «حساب» + شماره (ملت)
+// یا سرخط اقتصاد نوین «واریز( سود)/برداشت:» + شماره‌ی خط‌تیره‌دار
 function splitSMSBlocks(content) {
   var text = normalizeDigits(content);
-  var re = /حساب[\s:.\-]*[0-9]{4,}/g;
+  var re = /حساب[\s:.\-]*[0-9]{4,}|(?:واریز\s*سود|واریز|برداشت)\s*:\s*[0-9]{2,}-[0-9]/g;
   var starts = [], m;
   while ((m = re.exec(text)) !== null) {
     // شروع بلوک را به ابتدای خط همان مورد ببر تا چیزی از پیامک نیفتد
@@ -3965,9 +4029,9 @@ function unpairTransfer(idx) {
   var row = pendingSMSRows.find(function(r){ return r.idx===idx; });
   if (!row || !row.pair) return;
   var other = pendingSMSRows.find(function(r){ return r.idx===row.pair.otherIdx; });
-  delete row.pair;
+  delete row.pair; row.noPair = true;
   row.include = !!row.account && !row.dup;
-  if (other) { delete other.pair; other.include = !!other.account && !other.dup; }
+  if (other) { delete other.pair; other.noPair = true; other.include = !!other.account && !other.dup; }
   renderSMSImportReview();
 }
 
@@ -4268,7 +4332,8 @@ function processSMSContent(content) {
   // متن خام پیامک شامل کلمات کلیدی «حساب» و «مانده» چسبیده به عدد است.
   // CSV تولیدشده توسط Shortcut این کلمات را ندارد (فیلدها با کاما جدا شده‌اند).
   // چون اعداد فارسی جداکننده‌ی هزارگان (کاما) دارند، نمی‌توان صرفاً روی وجود کاما تکیه کرد.
-  var hasSMSKeywords = /حساب/.test(content) && /مانده/.test(content);
+  var normContent = normalizeDigits(content);
+  var hasSMSKeywords = (/حساب/.test(normContent) || NOVIN_HEAD_RE.test(normContent)) && /مانده/.test(normContent);
   var looksCSV = !hasSMSKeywords && lines.some(function(l){
     // یک ردیف CSV واقعی: بعد از حذف اعداد کاما دار، همچنان حداقل ۳ کاما دارد
     var stripped = l.replace(/\d{1,3}(,\d{3})+/g, 'N'); // اعداد کاما دار → N
@@ -4298,30 +4363,22 @@ function processSMSContent(content) {
   // پردازش هر ردیف: تطبیق حساب، تشخیص تکراری، اعتبارسنجی مانده
   pendingSMSRows = parsed.map(function(r, idx) {
     var acc = matchAccountByNumber(r.accNum);
+    var accMatch = acc ? 'exact' : null;
+    if (!acc) { acc = fuzzyMatchAccountByNumber(r.accNum); if (acc) accMatch = 'fuzzy'; }
     var dateISO = null, dateOK = false;
-    if (r.jy && r.jm && r.jd) {
-      dateISO = J.toGregorian(r.jy, r.jm, r.jd) + 'T' + (r.hh||'00') + ':' + (r.mn||'00') + ':00';
+    var gDate = (r.jy && r.jm && r.jd) ? J.toGregorian(r.jy, r.jm, r.jd) : null;
+    if (gDate) {
+      dateISO = gDate + 'T' + (r.hh||'00') + ':' + (r.mn||'00') + ':00';
       dateOK = true;
     } else {
       dateISO = todayGregorian() + 'T00:00:00';
     }
-    // تشخیص تکراری: همان حساب + مبلغ + نوع + تاریخ (روز)
-    var dup = false;
-    if (acc) {
-      var dayStr = dateISO.split('T')[0];
-      dup = DB.transactions.some(function(t){
-        return t.accountId===acc.id && t.amount===r.amount &&
-               ((r.type==='income' && t.type==='income') || (r.type==='expense' && t.type==='expense')) &&
-               (t.date||'').split('T')[0] === dayStr;
-      });
-    }
-    var preSeed = !!acc && dateOK && isBeforeSeed(acc, dateISO);
-    return {
-      idx: idx, accNum: r.accNum, account: acc, type: r.type,
-      amount: r.amount, balance: r.balance, dateISO: dateISO, dateOK: dateOK,
-      dup: dup, preSeed: preSeed,
-      include: !!acc && !dup   // پیش‌فرض: فقط اگر حساب پیدا شد و تکراری نبود
+    var row = {
+      idx: idx, accNum: r.accNum, account: acc, accMatch: accMatch, type: r.type, label: r.label || null,
+      amount: r.amount, balance: r.balance, dateISO: dateISO, dateOK: dateOK
     };
+    applySMSRowAccount(row, acc);
+    return row;
   });
 
   detectTransferPairs(pendingSMSRows);
@@ -4338,6 +4395,45 @@ function processSMSContent(content) {
   if (modeEl) modeEl.value = (ageDays > 3) ? 'history' : 'new';
   renderSMSImportReview();
   openModal('modal-sms-import');
+}
+
+// حساب یک ردیف پیامکی را تعیین و وضعیت تکراری/قبل از مبنا/تیک را بازمحاسبه کن
+function applySMSRowAccount(row, acc) {
+  row.account = acc || null;
+  // تشخیص تکراری: همان حساب + مبلغ + نوع + تاریخ (روز)
+  var dup = false;
+  if (acc) {
+    var dayStr = row.dateISO.split('T')[0];
+    dup = DB.transactions.some(function(t){
+      return t.accountId===acc.id && t.amount===row.amount &&
+             ((row.type==='income' && t.type==='income') || (row.type==='expense' && t.type==='expense')) &&
+             (t.date||'').split('T')[0] === dayStr;
+    });
+  }
+  row.dup = dup;
+  row.preSeed = !!acc && row.dateOK && isBeforeSeed(acc, row.dateISO);
+  row.include = !!acc && !dup;   // پیش‌فرض: فقط اگر حساب پیدا شد و تکراری نبود
+}
+
+// انتخاب دستی حساب برای ردیفی که خودکار تطبیق نخورد (v1.16.0)؛
+// همه‌ی ردیف‌های دیگرِ همان شماره (بدون تطبیق دقیق) هم همین حساب را می‌گیرند.
+function setSMSRowAccount(idx, accId) {
+  var row = pendingSMSRows.find(function(r){ return r.idx === idx; });
+  if (!row) return;
+  var acc = DB.accounts.find(function(a){ return a.id === accId; }) || null;
+  pendingSMSRows.forEach(function(r){
+    if (r.accMatch === 'exact' || r.pair) return;
+    if (r.idx !== idx && r.accNum !== row.accNum) return;
+    r.accMatch = acc ? 'manual' : null;
+    applySMSRowAccount(r, acc);
+  });
+  // با حساب تازه ممکن است جفت انتقال تازه‌ای پیدا شود (ردیف‌هایی که کاربر جدا کرده کنار می‌مانند)
+  detectTransferPairs(pendingSMSRows.filter(function(r){ return !r.pair && !r.noPair; }));
+  markDuplicateTransfers(pendingSMSRows);
+  var listEl = document.getElementById('sms-import-list');
+  var keepScroll = listEl ? listEl.scrollTop : 0;
+  renderSMSImportReview();
+  if (listEl) listEl.scrollTop = keepScroll;
 }
 
 // انتقال‌های از قبل ثبت‌شده را تکراری علامت بزن
@@ -4413,9 +4509,23 @@ function renderSMSImportReview() {
     }
 
     var isInc = r.type === 'income';
-    var typeLabel = isInc ? 'واریز' : 'برداشت';
+    var typeLabel = r.label === 'interest' ? 'واریز سود' : (isInc ? 'واریز' : 'برداشت');
     var typeColor = isInc ? 'var(--aqua-dark)' : 'var(--danger)';
-    var accName = r.account ? r.account.name : ('❓ ' + r.accNum + ' (حساب پیدا نشد)');
+    var accName = r.account ? r.account.name : ('❓ ' + toFa(r.accNum) + ' (حساب پیدا نشد)');
+    // حساب تطبیق‌نخورده، تقریبی یا دستی: فهرست انتخاب حساب (v1.16.0)
+    var accPickHtml = '';
+    if (r.accMatch !== 'exact') {
+      var opts = '<option value="">انتخاب حساب…</option>' + DB.accounts.map(function(a){
+        return '<option value="' + a.id + '"' + (r.account && r.account.id === a.id ? ' selected' : '') + '>' + escHtml(a.name) + '</option>';
+      }).join('');
+      var accNote = r.accMatch === 'fuzzy'
+        ? '⚠️ شماره‌ی پیامک (' + toFa(r.accNum) + ') با شماره‌ی نام این حساب یک رقم فرق دارد. اگر حساب درست است، شماره‌ی نام حساب را اصلاح کنید.'
+        : (r.account
+            ? 'برای تطبیق خودکار در دفعه‌های بعد، شماره‌ی ' + toFa(r.accNum) + ' را در نام حساب بنویسید.'
+            : 'شماره‌ی ' + toFa(r.accNum) + ' در نام هیچ حسابی نیست؛ حساب را انتخاب کنید.');
+      accPickHtml = '<select data-sms-acc="' + r.idx + '" class="form-input" style="margin-top:6px;padding:6px 8px;font-size:12px;height:auto;">' + opts + '</select>' +
+        '<div style="font-size:10px;color:#9a7d0a;margin-top:3px;line-height:1.6;">' + accNote + '</div>';
+    }
     var dateLabel = r.dateOK ? J.format(r.dateISO) : 'بدون تاریخ';
 
     // اعتبارسنجی مانده
@@ -4448,13 +4558,19 @@ function renderSMSImportReview() {
             '<span style="font-size:13px;font-weight:700;color:' + typeColor + ';direction:ltr;white-space:nowrap;">' + (isInc?'+':'-') + toFa(addCommas(r.amount)) + '</span>' +
           '</div>' +
           '<div style="font-size:11px;color:var(--text-sub);margin-top:2px;">' + typeLabel + ' • ' + dateLabel + (r.dup?' • <b style="color:#9a7d0a;">تکراری</b>':'') + '</div>' +
-          validationHtml +
+          validationHtml + accPickHtml +
         '</div>' +
       '</div>' +
     '</div>';
   }).join('');
 
   listEl.innerHTML = html;
+
+  listEl.querySelectorAll('[data-sms-acc]').forEach(function(sel){
+    sel.addEventListener('change', function(){
+      setSMSRowAccount(parseInt(this.dataset.smsAcc, 10), this.value);
+    });
+  });
 
   listEl.querySelectorAll('[data-unpair]').forEach(function(btn){
     btn.addEventListener('click', function(){
@@ -4560,7 +4676,7 @@ function confirmBankSMSImport() {
       amount: r.amount,
       accountId: r.account.id,
       date: r.dateISO,
-      desc: (r.type==='income' ? 'واریز بانکی' : 'برداشت بانکی') + ' (پیامک)'
+      desc: (r.label==='interest' ? 'سود بانکی' : (r.type==='income' ? 'واریز بانکی' : 'برداشت بانکی')) + ' (پیامک)'
     };
     if (r.type==='income') tx.incCatId = reviewCatInc;
     else tx.catId = reviewCatExp;
@@ -4867,13 +4983,18 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.15.4';
+var CURRENT_VERSION = '1.16.0';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.16.0', items:[
+    'پیامک‌های بانک اقتصاد نوین هم خوانده می‌شوند: واریز، برداشت و واریز سود. متن پیامک‌ها را مثل قبل در باکس «چسباندن پیامک بانک» پایین داشبورد بچسبانید؛ پیامک‌های ملت و نوین را می‌توانید با هم بچسبانید.',
+    'واریز سود با توضیح «سود بانکی» ثبت می‌شود.',
+    'اگر شماره‌ی حساب پیامک در نام هیچ حسابی نباشد، حالا در همان صفحه‌ی بررسی می‌توانید حساب را انتخاب کنید. برای تطبیق خودکار در دفعه‌های بعد، شماره‌ی حساب را در نام حساب بنویسید.'
+  ]},
   { v:'1.15.3', items:[
     'برای آیکون صندوق‌های تخصیصی هم حالا همان انتخابگر دسته‌بندی‌ها را دارید: بیش از ۲۰۰ ایموجی در ۱۰ گروه، به‌علاوه‌ی فیلد «ایموجی دلخواه».',
     'آیکون صندوق‌های موجود هم قابل تغییر شد: در صفحه‌ی «حساب‌ها» صندوق را ویرایش کنید.'
