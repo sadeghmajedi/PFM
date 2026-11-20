@@ -755,6 +755,7 @@ html { height:100%; height:-webkit-fill-available; }
       <div class="form-group" style="flex:1;"><label class="form-label">نرخ سود سالانه (٪)</label><input type="text" inputmode="decimal" class="form-input" id="bl-rate" placeholder="مثلاً 23" oninput="updateBankLoanPreview()"></div>
       <div class="form-group" style="flex:1;"><label class="form-label">تعداد اقساط (ماه)</label><input type="text" inputmode="numeric" class="form-input" id="bl-months" placeholder="مثلاً 36" oninput="updateBankLoanPreview()"></div>
     </div>
+    <div class="form-group"><label class="form-label">روش محاسبه</label><select class="form-select" id="bl-method" onchange="onBankMethodChange()"><option value="annuity">اقساط مساوی (مانده‌ی کاهنده) — رایج</option><option value="simple">روش ساده‌شده‌ی قدیمی</option></select><div style="font-size:10px;color:var(--text-sub);margin-top:4px;line-height:1.7;">اگر نمی‌دانید، «اقساط مساوی» بماند. اگر قسط بانک با عدد پایین جور نبود، روش دیگر را امتحان کنید.</div></div>
     <div class="form-group"><label class="form-label">مبلغ قسط ماهانه (ریال)</label><input type="text" inputmode="numeric" class="form-input" id="bl-inst" placeholder="محاسبه می‌شود" oninput="onBankInstInput(this)"><div id="bl-inst-note" style="font-size:10px;color:var(--text-sub);margin-top:4px;"></div></div>
     <div class="hint-box" id="bl-preview" style="display:none;line-height:1.9;font-size:12px;margin-bottom:12px;"></div>
     <div style="display:flex;gap:8px;">
@@ -2194,20 +2195,34 @@ function daysFromToday(gStr) {
 }
 
 // ─── محاسبه ───
-// قسط مساوی (annuity): A = P·r·(1+r)^n / ((1+r)^n − 1)، r = نرخ سالانه ÷ ۱۲۰۰
-function bankCalcInstallment(P, ratePct, n) {
+// دو روش (l.method؛ نبودِ فیلد = 'annuity' برای وام‌های v1.17.0):
+// 'annuity' اقساط مساوی با مانده‌ی کاهنده: A = P·r·(1+r)^n / ((1+r)^n − 1)، r = نرخ سالانه ÷ ۱۲۰۰ (= PMT اکسل)
+// 'simple'  روش ساده‌شده‌ی قدیمی (v1.17.1): سود کل I = P·R·(n+1) ÷ ۲۴۰۰، قسط = (P + I) ÷ n؛
+//           سود قسط k متناسب با (n−k+1) — یعنی سود روی اصلی که هر ماه P/n کم می‌شود — و جمعشان دقیقاً I
+var BANK_METHODS = { annuity: 'اقساط مساوی', simple: 'روش ساده‌شده' };
+function bankSimpleInterest(P, ratePct, n) { return Math.round(P * (ratePct || 0) * (n + 1) / 2400); }
+function bankCalcInstallment(P, ratePct, n, method) {
   if (!(P > 0) || !(n > 0)) return 0;
   var r = (ratePct || 0) / 1200;
   if (!r) return Math.ceil(P / n);
+  if (method === 'simple') return Math.round((P + bankSimpleInterest(P, ratePct, n)) / n);
   var f = Math.pow(1 + r, n);
   return Math.round(P * r * f / (f - 1));
 }
-// سود هر ماه روی مانده‌ی اصل؛ اصل = قسط − سود؛ قسط آخر هر چه از اصل مانده را صاف می‌کند
-function bankScheduleRaw(P, ratePct, n, inst, firstDue) {
+// اقساط مساوی: سود هر ماه روی مانده‌ی اصل. ساده‌شده: سهم ماه k از سود کل (جمع‌های گردشده تا جمع دقیق بماند).
+// در هر دو: اصل = قسط − سود؛ قسط آخر هر چه از اصل مانده را صاف می‌کند
+function bankScheduleRaw(P, ratePct, n, inst, firstDue, method) {
   var r = (ratePct || 0) / 1200, bal = P, rows = [];
   var fj = firstDue ? gToJ(firstDue) : null;
+  var simple = method === 'simple', I = simple ? bankSimpleInterest(P, ratePct, n) : 0;
+  var T = n * (n + 1) / 2, cumW = 0, cumI = 0;
   for (var k = 1; k <= n; k++) {
-    var interest = Math.round(bal * r);
+    var interest;
+    if (simple) {
+      cumW += n - k + 1;
+      var c = Math.round(I * cumW / T);
+      interest = c - cumI; cumI = c;
+    } else interest = Math.round(bal * r);
     var princ = (k === n) ? bal : Math.min(bal, Math.max(0, inst - interest));
     bal -= princ;
     var dj = fj ? jAddMonths(fj, k - 1) : null;
@@ -2216,7 +2231,7 @@ function bankScheduleRaw(P, ratePct, n, inst, firstDue) {
   }
   return rows;
 }
-function bankSchedule(l) { return bankScheduleRaw(l.principal, l.rate, l.months, l.installment, l.firstDue); }
+function bankSchedule(l) { return bankScheduleRaw(l.principal, l.rate, l.months, l.installment, l.firstDue, l.method); }
 function bankPaymentOf(l, n) { return (l.payments || []).find(function(p){ return p.n === n; }) || null; }
 function bankIsPaid(l, n) { return n <= (l.paidBefore || 0) || !!bankPaymentOf(l, n); }
 function bankNextRow(l, sched) {
@@ -2305,6 +2320,7 @@ function openBankLoanModal(prefill) {
   document.getElementById('bl-months').value = '';
   document.getElementById('bl-inst').value = '';
   document.getElementById('bl-paid').value = '';
+  document.getElementById('bl-method').value = 'annuity';
   var d = prefill.date || todayGregorian();
   document.getElementById('bl-date').value = d;
   var fj = jAddMonths(gToJ(d), 1);
@@ -2331,16 +2347,18 @@ function readBankLoanForm() {
     date: document.getElementById('bl-date').value || todayGregorian(),
     first: document.getElementById('bl-first').value,
     accountId: document.getElementById('bl-account').value,
-    deposit: document.getElementById('bl-deposit').checked
+    deposit: document.getElementById('bl-deposit').checked,
+    method: document.getElementById('bl-method').value === 'simple' ? 'simple' : 'annuity'
   };
 }
+function onBankMethodChange() { instDirty = false; updateBankLoanPreview(); }
 function onBankInstInput(el) { sanitizeNumberInput(el); instDirty = !!el.value; updateBankLoanPreview(); }
 function updateBankLoanPreview() {
   var f = readBankLoanForm();
   var box = document.getElementById('bl-preview');
-  var calc = bankCalcInstallment(f.principal, f.rate, f.months);
+  var calc = bankCalcInstallment(f.principal, f.rate, f.months, f.method);
   var instEl = document.getElementById('bl-inst');
-  if (!instDirty) instEl.value = calc ? addCommas(calc) : '';
+  if (!instDirty) { instEl.value = calc ? addCommas(calc) : ''; f.inst = calc; }
   document.getElementById('bl-inst-note').textContent = calc
     ? (instDirty && f.inst !== calc ? 'مبلغ محاسبه‌شده: ' + toFa(addCommas(calc)) + ' ریال' : 'محاسبه‌شده؛ اگر عدد بانک فرق دارد، اصلاح کنید')
     : '';
@@ -2350,7 +2368,7 @@ function updateBankLoanPreview() {
   if (!bankNewCtx && f.paid === 0 && !depWrap.dataset.touched) document.getElementById('bl-deposit').checked = true;
   var inst = f.inst || calc;
   if (!(f.principal > 0) || !(f.months > 0) || !inst) { box.style.display = 'none'; return; }
-  var sched = bankScheduleRaw(f.principal, f.rate, f.months, inst, f.first || null);
+  var sched = bankScheduleRaw(f.principal, f.rate, f.months, inst, f.first || null, f.method);
   var totInt = sched.reduce(function(s, r){ return s + r.interest; }, 0);
   var h = '<div style="display:flex;justify-content:space-between;"><span>قسط ماهانه</span><b>' + toFa(addCommas(inst)) + ' ریال</b></div>' +
     '<div style="display:flex;justify-content:space-between;"><span>سود کل</span><b>' + toFa(addCommas(totInt)) + ' ریال</b></div>' +
@@ -2374,7 +2392,7 @@ function submitBankLoan() {
   if (!f.first) { alert('تاریخ اولین قسط را وارد کنید'); return; }
   if (f.paid >= f.months) { alert('تعداد اقساط پرداخت‌شده باید کمتر از کل اقساط باشد'); return; }
   if (!f.accountId) { alert('حساب را انتخاب کنید'); return; }
-  var inst = f.inst || bankCalcInstallment(f.principal, f.rate, f.months);
+  var inst = f.inst || bankCalcInstallment(f.principal, f.rate, f.months, f.method);
   var acc = DB.accounts.find(function(a){ return a.id === f.accountId; });
   var cur = acc ? acc.currency : 'IRR';
   var baseTx = bankNewCtx ? DB.transactions.find(function(t){ return t.id === bankNewCtx.baseTxId; }) : null;
@@ -2384,7 +2402,7 @@ function submitBankLoan() {
     id: loanId, type: 'bank', no: nextLoanNo(true), counterparty: f.bank,
     principal: f.principal, remaining: f.principal, currency: cur, accountId: f.accountId, date: dateISO,
     status: 'open', note: f.title, repayments: [],
-    rate: f.rate, months: f.months, installment: inst, firstDue: f.first, paidBefore: f.paid, payments: []
+    rate: f.rate, months: f.months, method: f.method, installment: inst, firstDue: f.first, paidBefore: f.paid, payments: []
   };
   bankRefresh(l);
   DB.loans.push(l);
@@ -2474,6 +2492,7 @@ function openBankSchedule(loanId) {
   var head = '<div class="hint-box" style="margin-bottom:10px;line-height:1.9;">' +
     '<b>' + escHtml(l.counterparty) + '</b>' + (l.note ? ' — ' + escHtml(l.note) : '') + '<br>' +
     'مبلغ وام: ' + toCurrency(l.principal, cur) + ' • نرخ ' + toFa(String(l.rate)) + '٪ • ' + toFa(l.months) + ' قسط ' + toFa(addCommas(l.installment)) + '<br>' +
+    'روش محاسبه: ' + BANK_METHODS[l.method === 'simple' ? 'simple' : 'annuity'] + '<br>' +
     'سود کل: ' + toCurrency(st.totalInt, cur) + ' • پرداخت‌شده: ' + toCurrency(st.paidInt, cur) + ' • باقی: ' + toCurrency(st.leftInt, cur) +
     ((l.paidBefore || 0) ? '<br>اقساط ۱ تا ' + toFa(l.paidBefore) + ' پیش از ثبت در اپ پرداخت شده‌اند.' : '') + '</div>';
   var rows = st.sched.map(function(r){
@@ -5741,15 +5760,16 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.17.0';
+var CURRENT_VERSION = '1.17.1';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
-  { v:'1.17.0', items:[
+  { v:'1.17.1', items:[
     '«وام بانکی» به صفحه‌ی «قروض» اضافه شد: مبلغ، نرخ سود و تعداد اقساط را وارد کنید تا مبلغ قسط، سود کل و جدول اقساط محاسبه شود. اگر مبلغ قسط بانک فرق داشت، آن را اصلاح کنید.',
+    'روش محاسبه را هم انتخاب کنید: «اقساط مساوی» (رایج) یا «روش ساده‌شده‌ی قدیمی»؛ اگر بانک شما قسط را با روش قدیمی حساب می‌کند، روش ساده‌شده را انتخاب کنید تا سهم اصل و سود هر قسط درست باشد.',
     'برای وامی که از قبل گرفته‌اید، تعداد اقساط پرداخت‌شده را وارد کنید؛ موجودی حساب‌ها تغییر نمی‌کند.',
     'قسط‌های سررسیده روی داشبورد یادآوری می‌شوند و با یک لمس از حساب انتخابی ثبت می‌شوند.',
     'از هر قسط فقط بخش سود در گزارش‌ها «هزینه» (دسته‌ی «سود وام») حساب می‌شود؛ اصل قسط از مانده‌ی بدهی کم می‌شود.',
