@@ -276,7 +276,9 @@ html { height:100%; height:-webkit-fill-available; }
 .gi-sum { background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:12px; padding:10px 12px; margin-bottom:8px; }
 .gc-box { font-size:13.5px !important; line-height:1.85 !important; }
 /* v1.34.0: حالت نمایشی */
-#demoBar { flex-shrink:0; align-items:center; gap:8px; padding:7px 12px; background:var(--accent-light); color:var(--text-main); font-size:12px; font-weight:700; border-bottom:1px solid var(--accent); }
+#demoBar { flex-shrink:0; align-items:center; gap:8px; padding:7px 12px; padding-top:calc(7px + var(--safe-top)); /* v1.34.1: زیر ساعت/نشانگرهای آیفون نرود */ background:var(--accent-light); color:var(--text-main); font-size:12px; font-weight:700; border-bottom:1px solid var(--accent); }
+body.demo-on .top-bar { padding-top:12px; }   /* v1.34.1: فاصله‌ی امن بالا را نوار نمایشی گرفته است */
+#demoBar button { min-height:34px; }
 #demoBar span { flex:1; min-width:0; line-height:1.6; }
 #demoBar button { flex-shrink:0; font-family:inherit; font-size:12px; font-weight:700; background:var(--aqua); color:var(--on-primary); border:none; border-radius:9px; padding:6px 14px; cursor:pointer; }
 /* v1.33.0: راهنمای اپ */
@@ -8639,7 +8641,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.34.0';
+var CURRENT_VERSION = '1.34.1';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
@@ -8923,7 +8925,7 @@ function enterDemo() {
   DB = JSON.parse(DB_DEFAULT_JSON);
   buildDemoDB();
   saveDB();   // → سایه
-  document.getElementById('demoBar').style.display = 'flex';
+  document.getElementById('demoBar').style.display = 'flex'; document.body.classList.add('demo-on');
   var dash = document.querySelectorAll('#bottomNav .nav-item')[0];
   navigate('dashboard', dash);
   var sa = document.getElementById('scrollArea'); if (sa) sa.scrollTop = 0;
@@ -8941,7 +8943,7 @@ function exitDemo() {
   loadDB();
   if (typeof catTrendKey !== 'undefined') catTrendKey = null;
   if (typeof txDateFrom !== 'undefined') { txDateFrom = null; txDateTo = null; }
-  document.getElementById('demoBar').style.display = 'none';
+  document.getElementById('demoBar').style.display = 'none'; document.body.classList.remove('demo-on');
   var dash = document.querySelectorAll('#bottomNav .nav-item')[0];
   navigate('dashboard', dash);
   var sa = document.getElementById('scrollArea'); if (sa) sa.scrollTop = 0;
