@@ -5179,13 +5179,14 @@ function savingsLineHtml(inc, pay) {
 }
 
 // ── ۱. مقایسه با دوره‌ی قبل و همان دوره‌ی پارسال ──
-function chgHtml(cur, base, goodWhenUp) {
-  if (!base && !cur) return '<span class="cmp-na">—</span>';
-  if (!base) return '<span class="cmp-new">تازه</span>';
+// v1.30.1: جمله‌ی کامل با مرجع («۵۵٪ بیشتر از ماه قبل») — «ماه قبل: ۵۵٪ بیشتر» دو جور خوانده می‌شد
+function chgHtml(cur, base, goodWhenUp, ref) {
+  if (!base && !cur) return '<span class="cmp-na">' + ref + ': —</span>';
+  if (!base) return '<span class="cmp-new">' + ref + ': ثبت نشده</span>';
   var p = (cur - base) / base * 100;
-  if (Math.abs(p) < 0.5) return '<span class="cmp-na">بدون تغییر</span>';
+  if (Math.abs(p) < 0.5) return '<span class="cmp-na">مثل ' + ref + '</span>';
   var up = p > 0, good = goodWhenUp ? up : !up;
-  return '<span class="' + (good ? 'cmp-good' : 'cmp-bad') + '">' + faPct(Math.abs(p)) + (up ? ' بیشتر' : ' کمتر') + '</span>';
+  return '<span class="' + (good ? 'cmp-good' : 'cmp-bad') + '">' + faPct(Math.abs(p)) + (up ? ' بیشتر از ' : ' کمتر از ') + ref + '</span>';
 }
 function renderRepCompare(P, S) {
   var el = document.getElementById('repCompare'); if (!el) return;
@@ -5203,7 +5204,7 @@ function renderRepCompare(P, S) {
   }
   function row(cls, name, cur, a, b, goodUp) {
     return '<div class="cmp-row' + cls + '"><div class="cmp-top"><span class="cmp-name">' + name + '</span><span class="cmp-amt">' + rialStr(cur) + '</span></div>' +
-      '<div class="cmp-sub"><span>' + P.prev.short + ': ' + chgHtml(cur, a, goodUp) + '</span><span>' + P.ly.short + ': ' + chgHtml(cur, b, goodUp) + '</span></div>' +
+      '<div class="cmp-sub"><span>' + chgHtml(cur, a, goodUp, P.prev.short) + '</span><span>' + chgHtml(cur, b, goodUp, P.ly.short) + '</span></div>' +
       '<div class="cmp-more">' + P.prev.short + ': ' + rialStr(a) + ' ریال · ' + P.ly.short + ': ' + rialStr(b) + ' ریال</div></div>';
   }
   var html = '<div class="cmp-note">' + note + '</div>' +
@@ -5366,7 +5367,7 @@ function renderYearCard(jy) {
   var D = yearReportData(jy), S = D.S, PS = D.PS;
   if (!S.inc && !S.pay && !Object.keys(D.fx).length) { el.innerHTML = '<div class="empty" style="padding:12px;"><p style="font-size:12px;">داده‌ای برای این سال نیست</p></div>'; return; }
   var py = toFa(String(jy - 1));
-  var vs = function(cur, base, goodUp){ return D.hasPrev ? '<div class="c">نسبت به ' + py + ': ' + chgHtml(cur, base, goodUp) + '</div>' : ''; };
+  var vs = function(cur, base, goodUp){ return D.hasPrev ? '<div class="c">' + chgHtml(cur, base, goodUp, 'سال ' + py) + '</div>' : ''; };
   var rate = S.inc ? (S.inc - S.pay) / S.inc * 100 : null, prate = PS.inc ? (PS.inc - PS.pay) / PS.inc * 100 : null;
   var stat = function(l, v, extra){ return '<div class="yr-stat"><div class="l">' + l + '</div><div class="v">' + v + '</div>' + (extra || '') + '</div>'; };
   var html = '';
@@ -7740,13 +7741,16 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.30.0';
+var CURRENT_VERSION = '1.30.1';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.30.1', items:[
+    'متن مقایسه‌ها در گزارش‌ها صریح‌تر شد: مثلاً «۵۵٪ بیشتر از ماه قبل» یا «۲۰٪ کمتر از پارسال»؛ یعنی این دوره نسبت به آن دوره.'
+  ]},
   { v:'1.30.0', items:[
     'گزارش‌ها حالا علاوه بر ماه، «بازه‌ی دلخواه» هم دارند: مثلاً ۳ یا ۶ ماه اخیر، از اول امسال، پارسال یا هر دو تاریخی که بخواهید. خروجی PDF و Excel هم همان بازه را می‌گیرد.',
     'زیر کادرهای درآمد و هزینه «نرخ پس‌انداز» آمده است، و در بخش سال روند ماه‌به‌ماه آن.',
