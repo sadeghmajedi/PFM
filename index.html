@@ -355,6 +355,15 @@ html { height:100%; height:-webkit-fill-available; }
 .cb-item.open .cb-txs { display:block; }
 .cb-tx { display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--text-mid); padding:5px 0; border-top:1px dashed var(--border); }
 .cb-tx span:last-child { direction:ltr; unicode-bidi:isolate; font-weight:600; color:var(--text-main); }
+.txd-btn { flex:1; text-align:right; padding:9px 12px; background:#fff; border:1px solid var(--border-aqua); border-radius:10px; font-family:inherit; font-size:13px; color:var(--text-main); cursor:pointer; }
+.txd-btn.on { background:var(--aqua-pale); border-color:var(--aqua); color:var(--aqua-deep); font-weight:600; }
+.txd-x { width:38px; height:38px; flex-shrink:0; border:1px solid var(--border-aqua); border-radius:10px; background:#fff; color:var(--text-sub); font-size:14px; cursor:pointer; }
+.txd-panel { background:#fff; border:1px solid var(--border-aqua); border-radius:12px; padding:10px; margin-top:6px; }
+.txd-row { display:flex; gap:6px; align-items:center; margin-bottom:6px; }
+.txd-row:last-child { margin-bottom:0; }
+.txd-row .form-select { flex:1; min-width:0; font-size:13px; padding:7px 6px; }
+.txd-row .form-select:nth-of-type(2) { flex:1.6; }
+.txd-lbl { width:18px; font-size:12px; color:var(--text-sub); flex-shrink:0; }
 .tx-sum { display:flex; flex-wrap:wrap; gap:4px 12px; align-items:center; font-size:12px; color:var(--text-mid); background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:10px; padding:8px 12px; margin-bottom:10px; line-height:1.7; }
 .tx-sum:empty { display:none; }
 .tx-sum b { font-weight:700; unicode-bidi:isolate; }
@@ -516,6 +525,25 @@ html { height:100%; height:-webkit-fill-available; }
   <div style="margin-bottom:10px;position:relative;">
     <input type="text" class="form-input" id="tx-search" placeholder="🔍 جستجو در توضیحات یا مبلغ..." oninput="setTxSearch(this.value)" style="padding-left:36px;font-size:13px;">
     <button id="tx-search-clear" onclick="clearTxSearch()" style="display:none;position:absolute;left:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-sub);padding:0;line-height:1;">✕</button>
+  </div>
+  <!-- v1.21.0: فیلتر بازه‌ی تاریخ (شمسی) -->
+  <div style="margin-bottom:10px;">
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button id="txDateBtn" onclick="toggleTxDatePanel()" class="txd-btn">📅 <span id="txDateLabel">همه‌ی تاریخ‌ها</span> <span id="txDateCaret" style="font-size:10px;">▾</span></button>
+      <button id="txDateClear" onclick="clearTxDateRange()" class="txd-x" style="display:none;" aria-label="حذف فیلتر تاریخ">✕</button>
+    </div>
+    <div id="txDatePanel" class="txd-panel" style="display:none;">
+      <div class="chips" id="txDatePresets" style="margin-bottom:10px;">
+        <span class="chip" data-p="today" onclick="setTxDatePreset('today')">امروز</span>
+        <span class="chip" data-p="7d" onclick="setTxDatePreset('7d')">۷ روز اخیر</span>
+        <span class="chip" data-p="30d" onclick="setTxDatePreset('30d')">۳۰ روز اخیر</span>
+        <span class="chip" data-p="month" onclick="setTxDatePreset('month')">این ماه</span>
+        <span class="chip" data-p="prev" onclick="setTxDatePreset('prev')">ماه قبل</span>
+        <span class="chip" data-p="year" onclick="setTxDatePreset('year')">امسال</span>
+      </div>
+      <div class="txd-row"><span class="txd-lbl">از</span><select class="form-select" id="txdF-d"></select><select class="form-select" id="txdF-m"></select><select class="form-select" id="txdF-y"></select></div>
+      <div class="txd-row"><span class="txd-lbl">تا</span><select class="form-select" id="txdT-d"></select><select class="form-select" id="txdT-m"></select><select class="form-select" id="txdT-y"></select></div>
+    </div>
   </div>
   <div class="tx-sum" id="txSum"></div>
   <div id="txList"></div>
@@ -3216,6 +3244,109 @@ var txAccountFilter = 'all';
 var txCatFilter = 'all';
 var txFundFilter = 'all';
 var txSearchQuery = '';
+// v1.21.0: بازه‌ی تاریخ (هر دو سر شامل)؛ میلادی 'YYYY-MM-DD' تا مقایسه با بخش تاریخ t.date ساده باشد
+var txDateFrom = null, txDateTo = null, txDatePreset = null;
+
+function gDateStr(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function jPartsOf(gStr) {
+  var p = gStr.split('-');
+  return J.toJalali(parseInt(p[0], 10), parseInt(p[1], 10), parseInt(p[2], 10));
+}
+function jLabel(gStr) { var j = jPartsOf(gStr); return toFa(j.jd) + ' ' + J.monthName(j.jm) + ' ' + toFa(j.jy); }
+function txDateYears() {
+  var t = J.today(), minY = t.jy;
+  (DB.transactions || []).forEach(function(tx){
+    if (!tx.date) return;
+    var y = jPartsOf(tx.date.split('T')[0]).jy;
+    if (y < minY) minY = y;
+  });
+  var ys = []; for (var y = t.jy; y >= minY; y--) ys.push(y);
+  return ys;
+}
+function fillTxDateSelects(px, gStr) {
+  var j = jPartsOf(gStr);
+  var ys = txDateYears();
+  if (ys.indexOf(j.jy) === -1) ys.push(j.jy);
+  var dSel = document.getElementById(px + '-d'), mSel = document.getElementById(px + '-m'), ySel = document.getElementById(px + '-y');
+  ySel.innerHTML = ys.map(function(y){ return '<option value="' + y + '">' + toFa(y) + '</option>'; }).join('');
+  mSel.innerHTML = [1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){ return '<option value="' + m + '">' + J.monthName(m) + '</option>'; }).join('');
+  var len = jMonthLen(j.jy, j.jm), opts = '';
+  for (var d = 1; d <= len; d++) opts += '<option value="' + d + '">' + toFa(d) + '</option>';
+  dSel.innerHTML = opts;
+  ySel.value = j.jy; mSel.value = j.jm; dSel.value = Math.min(j.jd, len);
+}
+function readTxDateSelects(px) {
+  var jy = parseInt(document.getElementById(px + '-y').value, 10);
+  var jm = parseInt(document.getElementById(px + '-m').value, 10);
+  var jd = Math.min(parseInt(document.getElementById(px + '-d').value, 10), jMonthLen(jy, jm));
+  return J.toGregorian(jy, jm, jd);
+}
+// اگر «از» بعد از «تا» شد، سر دیگر به همان روز می‌آید (جابه‌جا کردن دو سر وسط انتخاب گیج‌کننده بود)
+function onTxDateSelect(changedPx) {
+  var f = readTxDateSelects('txdF'), t = readTxDateSelects('txdT');
+  if (f && t && f > t) { if (changedPx === 'txdF') t = f; else f = t; }
+  applyTxDateRange(f, t, null);
+}
+function applyTxDateRange(from, to, preset) {
+  txDateFrom = from; txDateTo = to; txDatePreset = preset;
+  if (from) fillTxDateSelects('txdF', from);
+  if (to) fillTxDateSelects('txdT', to);
+  updateTxDateUI();
+  renderTransactions();
+}
+function setTxDatePreset(p) {
+  var now = new Date(), t = J.today(), from, to = gDateStr(now);
+  if (p === 'today') from = to;
+  else if (p === '7d') { var d7 = new Date(now); d7.setDate(d7.getDate() - 6); from = gDateStr(d7); }
+  else if (p === '30d') { var d30 = new Date(now); d30.setDate(d30.getDate() - 29); from = gDateStr(d30); }
+  else if (p === 'month') { from = J.toGregorian(t.jy, t.jm, 1); to = J.toGregorian(t.jy, t.jm, jMonthLen(t.jy, t.jm)); }
+  else if (p === 'prev') { var py = t.jm === 1 ? t.jy - 1 : t.jy, pm = t.jm === 1 ? 12 : t.jm - 1;
+    from = J.toGregorian(py, pm, 1); to = J.toGregorian(py, pm, jMonthLen(py, pm)); }
+  else if (p === 'year') { from = J.toGregorian(t.jy, 1, 1); to = J.toGregorian(t.jy, 12, jMonthLen(t.jy, 12)); }
+  applyTxDateRange(from, to, p);
+}
+function clearTxDateRange() {
+  txDateFrom = txDateTo = txDatePreset = null;
+  document.getElementById('txDatePanel').style.display = 'none';
+  updateTxDateUI();
+  renderTransactions();
+}
+function toggleTxDatePanel() {
+  var panel = document.getElementById('txDatePanel');
+  var open = panel.style.display === 'none';
+  if (open && !txDateFrom) {
+    // پیش‌فرض انتخابگرها: از اول ماه جاری تا امروز (بدون اعمال فیلتر تا کاربر چیزی را عوض کند)
+    var t = J.today();
+    fillTxDateSelects('txdF', J.toGregorian(t.jy, t.jm, 1));
+    fillTxDateSelects('txdT', gDateStr(new Date()));
+  }
+  panel.style.display = open ? '' : 'none';
+  document.getElementById('txDateCaret').textContent = open ? '▴' : '▾';
+}
+var TXD_PRESET_LABELS = { today:'امروز', '7d':'۷ روز اخیر', '30d':'۳۰ روز اخیر', month:'این ماه', prev:'ماه قبل', year:'امسال' };
+function updateTxDateUI() {
+  var on = !!(txDateFrom && txDateTo);
+  var lbl = document.getElementById('txDateLabel');
+  lbl.textContent = !on ? 'همه‌ی تاریخ‌ها'
+    : (txDateFrom === txDateTo ? jLabel(txDateFrom) : jLabel(txDateFrom) + ' تا ' + jLabel(txDateTo)) +
+      (txDatePreset ? ' (' + TXD_PRESET_LABELS[txDatePreset] + ')' : '');
+  document.getElementById('txDateBtn').classList.toggle('on', on);
+  document.getElementById('txDateClear').style.display = on ? '' : 'none';
+  document.querySelectorAll('#txDatePresets .chip').forEach(function(c){ c.classList.toggle('sel', c.dataset.p === txDatePreset); });
+}
+document.addEventListener('DOMContentLoaded', function(){
+  ['txdF-d','txdF-m','txdF-y','txdT-d','txdT-m','txdT-y'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('change', function(){
+      // با عوض شدن ماه یا سال، تعداد روزها را درست کن
+      var px = id.slice(0, 4);
+      var g = readTxDateSelects(px); if (g) fillTxDateSelects(px, g);
+      onTxDateSelect(px);
+    });
+  });
+});
 
 function setFilter(f, el) {
   txFilter = f;
@@ -3585,6 +3716,10 @@ function renderTransactions() {
     txs = txs.filter(function(t){ return matchIds[t.catId] || matchIds[t.incCatId]; });
   }
   if (txFilter === 'fund' && txFundFilter && txFundFilter !== 'all') txs = txs.filter(function(t){ return t.fundId===txFundFilter; });
+  if (txDateFrom && txDateTo) txs = txs.filter(function(t){   // v1.21.0
+    var d = (t.date || '').split('T')[0];
+    return d >= txDateFrom && d <= txDateTo;
+  });
   if (txSearchQuery) {
     var q = normalizeFa(txSearchQuery).replace(/[،,]/g,'');
     // ارقام فارسی/عربی هم اول به لاتین تبدیل می‌شوند تا جستجوی مبلغ با هر کیبوردی کار کند
@@ -6017,13 +6152,17 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.20.0';
+var CURRENT_VERSION = '1.21.0';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.21.0', items:[
+    'در صفحه‌ی «تراکنش‌ها» فیلتر بازه‌ی تاریخ اضافه شد: روی «📅 همه‌ی تاریخ‌ها» بزنید و یکی از گزینه‌های آماده (امروز، ۷ روز اخیر، ۳۰ روز اخیر، این ماه، ماه قبل، امسال) را انتخاب کنید یا روز، ماه و سال شروع و پایان را به تاریخ شمسی تعیین کنید.',
+    'خط «مجموع» بالای فهرست، جمع دریافت و پرداخت همان بازه را نشان می‌دهد. برای برداشتن فیلتر، ✕ کنار آن را بزنید.'
+  ]},
   { v:'1.20.0', items:[
     'در تنظیمات، «📲 راهنمای خواندن خودکار پیامک‌ها» اضافه شد: مراحل ساختن میانبر (Shortcut) در آیفون و اشتراک‌گذاری پیامک در اندروید.',
     'در اندروید می‌توانید پیامک بانک را از اپ پیامک مستقیم با «اشتراک‌گذاری» به PFM بفرستید (PFM باید با Chrome نصب شده باشد).',
