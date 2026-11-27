@@ -275,6 +275,25 @@ html { height:100%; height:-webkit-fill-available; }
 .gi-val span { font-size:10.5px; unicode-bidi:isolate; }
 .gi-sum { background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:12px; padding:10px 12px; margin-bottom:8px; }
 .gc-box { font-size:13.5px !important; line-height:1.85 !important; }
+/* v1.32.0: زکات */
+.zk-sec { font-size:12px; font-weight:700; color:var(--aqua-deep); margin:10px 0 4px; }
+.zk-row { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; padding:6px 0; border-bottom:1px dashed var(--border); font-size:12.5px; color:var(--text-main); }
+.zk-row > span { min-width:0; line-height:1.7; }
+.zk-row > span small { display:block; font-size:10.5px; color:var(--text-sub); }
+.zk-row > b { flex-shrink:0; unicode-bidi:isolate; white-space:nowrap; color:var(--aqua-deep); }
+.zk-row.strong > span, .zk-row.strong > b { font-weight:700; }
+.zk-row.muted > b { color:var(--text-sub); }
+.zk-row label { display:flex; gap:6px; align-items:flex-start; }
+.zk-gold { background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:10px; padding:6px 10px; margin:6px 0; }
+.zk-gi { display:flex; gap:8px; align-items:flex-start; padding:4px 0; font-size:12px; color:var(--text-main); }
+.zk-gi > span { flex:1; min-width:0; }
+.zk-gi > b { flex-shrink:0; unicode-bidi:isolate; font-size:12px; color:var(--aqua-deep); }
+.zk-due-x { flex:0 0 34px; height:34px; border:1px solid var(--border); border-radius:10px; background:#fff; color:var(--text-sub); font-size:13px; font-family:inherit; }
+.zk-note { font-size:10.5px; color:var(--text-sub); line-height:1.8; }
+.zk-box { margin-top:10px; background:#fff; border:1px solid var(--border-aqua); border-radius:12px; padding:6px 12px 10px; }
+.zk-due { margin:10px 0 6px; padding:10px 12px; border-radius:10px; background:var(--aqua); color:var(--on-primary); font-size:13.5px; text-align:center; }
+.zk-due b { font-size:17px; unicode-bidi:isolate; }
+.zk-due.none { background:var(--aqua-pale); color:var(--aqua-deep); }
 .gc-box .lc-sum { font-size:13.5px; padding:4px 0; }
 .gc-box .lc-sum > :last-child { white-space:nowrap; }
 .gc-box .lc-big { font-size:25px; }
@@ -827,6 +846,11 @@ html { height:100%; height:-webkit-fill-available; }
       <div class="as-txt"><div class="as-name">محاسبه‌گر خرید و فروش طلا</div><div class="as-desc">پیش از خرید یا فروش زیورآلات، فاکتور طلافروش را چک کنید: ارزش طلا، اجرت، سود، مالیات و مبلغ دریافتی.</div></div>
       <span class="si-val">←</span>
     </div>
+    <div class="as-item" onclick="openZakat()">
+      <div class="as-ico">🕌</div>
+      <div class="as-txt"><div class="as-name">محاسبه‌گر زکات</div><div class="as-desc">زکات دارایی‌ها طبق نظر اکثریت اهل سنت یا فتاوای آیت‌الله سیستانی؛ جدا از صندوق‌های تخصیصی شما.</div></div>
+      <span class="si-val">←</span>
+    </div>
   </div></div>
 </div>
 
@@ -1121,6 +1145,44 @@ html { height:100%; height:-webkit-fill-available; }
 </div>
 
 <!-- v1.25.0: دستیار سین — محاسبه‌گر خرید و فروش طلا -->
+<!-- v1.32.0: محاسبه‌گر زکات -->
+<div class="modal-overlay" id="modal-zakat" onclick="closeModalOutside(event,'modal-zakat')">
+  <div class="modal-sheet" style="max-height:92vh;">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🕌 محاسبه‌گر زکات</div>
+    <div class="chips" id="zk-method" style="margin-bottom:10px;">
+      <span class="chip" data-m="sunni" onclick="setZakatMethod('sunni')">اهل سنت (نظر اکثریت)</span>
+      <span class="chip" data-m="sist" onclick="setZakatMethod('sist')">آیت‌الله سیستانی</span>
+    </div>
+    <div class="form-group"><label class="form-label">سالگرد زکات (پایان سال قمری دارایی)</label><button class="btn-secondary" id="zk-due-set" onclick="zkSetDue(todayGregorian())" style="margin-top:0;">📅 تعیین تاریخ</button>
+      <div class="txd-row" id="zk-due-row"><select class="form-select" id="zkd-d" onchange="zkDueSelect()"></select><select class="form-select" id="zkd-m" onchange="zkDueSelect()"></select><select class="form-select" id="zkd-y" onchange="zkDueSelect()"></select><button class="zk-due-x" onclick="zkSetDue('')" title="حذف تاریخ">✕</button></div>
+      <div class="zk-note" id="zk-due-lbl" style="margin-top:4px;"></div></div>
+    <div id="zk-sunni">
+      <div class="form-group" style="margin-bottom:8px;"><label class="form-label">مبنای نصاب</label>
+        <select class="form-input" id="zk-basis" onchange="zkChange()"><option value="gold">طلا — ۸۵ گرم طلای خالص</option><option value="silver">نقره — ۵۹۵ گرم نقره (احتیاط بیشتر، رایج نزد حنفی‌ها)</option></select></div>
+      <div id="zk-sunni-a"></div>
+      <div class="form-group" style="margin:8px 0 4px;"><label class="form-label">سایر دارایی‌های مشمول (ریال)</label><input type="text" inputmode="numeric" class="form-input" id="zk-other" placeholder="کالای تجاری به قیمت روز، سهام و …" oninput="sanitizeNumberInput(this);zkChange()"><div class="zk-note" style="margin-top:4px;">هر دارایی مشمولی که در حساب‌های اپ نیست.</div></div>
+      <div id="zk-sunni-b"></div>
+    </div>
+    <div id="zk-sist">
+      <div id="zk-sist-a"></div>
+      <div class="zk-sec">مشمول زکات</div>
+      <div style="display:flex;gap:8px;">
+        <div class="form-group" style="flex:1;"><label class="form-label">سکه‌ی طلای رایج (مثقال)</label><input type="text" inputmode="decimal" class="form-input" id="zk-gcoin" placeholder="۰" oninput="zkChange()"></div>
+        <div class="form-group" style="flex:1;"><label class="form-label">سکه‌ی نقره‌ی رایج (مثقال)</label><input type="text" inputmode="decimal" class="form-input" id="zk-scoin" placeholder="۰" oninput="zkChange()"></div>
+      </div>
+      <div class="zk-note" style="margin:-6px 0 10px;">فقط سکه‌ای که امروز به‌عنوان پول در معامله رایج است و ۱۱ ماه کامل در ملک شما بوده. هر مثقال = ۴٫۶۰۸ گرم. نصاب طلا ۱۵ مثقال و بعد هر ۳ مثقال؛ نقره ۱۰۵ و بعد هر ۲۱.</div>
+      <div class="form-group"><label class="form-label">مال‌التجاره به قیمت روز (ریال، احتیاط واجب)</label><input type="text" inputmode="numeric" class="form-input" id="zk-trade" placeholder="۰" oninput="sanitizeNumberInput(this);zkChange()"></div>
+      <label class="zk-gi" style="margin-bottom:10px;"><input type="checkbox" id="zk-tradeok" onchange="zkChange()"><span style="font-size:11.5px;line-height:1.8;">شش شرط برقرار است: مالک بالغ و عاقل است؛ ارزش به نصاب رسیده؛ یک سال از قصد کسب گذشته؛ قصد کسب در تمام سال مانده؛ مالک در تمام سال می‌توانسته در آن تصرف کند؛ در تمام سال به سرمایه یا بیشتر خریدار داشته.</span></label>
+    </div>
+    <div class="form-group" id="zk-silver-wrap"><label class="form-label" id="zk-silver-lbl">قیمت هر گرم نقره (تومان)</label><input type="text" inputmode="numeric" class="form-input" id="zk-silver" placeholder="قیمت روز نقره" oninput="sanitizeNumberInput(this);zkChange()"></div>
+    <div class="zk-box" id="zk-result"></div>
+    <button class="btn-primary" id="zk-pay" onclick="zakatPay()" style="margin-top:12px;">ثبت پرداخت زکات</button>
+    <div id="zk-paid" style="margin-top:8px;"></div>
+    <div class="zk-note" style="margin-top:12px;">این محاسبه کمکی است. در جزئیات و موارد خاص (بدهی‌ها، طلب‌ها، مال مشترک، شرکت‌ها) حکم نهایی با مرجع تقلید یا مفتی شماست. این ابزار با صندوق‌های تخصیصی شما کاری ندارد.</div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-gold-calc" onclick="closeModalOutside(event,'modal-gold-calc')">
   <div class="modal-sheet" style="max-height:92vh;">
     <div class="modal-handle"></div>
@@ -2327,6 +2389,7 @@ function linkAfterSubmit(tx, kind) {
   if (!L || !tx) return;
   if (L.kind === 'recur') { var r = recurById(L.id); if (r) { r.last = txDay(tx); r.next = recurAdvance(r); } }
   if (L.kind === 'cheque') { var c = chequeById(L.id); if (c) { c.status = 'cleared'; c.txId = tx.id; c.clearedAt = txDay(tx); tx.chequeId = c.id; } }
+  if (L.kind === 'zakat') zakatAfterPay(tx, L.id);   // v1.32.0
 }
 
 // ── تکراری‌ها: {id, type:'expense'|'income', amount, accountId, catId|incCatId, group, desc, every (ماه), day (روز شمسی), next 'YYYY-MM-DD', active} ──
@@ -2565,10 +2628,15 @@ function renderDueList() {
   var items = [];
   recurItems().forEach(function(r){ if (r.active === false || !r.next) return; var d = daysFromToday(r.next); if (d <= DUE_DAYS) items.push({ k: 'r', o: r, d: d, date: r.next }); });
   chequeItems().forEach(function(c){ if (c.status !== 'pending') return; var d = daysFromToday(c.due); if (d <= DUE_DAYS) items.push({ k: 'c', o: c, d: d, date: c.due }); });
+  if (DB.zakat) ['sunni', 'sist'].forEach(function(m){ var zs = DB.zakat[m]; if (!zs || !zs.due) return; var d = daysFromToday(zs.due); if (d <= DUE_DAYS) items.push({ k: 'z', o: { m: m }, d: d, date: zs.due }); });   // v1.32.0
   if (!items.length) { el.innerHTML = ''; return; }
   items.sort(function(a, b){ return a.date < b.date ? -1 : 1; });
   el.innerHTML = items.map(function(it) {
     var over = it.d < 0, color = over ? 'var(--danger)' : '#9a7d0a', o = it.o;
+    if (it.k === 'z') return '<div class="due-card' + (over ? ' over' : '') + '"><div style="min-width:0;">' +
+      '<div class="due-title" style="color:' + color + ';">🕌 سالگرد زکات (' + (o.m === 'sist' ? 'آیت‌الله سیستانی' : 'اهل سنت') + ')</div>' +
+      '<div class="due-sub">' + jLabel(it.date) + ' (' + whenLabel(it.d) + ')</div></div>' +
+      '<div class="due-acts"><button data-zk="' + o.m + '" class="due-btn" style="background:' + color + ';">محاسبه</button></div></div>';
     var title = it.k === 'r' ? '🔁 ' + recurLabel(o) : '📑 چک ' + (o.dir === 'in' ? 'دریافتی' : 'صادره') + (o.party ? ' — ' + escHtml(o.party) : '');
     var amt = fmtCur(o.amount, accCurOf(o.accountId));
     var btns = it.k === 'r'
@@ -2580,12 +2648,238 @@ function renderDueList() {
       '<div class="due-acts">' + btns + '</div></div>';
   }).join('');
   el.onclick = function(e) {
-    var b = e.target.closest('[data-rrec],[data-rskip],[data-chq]'); if (!b) return;
-    if (b.dataset.rrec) recurRecord(b.dataset.rrec);
+    var b = e.target.closest('[data-rrec],[data-rskip],[data-chq],[data-zk]'); if (!b) return;
+    if (b.dataset.zk) openZakat(b.dataset.zk);
+    else if (b.dataset.rrec) recurRecord(b.dataset.rrec);
     else if (b.dataset.rskip) recurSkip(b.dataset.rskip);
     else openCheque(b.dataset.chq);
   };
 }
+
+
+// ═══════════════════════════════════════
+// ZAKAT (v1.32.0) — محاسبه‌گر زکات: «اهل سنت، نظر اکثریت» و «آیت‌الله سیستانی»
+// ═══════════════════════════════════════
+// جدا از صندوق تخصیصی ۲٫۵٪ کاربر. چیزی خودکار ثبت نمی‌کند؛ «ثبت پرداخت» همان پنجره‌ی پرداخت را باز می‌کند (pendingLink kind 'zakat').
+// DB.zakat = {method:'sunni'|'sist', silverPrice (ریال/گرم، دستی),
+//   sunni:{due, basis:'gold'|'silver', jewel:{goldId:true}, recv:bool, debts:bool, other (ریال)},
+//   sist:{due, gcoin (مثقال), scoin (مثقال), trade (ریال), tradeOk:bool}, paid:[{date, method, amount, txId}]}
+// منابع قواعد در CLAUDE.md (v1.32.0). اعداد: مثقال بازاری (صیرفی) ۴٫۶۰۸ گرم (توضیح‌المسائل جامع سیستانی).
+var MITHQAL_G = 4.608;
+var ZK_RATE = 0.025;                       // یک‌چهلم
+var ZK_NISAB_GOLD_G = 85, ZK_NISAB_SILVER_G = 595;               // اهل سنت
+var SIST_GOLD_N1 = 15, SIST_GOLD_STEP = 3, SIST_SILVER_N1 = 105, SIST_SILVER_STEP = 21;   // سیستانی، مثقال بازاری
+function zk() {
+  var z = DB.zakat || (DB.zakat = {});
+  z.method = z.method || 'sunni';
+  z.sunni = z.sunni || { basis: 'gold', jewel: {}, recv: true, debts: true, other: 0 };
+  z.sunni.jewel = z.sunni.jewel || {};
+  z.sist = z.sist || { gcoin: 0, scoin: 0, trade: 0, tradeOk: false };
+  z.paid = z.paid || [];
+  return z;
+}
+// ── تقویم قمری (Intl، تقویم ام‌القری)؛ اگر مرورگر پشتیبانی نکند، سال قمری = ۳۵۴ روز ──
+function hijriParts(gStr) {
+  try {
+    var p = gStr.split('-'), d = new Date(+p[0], +p[1] - 1, +p[2], 12);
+    var o = {};
+    new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(d)
+      .forEach(function(x){ if (x.type === 'year' || x.type === 'month' || x.type === 'day') o[x.type] = parseInt(x.value, 10); });
+    return o.year && o.month && o.day ? { y: o.year, m: o.month, d: o.day } : null;
+  } catch (e) { return null; }
+}
+function hijriLabel(gStr) {
+  try {
+    var p = gStr.split('-'), d = new Date(+p[0], +p[1] - 1, +p[2], 12);
+    var s = new Intl.DateTimeFormat('fa-IR-u-ca-islamic-umalqura', { year: 'numeric', month: 'long', day: 'numeric' }).format(d);
+    return hijriParts(gStr) ? s : '';
+  } catch (e) { return ''; }
+}
+function addLunarYear(gStr) {
+  var h = hijriParts(gStr);
+  if (h) for (var k = 350; k <= 360; k++) {
+    var c = gAddDays(gStr, k), hc = hijriParts(c);
+    if (hc && hc.y === h.y + 1 && hc.m === h.m && hc.d >= Math.min(h.d, 29)) return c;
+  }
+  return gAddDays(gStr, 354);
+}
+function zkGold24() { var r = fxRateOf(getFx(), 'GOLD18'); return r ? r.rate / 0.75 : 0; }     // ریال/گرم طلای خالص
+function zkRate(cur) { if (cur === 'IRR') return 1; var r = fxRateOf(getFx(), cur); return r ? r.rate : 0; }
+function zkFmt(n) { return rialStr(n) + ' ریال'; }
+
+// ── داده‌های اپ که در محاسبه می‌آیند ──
+function zkAccounts() {
+  var by = {}, missing = [];
+  DB.accounts.forEach(function(a){ var c = a.currency || 'IRR'; by[c] = (by[c] || 0) + getAccountBalance(a.id); });
+  var rial = 0;
+  Object.keys(by).forEach(function(c){ var r = zkRate(c); if (r) rial += by[c] * r; else if (by[c]) missing.push(c); });
+  return { by: by, rial: rial, missing: missing };
+}
+function zkGoldItems() {
+  var p18 = (fxRateOf(getFx(), 'GOLD18') || {}).rate || 0;
+  return goldItems().map(function(g){ var k = g.k || 750; return { g: g, pure: g.w * k / 1000, value: p18 ? g.w * p18 * k / 750 : 0 }; });
+}
+function zkReceivables() {
+  var s = 0, miss = [];
+  (DB.loans || []).forEach(function(l){ if (l.type !== 'given' || l.status !== 'open' || !(l.remaining > 0)) return; var c = l.currency || 'IRR', r = zkRate(c); if (r) s += l.remaining * r; else miss.push(c); });
+  return { rial: s, missing: miss };
+}
+// بدهی‌های سررسید تا ۱۲ ماه آینده: قرض‌های شخصیِ گرفته‌شده (کل مانده) + اصلِ اقساط وام بانکی تا ۱۲ ماه (و معوقه)
+function zkDebts12() {
+  var lim = gAddDays(todayGregorian(), 365), pers = 0, bank = 0;
+  (DB.loans || []).forEach(function(l){
+    if (l.status !== 'open') return;
+    var r = zkRate(l.currency || 'IRR'); if (!r) return;
+    if (l.type === 'taken') pers += (l.remaining || 0) * r;
+    if (l.type === 'bank') bankSchedule(l).forEach(function(row){ if (!bankIsPaid(l, row.n) && row.due && row.due <= lim) bank += row.principal * r; });
+  });
+  return { pers: pers, bank: bank, total: pers + bank };
+}
+
+// ── محاسبه‌ی اهل سنت (نظر اکثریت) ──
+function zkSunniCalc() {
+  var z = zk(), s = z.sunni, acc = zkAccounts(), golds = zkGoldItems(), rec = zkReceivables(), deb = zkDebts12();
+  var goldVal = 0, jewelVal = 0;
+  golds.forEach(function(x){ if (s.jewel[x.g.id]) jewelVal += x.value; else goldVal += x.value; });
+  var assets = Math.max(0, acc.rial) + goldVal + (s.recv ? rec.rial : 0) + (s.other || 0);
+  var minus = s.debts ? deb.total : 0;
+  var net = Math.max(0, assets - minus);
+  var g24 = zkGold24();
+  var nisab = s.basis === 'silver' ? (z.silverPrice ? ZK_NISAB_SILVER_G * z.silverPrice : 0) : (g24 ? ZK_NISAB_GOLD_G * g24 : 0);
+  var due = nisab > 0 && net >= nisab ? Math.round(net * ZK_RATE) : 0;
+  return { acc: acc, golds: golds, goldVal: goldVal, jewelVal: jewelVal, rec: rec, deb: deb, assets: assets, minus: minus, net: net, nisab: nisab, due: due, g24: g24 };
+}
+// ── محاسبه‌ی آیت‌الله سیستانی ──
+// سکه‌ی رایج: نصاب اول، بعد هر «گام» کامل؛ کمتر از یک گام معاف. زکات = یک‌چهلمِ مقدارِ مشمول (توضیح‌المسائل، زکات طلا و نقره).
+function sistTiered(w, n1, step) { if (!(w >= n1)) return 0; return n1 + step * Math.floor((w - n1) / step + 1e-9); }
+function zkSistCalc() {
+  var z = zk(), s = z.sist, g24 = zkGold24(), sp = z.silverPrice || 0;
+  var gIn = sistTiered(s.gcoin || 0, SIST_GOLD_N1, SIST_GOLD_STEP), sIn = sistTiered(s.scoin || 0, SIST_SILVER_N1, SIST_SILVER_STEP);
+  var gZ = gIn / 40, sZ = sIn / 40;   // مثقال
+  var gZv = g24 ? gZ * MITHQAL_G * g24 : 0, sZv = sp ? sZ * MITHQAL_G * sp : 0;
+  // نصاب مال‌التجاره: ارزش ۱۵ مثقال طلای مسکوک یا ۱۰۵ مثقال نقره‌ی مسکوک (هر کدام کمتر بود، رسیدن به آن کافی است)
+  var nG = g24 ? SIST_GOLD_N1 * MITHQAL_G * g24 : 0, nS = sp ? SIST_SILVER_N1 * MITHQAL_G * sp : 0;
+  var tNisab = nG && nS ? Math.min(nG, nS) : (nG || nS);
+  var trade = s.trade || 0, tZ = s.tradeOk && tNisab && trade >= tNisab ? Math.round(trade / 40) : 0;
+  return { acc: zkAccounts(), golds: zkGoldItems(), gIn: gIn, sIn: sIn, gZ: gZ, sZ: sZ, gZv: gZv, sZv: sZv, tNisab: tNisab, trade: trade, tZ: tZ,
+    due: Math.round(gZv + sZv + tZ), g24: g24 };
+}
+
+// ── پنجره ──
+function openZakat(method) {
+  var z = zk(); if (method) z.method = method;
+  var bs = document.getElementById('zk-basis'); if (bs) bs.value = z.sunni.basis;
+  ['zk-other', 'zk-trade', 'zk-silver'].forEach(function(id){ document.getElementById(id).value = ''; });
+  if (z.sunni.other) document.getElementById('zk-other').value = addCommas(z.sunni.other);
+  if (z.sist.trade) document.getElementById('zk-trade').value = addCommas(z.sist.trade);
+  if (z.silverPrice) document.getElementById('zk-silver').value = addCommas(Math.round(z.silverPrice / 10));
+  document.getElementById('zk-gcoin').value = z.sist.gcoin ? String(z.sist.gcoin) : '';
+  document.getElementById('zk-scoin').value = z.sist.scoin ? String(z.sist.scoin) : '';
+  document.getElementById('zk-tradeok').checked = !!z.sist.tradeOk;
+  renderZakat();
+  openModal('modal-zakat');
+  document.querySelector('#modal-zakat .modal-sheet').scrollTop = 0;
+}
+function setZakatMethod(m) { zk().method = m; saveDB(); renderZakat(); }
+function zkNum(id) { return getNumericValue(id) || 0; }
+function zkFloat(id) { var v = parseFloat(faDecimal(document.getElementById(id).value)); return isFinite(v) && v > 0 ? v : 0; }
+// خواندن فیلدها و ذخیره (بعد از هر تغییر)
+function zkChange() {
+  var z = zk();
+  z.sunni.basis = document.getElementById('zk-basis').value;
+  z.sunni.other = zkNum('zk-other');
+  z.sist.gcoin = zkFloat('zk-gcoin'); z.sist.scoin = zkFloat('zk-scoin');
+  z.sist.trade = zkNum('zk-trade'); z.sist.tradeOk = document.getElementById('zk-tradeok').checked;
+  var sp = zkNum('zk-silver'); z.silverPrice = sp > 0 ? sp * 10 : 0;   // ورودی تومان، ذخیره ریال
+  saveDB(); renderZakat();
+}
+function zkSetDue(v) { var z = zk(); z[z.method].due = v || null; if (!v) delete z[z.method].due; saveDB(); renderZakat(); renderDueList(); }
+function zkToggle(k, on) { zk().sunni[k] = !!on; saveDB(); renderZakat(); }
+// انتخابگر شمسی سالگرد (سال‌ها: دو سال قبل تا دو سال بعد)
+function zkFillDue(gStr) {
+  var j = jPartsOf(gStr), ty = J.today().jy, ys = [];
+  for (var y = Math.max(ty, j.jy) + 2; y >= Math.min(ty, j.jy) - 2; y--) ys.push(y);
+  document.getElementById('zkd-y').innerHTML = ys.map(function(y){ return '<option value="' + y + '">' + toFa(y) + '</option>'; }).join('');
+  document.getElementById('zkd-m').innerHTML = [1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){ return '<option value="' + m + '">' + J.monthName(m) + '</option>'; }).join('');
+  var len = jMonthLen(j.jy, j.jm), o = ''; for (var d = 1; d <= len; d++) o += '<option value="' + d + '">' + toFa(d) + '</option>';
+  document.getElementById('zkd-d').innerHTML = o;
+  document.getElementById('zkd-y').value = j.jy; document.getElementById('zkd-m').value = j.jm; document.getElementById('zkd-d').value = j.jd;
+}
+function zkDueSelect() { var g = readTxDateSelects('zkd'); if (g) zkSetDue(g); }
+function zkJewel(id, on) { var z = zk(); if (on) z.sunni.jewel[id] = true; else delete z.sunni.jewel[id]; saveDB(); renderZakat(); }
+function zkRow(label, val, cls, sub) { return '<div class="zk-row' + (cls ? ' ' + cls : '') + '"><span>' + label + (sub ? '<small>' + sub + '</small>' : '') + '</span><b>' + val + '</b></div>'; }
+function renderZakat() {
+  var z = zk(), m = z.method;
+  document.querySelectorAll('#zk-method .chip').forEach(function(c){ c.classList.toggle('sel', c.dataset.m === m); });
+  document.getElementById('zk-sunni').style.display = m === 'sunni' ? '' : 'none';
+  document.getElementById('zk-sist').style.display = m === 'sist' ? '' : 'none';
+  document.getElementById('zk-silver-wrap').style.display = (m === 'sunni' && z.sunni.basis === 'silver') || m === 'sist' ? '' : 'none';
+  document.getElementById('zk-silver-lbl').textContent = m === 'sist' ? 'قیمت هر گرم نقره (تومان، اختیاری — برای نصاب نقره)' : 'قیمت هر گرم نقره (تومان)';
+  // تاریخ سالگرد
+  var due = z[m].due || '';
+  document.getElementById('zk-due-set').style.display = due ? 'none' : '';
+  document.getElementById('zk-due-row').style.display = due ? '' : 'none';
+  if (due) zkFillDue(due);
+  document.getElementById('zk-due-lbl').textContent = due ? jLabel(due) + (hijriLabel(due) ? '، ' + hijriLabel(due) : '') + ' — ' + whenLabel(daysFromToday(due)) : 'تعیین نشده؛ با تعیین آن، از ۷ روز مانده روی داشبورد یادآوری می‌شود.';
+  var noGold = !zkGold24();
+  var goldWarn = noGold ? '<div class="hint-box" style="margin-bottom:8px;">⚠️ قیمت روز طلا ثبت نشده؛ نصاب و ارزش طلا حساب نمی‌شود. <a href="#" onclick="closeModal(\'modal-zakat\');openFxModal();return false;">ثبت قیمت</a></div>' : '';
+  var res = '', due$ = 0;
+  if (m === 'sunni') {
+    var c = zkSunniCalc(); due$ = c.due;
+    var h = goldWarn;
+    h += '<div class="zk-sec">دارایی‌های مشمول</div>';
+    var accSub = Object.keys(c.acc.by).filter(function(k){ return k !== 'IRR' && c.acc.by[k]; }).map(function(k){ return toCurrency(c.acc.by[k], k) + (zkRate(k) ? '' : ' (بدون نرخ؛ حساب نشد)'); }).join(' · ');
+    h += zkRow('موجودی همه‌ی حساب‌ها', zkFmt(c.acc.rial), '', accSub ? 'شامل معادل ریالی: ' + accSub : 'موجودی صندوق‌های تخصیصی هم داخل همین است');
+    if (c.golds.length) {
+      h += '<div class="zk-gold">' + c.golds.map(function(x){
+        var j = !!z.sunni.jewel[x.g.id];
+        return '<label class="zk-gi"><input type="checkbox"' + (j ? ' checked' : '') + ' onchange="zkJewel(\'' + x.g.id + '\', this.checked)"><span>' + escHtml(x.g.name || 'طلا') + ' (' + toFa(String(Math.round(x.g.w * 100) / 100)).replace('.', '٫') + ' گرم)</span><b>' + (j ? 'زینتی — معاف' : zkFmt(x.value)) + '</b></label>';
+      }).join('') + '<div class="zk-note">تیک = زیور مورد استفاده‌ی شخصی (به اندازه‌ی متعارف). طبق مالکی، شافعی و حنبلی زکات ندارد؛ طلای پس‌انداز، سکه و شمش زکات دارد.</div></div>';
+    }
+    h += zkRow('<label><input type="checkbox"' + (z.sunni.recv !== false ? ' checked' : '') + ' onchange="zkToggle(\'recv\', this.checked)"> طلب‌ها (قرض‌هایی که داده‌اید و امید وصول دارید)</label>', zkFmt(c.rec.rial));
+    document.getElementById('zk-sunni-a').innerHTML = h;
+    var d = '<div class="zk-sec">کسورات</div>' + zkRow('<label><input type="checkbox"' + (z.sunni.debts !== false ? ' checked' : '') + ' onchange="zkToggle(\'debts\', this.checked)"> بدهی‌های سررسید تا ۱۲ ماه آینده</label>', zkFmt(c.deb.total), '', 'قرض‌های شخصی: ' + rialStr(c.deb.pers) + ' · اصل اقساط وام بانکی تا ۱۲ ماه: ' + rialStr(c.deb.bank));
+    document.getElementById('zk-sunni-b').innerHTML = d;
+    res = zkRow('جمع دارایی مشمول', zkFmt(c.assets)) + (c.minus ? zkRow('منهای بدهی‌ها', zkFmt(c.minus)) : '') + zkRow('خالص', zkFmt(c.net), 'strong') +
+      zkRow('نصاب (' + (z.sunni.basis === 'silver' ? '۵۹۵ گرم نقره' : '۸۵ گرم طلای خالص') + ')', c.nisab ? zkFmt(c.nisab) : 'قیمت ثبت نشده') +
+      '<div class="zk-due' + (c.due ? '' : ' none') + '">' + (c.nisab ? (c.due ? 'زکات (۲٫۵٪ خالص): <b>' + zkFmt(c.due) + '</b>' : 'خالص به نصاب نرسیده؛ زکاتی واجب نیست.') : 'برای محاسبه، قیمت ' + (z.sunni.basis === 'silver' ? 'نقره' : 'طلا') + ' لازم است.') + '</div>' +
+      '<div class="zk-note">ارقام مال امروز است؛ زکات به دارایی <b>روز سالگرد</b> تعلق می‌گیرد، پس همان روز دوباره نگاه کنید. اینکه دارایی در طول سال زیر نصاب نرفته باشد (شرط حول در بیشتر مذاهب) را اپ بررسی نمی‌کند. نظر حنفی: زیورآلات هم زکات دارد و بسیاری نصاب نقره را مبنا می‌گیرند.</div>';
+  } else {
+    var s = zkSistCalc(); due$ = s.due;
+    var h2 = goldWarn + '<div class="zk-sec">بدون زکات (طبق فتاوای ایشان)</div>';
+    h2 += zkRow('موجودی حساب‌ها، اسکناس و پول بانکی', zkFmt(s.acc.rial), 'muted', 'اسکناس و پول غیر طلا و نقره حکم طلا و نقره را ندارد و زکات ندارد (توضیح‌المسائل، احکام زکات طلا و نقره)');
+    if (s.golds.length) { var gw = s.golds.reduce(function(a, x){ return a + x.g.w; }, 0); h2 += zkRow('طلاهای من (زیورآلات و سکه‌های فعلی مثل بهار آزادی)', toFa(String(Math.round(gw * 100) / 100)).replace('.', '٫') + ' گرم', 'muted', 'زیورآلات و سکه‌های فعلی زکات ندارد؛ زکات به طلایی است که سکه و پول رایج باشد (استفتائات دفتر ایشان)'); }
+    document.getElementById('zk-sist-a').innerHTML = h2;
+    res = (s.gIn ? zkRow('سکه‌ی طلای رایج: مشمول ' + toFa(s.gIn) + ' مثقال', toFa(String(Math.round(s.gZ * 1000) / 1000)).replace('.', '٫') + ' مثقال' + (s.gZv ? ' ≈ ' + zkFmt(s.gZv) : '')) : '') +
+      (s.sIn ? zkRow('سکه‌ی نقره‌ی رایج: مشمول ' + toFa(s.sIn) + ' مثقال', toFa(String(Math.round(s.sZ * 1000) / 1000)).replace('.', '٫') + ' مثقال' + (s.sZv ? ' ≈ ' + zkFmt(s.sZv) : '')) : '') +
+      zkRow('نصاب مال‌التجاره', s.tNisab ? zkFmt(s.tNisab) : 'قیمت ثبت نشده', '', 'ارزش ۱۵ مثقال طلای مسکوک (با قیمت طلای خالص، تقریبی) یا ۱۰۵ مثقال نقره') +
+      (s.trade ? zkRow('مال‌التجاره', s.tZ ? zkFmt(s.tZ) : (z.sist.tradeOk ? (s.tNisab && s.trade < s.tNisab ? 'به نصاب نرسیده' : '—') : 'شرایط تأیید نشده')) : '') +
+      '<div class="zk-due' + (s.due ? '' : ' none') + '">' + (s.due ? 'جمع زکات: <b>' + zkFmt(s.due) + '</b>' : 'با این ورودی‌ها زکاتی واجب نیست.') + '</div>' +
+      '<div class="zk-note">زکات دام (گوسفند، گاو، شتر) و غلات (گندم، جو، خرما، کشمش) اینجا حساب نمی‌شود؛ به رساله مراجعه کنید. خمس واجب جداگانه‌ای است و این محاسبه جای آن نیست.</div>';
+  }
+  document.getElementById('zk-result').innerHTML = res;
+  document.getElementById('zk-pay').style.display = due$ > 0 ? '' : 'none';
+  document.getElementById('zk-pay').dataset.amt = due$;
+  var paid = z.paid.filter(function(p){ return p.method === m; }).slice(-5).reverse();
+  document.getElementById('zk-paid').innerHTML = paid.length ? '<div class="zk-sec">پرداخت‌های ثبت‌شده</div>' + paid.map(function(p){ return zkRow(jLabel(p.date) + (hijriLabel(p.date) ? '، ' + hijriLabel(p.date) : ''), zkFmt(p.amount)); }).join('') : '';
+}
+function zakatPay() {
+  var z = zk(), amt = parseFloat(document.getElementById('zk-pay').dataset.amt) || 0;
+  closeModal('modal-zakat');
+  var hl = hijriLabel(todayGregorian());
+  prefillTxModal('expense', { amount: amt, date: todayGregorian(), desc: 'زکات' + (z.method === 'sist' ? ' (فتوای آیت‌الله سیستانی)' : ' (اهل سنت)') + (hl ? ' — ' + hl : '') });
+  pendingLink = { kind: 'zakat', id: z.method };
+}
+function zakatAfterPay(tx, method) {
+  var z = zk(), s = z[method];
+  z.paid.push({ date: txDay(tx), method: method, amount: tx.amount, txId: tx.id });
+  tx.zakat = method;
+  // اگر سالگرد نزدیک یا گذشته بود، به سالگرد بعد (یک سال قمری) می‌رود
+  if (s && s.due && daysFromToday(s.due) <= 30) { var n = s.due; while (n <= todayGregorian()) n = addLunarYear(n); if (n === s.due) n = addLunarYear(n); s.due = n; }
+}
+
+// deleteTx: پرداخت زکات از فهرست پرداخت‌ها برداشته می‌شود (تاریخ سالگرد عوض نمی‌شود)
+function zakatUnlinkTx(tx) { if (!tx || !tx.zakat || !DB.zakat || !DB.zakat.paid) return; DB.zakat.paid = DB.zakat.paid.filter(function(p){ return p.txId !== tx.id; }); }
 
 function submitExpense() {
   var amount = getNumericValue('exp-amount');
@@ -6517,6 +6811,7 @@ function deleteTx(id) {
     }
   }
   DB.transactions = DB.transactions.filter(function(t){ return t.id!==id; });
+  if (tx.zakat) zakatUnlinkTx(tx);   // v1.32.0
   if (tx.chequeId) { var chq = chequeById(tx.chequeId); if (chq && chq.txId === tx.id) { chq.status = 'pending'; delete chq.txId; delete chq.clearedAt; } }   // v1.31.0
   saveDB(); renderAll();
 }
@@ -8292,13 +8587,19 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.31.0';
+var CURRENT_VERSION = '1.32.0';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.32.0', items:[
+    'محاسبه‌گر زکات در «دستیار سین» (دکمه‌ی ✨ بالای صفحه): دو روش جدا — نظر اکثریت اهل سنت و فتاوای آیت‌الله سیستانی. این ابزار با صندوق‌های تخصیصی شما کاری ندارد.',
+    'روش اهل سنت: موجودی حساب‌ها (ارزی با نرخ روز)، «طلاهای من»، طلب‌ها و سایر دارایی‌ها جمع و بدهی‌های ۱۲ ماه آینده کم می‌شود؛ اگر خالص به نصاب (۸۵ گرم طلا یا ۵۹۵ گرم نقره) برسد، ۲٫۵٪ آن زکات است. زیور شخصی را می‌توانید معاف علامت بزنید.',
+    'روش آیت‌الله سیستانی: پول کاغذی، موجودی بانک، زیورآلات و سکه‌های فعلی زکات ندارد؛ برای سکه‌ی طلا و نقره‌ی رایج (با نصاب‌های پلکانی) و مال‌التجاره می‌توانید مقدار وارد کنید.',
+    'سالگرد زکات را تعیین کنید تا از ۷ روز مانده روی داشبورد یادآوری شود. با «ثبت پرداخت زکات» پنجره‌ی پرداخت با مبلغ آماده باز می‌شود و سالگرد یک سال قمری جلو می‌رود.'
+  ]},
   { v:'1.31.0', items:[
     'مدیریت چک: در صفحه‌ی «قروض» چک‌های صادره و دریافتی را با سررسید، طرف حساب و شناسه‌ی صیادی ثبت کنید. از ۷ روز مانده به سررسید روی داشبورد یادآوری می‌شود؛ با «وصول شد» تراکنشش ثبت می‌شود و برگشتی یا باطل شدن هم ثبت می‌شود.',
     'پرداخت و دریافت‌های تکراری (اجاره، قبض، حقوق و…): موقع ثبت، تیک «هر ماه تکرار شود» را بزنید یا از تنظیمات تعریف کنید. نوبت‌ها روی داشبورد یادآوری می‌شوند و با «ثبت» همان پنجره با مبلغ آماده باز می‌شود.',
