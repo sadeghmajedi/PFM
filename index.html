@@ -4580,12 +4580,79 @@ function parseNovinSMS(text) {
   };
 }
 
+// سال پیامکی که فقط ماه و روز دارد: سال جاری؛ اگر آن روز هنوز نرسیده، سال قبل
+function inferSMSJYear(jm, jd) {
+  var t = J.today();
+  return (jm > t.jm || (jm === t.jm && jd > t.jd)) ? t.jy - 1 : t.jy;
+}
+function smsNum(s) { return parseInt(String(s).replace(/,/g, ''), 10); }
+function smsPad2(s) { s = String(s); return s.length === 1 ? '0' + s : s; }
+
+// ─── بانک سپه (v1.19.0) ───
+// «بانک سپه» (اختیاری) / «برداشت از:» یا «واریز به:» یا «واریز سود به:» + شماره / «مبلغ: N ریال» /
+// «زمان: 1404/6/27-19:56» / «مانده: N [ریال]» / گاهی یک خط شرح (مثلاً «خرید کالا و خدمات از پایانه فروش …»)
+var SEPAH_HEAD_RE = /([^\n:0-9]{2,20}?)\s+(از|به)\s*:\s*([0-9]{6,})/;
+function parseSepahSMS(text) {
+  var head = text.match(SEPAH_HEAD_RE);
+  if (!head) return null;
+  var word = head[1].replace(/بانک\s*سپه/, '').replace(/\s+/g, ' ').trim();
+  if (!/برداشت|واریز|خرید|انتقال|پرداخت|سود/.test(word)) return null;
+  var body = text.slice(head.index + head[0].length);
+  var amt = body.match(/مبلغ\s*:?\s*([0-9][0-9,]*)/);
+  var bal = body.match(/مانده\s*:?\s*([0-9][0-9,]*)/);
+  var dt = body.match(/زمان\s*:?\s*(1[34][0-9]{2})\/([0-9]{1,2})\/([0-9]{1,2})\s*-?\s*([0-9]{1,2}):([0-9]{2})/);
+  if (!amt || !bal) return null;
+  var amount = smsNum(amt[1]), balance = smsNum(bal[1]);
+  if (!amount || isNaN(balance)) return null;
+  // واریز / «… به» = دریافت؛ برداشت / «… از» = پرداخت
+  var income = /واریز/.test(word) || (head[2] === 'به' && !/برداشت|خرید|پرداخت/.test(word));
+  // شرح: اولین خطِ بعد از خط مانده
+  var after = body.slice(bal.index + bal[0].length).split('\n').map(function(l){ return l.replace(/^ریال/, '').trim(); }).filter(Boolean);
+  var note = after.length ? after[0].slice(0, 80) : '';
+  return {
+    accNum: head[3], type: income ? 'income' : 'expense',
+    label: /سود/.test(word) ? 'interest' : null, note: note || null,
+    amount: amount, balance: balance,
+    jy: dt ? parseInt(dt[1], 10) : null, jm: dt ? parseInt(dt[2], 10) : null, jd: dt ? parseInt(dt[3], 10) : null,
+    hh: dt ? smsPad2(dt[4]) : '00', mn: dt ? dt[5] : '00'
+  };
+}
+
+// ─── بانک مسکن (v1.19.0) ───
+// «خرید:-600,000» / «سود:+117,087» / «برداشت:-…» (علامت = جهت) / «حساب:N» / «مانده:N» / «0801-20:06» (ماه‌روز بدون سال)
+var MASKAN_HEAD_RE = /(^|\n)\s*([^\n:0-9+\-]{2,25}?)\s*:\s*([+\-])\s*([0-9][0-9,]*)\s*\n\s*حساب\s*:?\s*([0-9]{5,})/;
+function parseMaskanSMS(text) {
+  var head = text.match(MASKAN_HEAD_RE);
+  if (!head) return null;
+  var word = head[2].trim();
+  var body = text.slice(head.index + head[0].length);
+  var bal = body.match(/مانده\s*:?\s*([0-9][0-9,]*)/);
+  if (!bal) return null;
+  var amount = smsNum(head[4]), balance = smsNum(bal[1]);
+  if (!amount || isNaN(balance)) return null;
+  var dt = body.match(/(?:^|\n)\s*([0-9]{2})([0-9]{2})\s*-\s*([0-9]{1,2}):([0-9]{2})/);
+  var jm = dt ? parseInt(dt[1], 10) : null, jd = dt ? parseInt(dt[2], 10) : null;
+  if (jm && (jm > 12 || !jd || jd > 31)) { jm = jd = null; }
+  return {
+    accNum: head[5], type: head[3] === '+' ? 'income' : 'expense',
+    label: /سود/.test(word) ? 'interest' : null,
+    note: /^(برداشت|واریز|سود)$/.test(word) ? null : word,
+    amount: amount, balance: balance,
+    jy: jm ? inferSMSJYear(jm, jd) : null, jm: jm, jd: jd,
+    hh: dt ? smsPad2(dt[3]) : '00', mn: dt ? dt[4] : '00'
+  };
+}
+
 // تجزیه‌ی یک بلوک پیامک خام به فیلدها (پشتیبان، وقتی CSV نیست)
 function parseSMSBlock(block) {
   var text = normalizeDigits(block);
   if (looksLikeOTP(text)) return null;
   var novin = parseNovinSMS(text);
   if (novin) return novin;
+  var maskan = parseMaskanSMS(text);
+  if (maskan) return maskan;
+  var sepah = parseSepahSMS(text);
+  if (sepah) return sepah;
   // باید هم نوع تراکنش و هم «مانده» داشته باشد
   var typeMatch = text.match(/(برداشت|واریز)/);
   var hasBalance = /مانده/.test(text);
@@ -4657,12 +4724,18 @@ function parseCSVRow(cols) {
 // یا سرخط اقتصاد نوین «واریز( سود)/برداشت:» + شماره‌ی خط‌تیره‌دار
 function splitSMSBlocks(content) {
   var text = normalizeDigits(content);
-  var re = /حساب[\s:.\-]*[0-9]{4,}|(?:واریز\s*سود|واریز|برداشت)\s*:\s*[0-9]{2,}-[0-9]/g;
-  var starts = [], m;
+  // ملت: «حساب»+شماره | نوین: سرخط با شماره‌ی خط‌تیره‌دار
+  // سپه (v1.19.0): «بانک سپه» (اختیاری) + «برداشت از:/واریز به:» + شماره
+  // مسکن (v1.19.0): خط «خرید:-N» که خط بعدش «حساب:» است — خط «حساب» آن دیگر شروع جدا حساب نمی‌شود
+  var re = /(?:بانک\s*سپه\s*\n\s*)?(?:برداشت|واریز(?:\s*سود)?|خرید|انتقال)\s+(?:از|به)\s*:\s*[0-9]{6,}|[^\n:0-9+\-]{2,25}?\s*:\s*[+\-]\s*[0-9][0-9,]*\s*\n\s*حساب\s*:?\s*[0-9]{5,}|حساب[\s:.\-]*[0-9]{4,}|(?:واریز\s*سود|واریز|برداشت)\s*:\s*[0-9]{2,}-[0-9]/g;
+  var starts = [], m, lastEnd = -1;
   while ((m = re.exec(text)) !== null) {
     // شروع بلوک را به ابتدای خط همان مورد ببر تا چیزی از پیامک نیفتد
     var lineStart = text.lastIndexOf('\n', m.index);
-    starts.push(lineStart === -1 ? 0 : lineStart + 1);
+    lineStart = lineStart === -1 ? 0 : lineStart + 1;
+    if (lineStart < lastEnd) continue;            // داخل سرخط قبلی (مثلاً خط «حساب» مسکن)
+    if (!starts.length || starts[starts.length - 1] !== lineStart) starts.push(lineStart);
+    lastEnd = m.index + m[0].length;
   }
   if (!starts.length) {
     // پشتیبان: جدا کردن با خط خالی
@@ -5086,7 +5159,7 @@ function processSMSContent(content) {
   // CSV تولیدشده توسط Shortcut این کلمات را ندارد (فیلدها با کاما جدا شده‌اند).
   // چون اعداد فارسی جداکننده‌ی هزارگان (کاما) دارند، نمی‌توان صرفاً روی وجود کاما تکیه کرد.
   var normContent = normalizeDigits(content);
-  var hasSMSKeywords = (/حساب/.test(normContent) || NOVIN_HEAD_RE.test(normContent)) && /مانده/.test(normContent);
+  var hasSMSKeywords = (/حساب/.test(normContent) || NOVIN_HEAD_RE.test(normContent) || SEPAH_HEAD_RE.test(normContent)) && /مانده/.test(normContent);
   var looksCSV = !hasSMSKeywords && lines.some(function(l){
     // یک ردیف CSV واقعی: بعد از حذف اعداد کاما دار، همچنان حداقل ۳ کاما دارد
     var stripped = l.replace(/\d{1,3}(,\d{3})+/g, 'N'); // اعداد کاما دار → N
@@ -5127,7 +5200,7 @@ function processSMSContent(content) {
       dateISO = todayGregorian() + 'T00:00:00';
     }
     var row = {
-      idx: idx, accNum: r.accNum, account: acc, accMatch: accMatch, type: r.type, label: r.label || null,
+      idx: idx, accNum: r.accNum, account: acc, accMatch: accMatch, type: r.type, label: r.label || null, note: r.note || null,
       amount: r.amount, balance: r.balance, dateISO: dateISO, dateOK: dateOK
     };
     applySMSRowAccount(row, acc);
@@ -5310,7 +5383,7 @@ function renderSMSImportReview() {
     }
 
     var isInc = r.type === 'income';
-    var typeLabel = r.label === 'interest' ? 'واریز سود' : (isInc ? 'واریز' : 'برداشت');
+    var typeLabel = (r.label === 'interest' ? 'واریز سود' : (isInc ? 'واریز' : 'برداشت')) + (r.note ? ' (' + escHtml(r.note) + ')' : '');
     var typeColor = isInc ? 'var(--aqua-dark)' : 'var(--danger)';
     var accName = r.account ? r.account.name : ('❓ ' + toFa(r.accNum) + ' (حساب پیدا نشد)');
     // حساب تطبیق‌نخورده، تقریبی یا دستی: فهرست انتخاب حساب (v1.16.0)
@@ -5493,7 +5566,7 @@ function confirmBankSMSImport() {
       amount: r.amount,
       accountId: r.account.id,
       date: r.dateISO,
-      desc: (r.label==='interest' ? 'سود بانکی' : (r.type==='income' ? 'واریز بانکی' : 'برداشت بانکی')) + ' (پیامک)'
+      desc: (r.label==='interest' ? 'سود بانکی' : (r.note || (r.type==='income' ? 'واریز بانکی' : 'برداشت بانکی'))) + ' (پیامک)'
     };
     if (r.type==='income') tx.incCatId = reviewCatInc;
     else tx.catId = reviewCatExp;
@@ -5813,13 +5886,18 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.18.0';
+var CURRENT_VERSION = '1.19.0';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.19.0', items:[
+    'پیامک‌های بانک سپه و بانک مسکن هم خوانده می‌شوند: برداشت، خرید، واریز و واریز سود؛ چه با چسباندن متن و چه از فایل پیامک‌ها.',
+    'شرح خرید در پیامک سپه (مثلاً نام فروشگاه) و نوع «خرید» در پیامک مسکن در توضیح تراکنش ثبت می‌شود.',
+    'برای تطبیق خودکار، شماره‌ای را که در پیامک هر بانک می‌آید در نام همان حساب بنویسید؛ در غیر این صورت حساب را در صفحه‌ی بررسی انتخاب کنید.'
+  ]},
   { v:'1.18.0', items:[
     'دکمه‌ی «📂 خواندن فایل پیامک‌ها» به پایین داشبورد اضافه شد: فایلی را که میانبر (Shortcut) آیفون پیامک‌های بانک را در آن جمع می‌کند انتخاب کنید تا پیامک‌های تازه به تراکنش تبدیل شوند.',
     'پیامک‌هایی که قبلاً ثبت شده‌اند با مانده‌ی بانک شناخته می‌شوند و در صفحه‌ی بررسی پنهان می‌مانند؛ پس می‌توانید همان فایل را هر بار دوباره بخوانید.',
