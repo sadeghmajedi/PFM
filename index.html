@@ -273,6 +273,11 @@ html { height:100%; height:-webkit-fill-available; }
 .exp-choice-sub { font-size:11px; color:var(--text-sub); display:block; margin-top:2px; }
 
 /* ── HINT BOX ── */
+.sg-steps { margin:0 0 12px; padding-inline-start:20px; font-size:12px; line-height:1.9; color:var(--text-main); }
+.sg-steps li { margin-bottom:6px; }
+.sg-steps b, .sg-note b { color:var(--aqua-deep); }
+.sg-en { unicode-bidi:isolate; direction:ltr; display:inline-block; font-family:-apple-system,system-ui,sans-serif; font-size:11px; background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:5px; padding:0 5px; color:var(--aqua-deep); }
+.sg-note { font-size:11px; color:var(--text-mid); line-height:1.8; margin-bottom:10px; }
 .hint-box { background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:11px; color:var(--aqua-deep); line-height:1.6; }
 
 /* ── LOGO PICK ── */
@@ -573,6 +578,8 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="settings-item" onclick="openModal('modal-auto-backup')"><span class="si-label">🗄️ پشتیبان خودکار روزانه</span><span class="si-val" id="autoBackupStatus">←</span></div>
     <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel"></span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
+    <div class="settings-item" onclick="openSmsGuide()"><span class="si-label">📲 راهنمای خواندن خودکار پیامک‌ها</span><span class="si-val">←</span></div>
+    <div class="settings-item" onclick="requestPersistentStorage(true)"><span class="si-label">🛡️ ماندگاری داده‌ها</span><span class="si-val" id="persistStatus">…</span></div>
     <div class="settings-item" onclick="document.getElementById('smsImportFile').click()"><span class="si-label">🏦 ورود پیامک بانک (فایل)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:var(--danger)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
   </div></div>
@@ -742,6 +749,56 @@ html { height:100%; height:-webkit-fill-available; }
     <button class="btn-primary" onclick="submitRepayment()">ثبت بازپرداخت</button>
     <button class="btn-secondary" onclick="fullSettleLoan()" style="background:rgba(39,174,96,0.15);color:var(--aqua-dark);border:1px solid rgba(39,174,96,0.3);">تسویه کامل</button>
     <button class="btn-secondary" onclick="closeModal('modal-repay')">انصراف</button>
+  </div>
+</div>
+
+<!-- v1.20.0: SMS automation guide -->
+<div class="modal-overlay" id="modal-sms-guide" onclick="closeModalOutside(event,'modal-sms-guide')">
+  <div class="modal-sheet" style="max-height:90vh;">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📲 خواندن خودکار پیامک‌های بانک</div>
+    <div class="chips" id="sg-tabs" style="margin-bottom:12px;">
+      <span class="chip" data-os="ios" onclick="setSmsGuideTab('ios')">🍎 آیفون</span>
+      <span class="chip" data-os="android" onclick="setSmsGuideTab('android')">🤖 اندروید</span>
+    </div>
+    <div id="sg-ios">
+      <div class="sg-note">در آیفون، اپ <b>Shortcuts</b> هر پیامکی را که کلمه‌ی «مانده» داشته باشد خودکار به یک فایل در iCloud اضافه می‌کند و PFM همان فایل را می‌خواند. این کار فقط یک بار انجام می‌شود.</div>
+      <div class="card-title" style="font-size:12px;">ساختن اتوماسیون (یک بار)</div>
+      <ol class="sg-steps">
+        <li>اپ <b>Shortcuts</b> را باز کنید، تب <span class="sg-en">Automation</span> را بزنید و دکمه‌ی <b>+</b> را لمس کنید.</li>
+        <li><span class="sg-en">Message</span> را انتخاب کنید. در <span class="sg-en">Message Contains</span> بنویسید <b>مانده</b> و فرستنده را خالی بگذارید.</li>
+        <li><span class="sg-en">Run Immediately</span> را انتخاب کنید (و در صورت تمایل <span class="sg-en">Notify When Run</span> را خاموش کنید)، سپس <span class="sg-en">Next</span>.</li>
+        <li><span class="sg-en">New Blank Automation</span> ← <span class="sg-en">Add Action</span> و اکشن <span class="sg-en">Append to Text File</span> را جستجو و انتخاب کنید.</li>
+        <li>روی کلمه‌ی <span class="sg-en">Text</span> بزنید و <span class="sg-en">Shortcut Input</span> را انتخاب کنید. دوباره روی همان بزنید و از فهرست، <span class="sg-en">Content</span> را انتخاب کنید.</li>
+        <li>در <span class="sg-en">File Path</span> بنویسید <span class="sg-en">pfm-sms.txt</span> و <span class="sg-en">Make New Line</span> را روشن بگذارید.</li>
+        <li>با دکمه‌ی برگشت خارج شوید؛ اتوماسیون خودکار ذخیره می‌شود. در فهرست Automation روی آن بزنید و مطمئن شوید <span class="sg-en">Run Immediately</span> انتخاب شده است.</li>
+      </ol>
+      <div class="card-title" style="font-size:12px;">ثبت پیامک‌ها در PFM (هر بار)</div>
+      <ol class="sg-steps">
+        <li>پایین داشبورد دکمه‌ی <b>«📂 خواندن فایل پیامک‌ها»</b> را بزنید.</li>
+        <li>در پنجره‌ی انتخاب فایل: <span class="sg-en">iCloud Drive</span> ← <span class="sg-en">Shortcuts</span> ← <span class="sg-en">pfm-sms.txt</span>.</li>
+        <li>پیامک‌های تازه را بررسی و «ثبت» را بزنید. پیامک‌هایی که قبلاً ثبت شده‌اند پنهان می‌مانند.</li>
+      </ol>
+      <div class="sg-note">• <span class="sg-en">iCloud Drive</span> باید روشن باشد (Settings ← نام شما ← iCloud).<br>• پیامک‌های همه‌ی بانک‌ها در همین یک فایل جمع می‌شوند. هر چند ماه یک بار، بعد از ثبت آخرین پیامک‌ها، می‌توانید فایل را از اپ Files پاک کنید؛ با پیامک بعدی دوباره ساخته می‌شود.<br>• پیامک‌های قدیمی‌تر از ساختن اتوماسیون را در باکس «چسباندن پیامک بانک» پایین داشبورد بچسبانید.</div>
+    </div>
+    <div id="sg-android" style="display:none;">
+      <div class="sg-note">در اندروید می‌توانید پیامک بانک را مستقیم از اپ پیامک به PFM بفرستید (اشتراک‌گذاری). برای این کار PFM باید با <b>Chrome</b> روی صفحه‌ی اصلی گوشی نصب شده باشد.</div>
+      <div class="card-title" style="font-size:12px;">نصب PFM (یک بار)</div>
+      <ol class="sg-steps">
+        <li>PFM را در <b>Chrome</b> باز کنید.</li>
+        <li>از منوی <b>⋮</b> بالای صفحه، <b>«نصب برنامه»</b> یا <b>«افزودن به صفحه‌ی اصلی»</b> را بزنید و تأیید کنید.</li>
+        <li>از این به بعد PFM را با آیکون آن در صفحه‌ی اصلی باز کنید.</li>
+      </ol>
+      <div class="card-title" style="font-size:12px;">فرستادن پیامک به PFM (هر بار)</div>
+      <ol class="sg-steps">
+        <li>در اپ پیامک، روی پیامک بانک انگشت را نگه دارید تا انتخاب شود. اگر اپ پیامک اجازه دهد، می‌توانید چند پیامک را با هم انتخاب کنید.</li>
+        <li>گزینه‌ی <b>اشتراک‌گذاری</b> (<span class="sg-en">Share</span>) را بزنید و از فهرست، <b>PFM</b> را انتخاب کنید.</li>
+        <li>PFM باز می‌شود؛ بعد از وارد کردن رمز، صفحه‌ی بررسی پیامک‌ها نمایش داده می‌شود. بررسی کنید و «ثبت» را بزنید.</li>
+      </ol>
+      <div class="sg-note">• اگر PFM در فهرست اشتراک‌گذاری نبود، مطمئن شوید با Chrome نصب شده است و یک بار آن را باز کنید.<br>• راه دیگر: متن پیامک را کپی کنید و در باکس «چسباندن پیامک بانک» پایین داشبورد بچسبانید.<br>• اگر اپی دارید که پیامک‌ها را در یک فایل متنی جمع می‌کند، همان فایل را هم می‌توانید با «📂 خواندن فایل پیامک‌ها» بخوانید.</div>
+    </div>
+    <div class="sg-note">پیامک‌های بانک ملت، اقتصاد نوین، سپه و مسکن خوانده می‌شوند. برای پیدا شدن خودکار حساب، شماره‌ای را که در پیامک هر بانک می‌آید در نام همان حساب بنویسید.</div>
+    <button class="btn-secondary" onclick="closeModal('modal-sms-guide')">بستن</button>
   </div>
 </div>
 
@@ -1250,7 +1307,10 @@ function hideLock() {
   document.getElementById('bottomNav').style.display = 'flex';
   document.getElementById('appShell').style.display = 'flex';
   renderAll();
-  setTimeout(maybeShowWhatsNew, 400);   // v1.14.0
+  requestPersistentStorage(false);   // v1.20.0
+  // v1.20.0: پیامکی که در اندروید به PFM اشتراک‌گذاری شده؛ «تازه‌ها» به بار بعد می‌ماند
+  if (pendingSharedSMS) setTimeout(handleSharedSMS, 300);
+  else setTimeout(maybeShowWhatsNew, 400);   // v1.14.0
 }
 
 function pinPress(d) {
@@ -2748,6 +2808,77 @@ function incToCollect(loanId) {
 function expToBankPay(loanId) {
   var d = readExpenseDraft(); closeModal('modal-expense'); clearExpenseForm();
   openBankPay(loanId, { amount: parseFloat(convertPersianToEn(String(d.amount)).replace(/,/g, '')) || 0, date: d.date, accountId: d.accountId });
+}
+
+// ═══════════════════════════════════════
+// v1.20.0: راهنمای پیامک، ماندگاری داده‌ها، اشتراک‌گذاری پیامک در اندروید
+// ═══════════════════════════════════════
+function detectOS() {
+  var ua = navigator.userAgent || '';
+  if (/android/i.test(ua)) return 'android';
+  if (/iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'ios';
+  return 'ios';
+}
+function setSmsGuideTab(os) {
+  document.querySelectorAll('#sg-tabs .chip').forEach(function(c){ c.classList.toggle('sel', c.dataset.os === os); });
+  document.getElementById('sg-ios').style.display = os === 'ios' ? '' : 'none';
+  document.getElementById('sg-android').style.display = os === 'android' ? '' : 'none';
+}
+function openSmsGuide() { setSmsGuideTab(detectOS()); openModal('modal-sms-guide'); }
+
+// ماندگاری: از مرورگر می‌خواهد داده‌های اپ را هنگام کمبود فضای گوشی پاک نکند.
+// Chrome و Safari پیغامی نشان نمی‌دهند و خودشان تصمیم می‌گیرند (نصب روی صفحه‌ی اصلی شانس را بالا می‌برد).
+function renderPersistStatus(ok) {
+  var el = document.getElementById('persistStatus');
+  if (!el) return;
+  el.textContent = ok === true ? '✓ فعال' : (ok === false ? 'تأیید نشده' : 'پشتیبانی نمی‌شود');
+  el.style.color = ok === true ? 'var(--aqua-dark)' : 'var(--text-sub)';
+}
+function requestPersistentStorage(fromUser) {
+  if (!(navigator.storage && navigator.storage.persist)) {
+    renderPersistStatus(null);
+    if (fromUser) alert('این مرورگر درخواست ماندگاری داده‌ها را پشتیبانی نمی‌کند. پشتیبان JSON را فراموش نکنید.');
+    return;
+  }
+  navigator.storage.persisted().then(function(already){
+    if (already) return true;
+    return navigator.storage.persist();
+  }).then(function(ok){
+    renderPersistStatus(!!ok);
+    if (fromUser) alert(ok
+      ? '✓ مرورگر داده‌های PFM را ماندگار نگه می‌دارد و هنگام کمبود فضای گوشی آن‌ها را پاک نمی‌کند.\n\nاین جایگزین پشتیبان JSON نیست.'
+      : 'مرورگر فعلاً ماندگاری را تأیید نکرده است. نصب اپ روی صفحه‌ی اصلی و استفاده‌ی مرتب از آن شانس تأیید را بالا می‌برد. پشتیبان JSON را فراموش نکنید.');
+  }).catch(function(){ renderPersistStatus(null); });
+}
+
+// اشتراک‌گذاری پیامک (اندروید): sw.js درخواست POST «share-target» را می‌گیرد، متن را در کش pfm-share
+// می‌گذارد (هیچ‌وقت به سرور نمی‌رود) و صفحه را با ?shared=1 باز می‌کند. بعد از باز کردن قفل، متن خوانده می‌شود.
+var SHARE_CACHE = 'pfm-share', SHARE_KEY = './__shared-sms';
+var pendingSharedSMS = false;
+(function(){
+  try {
+    var q = new URLSearchParams(location.search);
+    if (q.has('shared')) {
+      pendingSharedSMS = true;
+      history.replaceState(null, '', location.pathname);
+    }
+  } catch (e) {}
+})();
+function handleSharedSMS() {
+  pendingSharedSMS = false;
+  if (!window.caches) return;
+  caches.open(SHARE_CACHE).then(function(cache){
+    return cache.match(SHARE_KEY).then(function(res){
+      if (!res) return null;
+      return res.text().then(function(txt){ cache.delete(SHARE_KEY); return txt; });
+    });
+  }).then(function(txt){
+    txt = (txt || '').trim();
+    if (!txt) { alert('متنی از اشتراک‌گذاری دریافت نشد.'); return; }
+    var box = document.getElementById('smsPasteBox');
+    if (box) box.value = txt;
+    processSMSContent(txt);
+  }).catch(function(){ alert('خواندن پیامک اشتراک‌گذاری‌شده ممکن نشد. متن را کپی و در باکس پیامک بچسبانید.'); });
 }
 
 // ═══════════════════════════════════════
@@ -5886,13 +6017,19 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.19.0';
+var CURRENT_VERSION = '1.20.0';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.20.0', items:[
+    'در تنظیمات، «📲 راهنمای خواندن خودکار پیامک‌ها» اضافه شد: مراحل ساختن میانبر (Shortcut) در آیفون و اشتراک‌گذاری پیامک در اندروید.',
+    'در اندروید می‌توانید پیامک بانک را از اپ پیامک مستقیم با «اشتراک‌گذاری» به PFM بفرستید (PFM باید با Chrome نصب شده باشد).',
+    'PFM از مرورگر می‌خواهد داده‌ها را هنگام کمبود فضای گوشی پاک نکند؛ وضعیت آن را در تنظیمات، «🛡️ ماندگاری داده‌ها»، ببینید. پشتیبان JSON همچنان لازم است.',
+    'آیکون اپ برای صفحه‌ی اصلی گوشی‌های اندروید مناسب‌سازی شد.'
+  ]},
   { v:'1.19.0', items:[
     'پیامک‌های بانک سپه و بانک مسکن هم خوانده می‌شوند: برداشت، خرید، واریز و واریز سود؛ چه با چسباندن متن و چه از فایل پیامک‌ها.',
     'شرح خرید در پیامک سپه (مثلاً نام فروشگاه) و نوع «خرید» در پیامک مسکن در توضیح تراکنش ثبت می‌شود.',
