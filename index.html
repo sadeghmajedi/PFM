@@ -41,7 +41,7 @@
   --shadow: 0 2px 12px rgba(0,0,0,0.08);
   --radius: 18px;
   --radius-sm: 12px;
-  --nav-h: 52px;
+  --nav-h: 62px;   /* v1.24.0: نوار پایین بزرگ‌تر (قبلاً 52) */
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-top: env(safe-area-inset-top, 0px);
 }
@@ -110,10 +110,12 @@ html { height:100%; height:-webkit-fill-available; }
 
 /* ── BOTTOM NAV ── */
 .bottom-nav { background:#fff; border-top:1.5px solid var(--border-aqua); box-shadow:0 -2px 12px rgba(0,0,0,0.06); display:flex; padding-bottom:var(--safe-bottom); z-index:200; flex-shrink:0; }
-.nav-item { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:7px 4px 6px; cursor:pointer; color:var(--text-sub); font-size:9px; font-weight:500; gap:2px; border:none; background:none; font-family:inherit; transition:color 0.2s; }
-.nav-item svg { width:19px; height:19px; stroke:currentColor; fill:none; stroke-width:1.8; }
-.nav-item.active { color:var(--aqua-dark); font-weight:700; }
-.nav-item.active svg { stroke:var(--aqua-dark); }
+.nav-item { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:8px 2px 7px; cursor:pointer; color:var(--text-sub); font-size:10.5px; font-weight:500; gap:3px; border:none; background:none; font-family:inherit; transition:color 0.2s; white-space:nowrap; -webkit-tap-highlight-color:transparent; }
+/* v1.24.0: آیکون داخل یک «قرص» (pill)؛ صفحه‌ی فعال = قرص پر با رنگ اصلی و آیکون سفید */
+.nav-item svg { width:48px; height:30px; padding:4px 13px; box-sizing:border-box; border-radius:99px; stroke:currentColor; fill:none; stroke-width:1.9; transition:background-color 0.2s, stroke 0.2s, transform 0.2s; }
+.nav-item:active svg { transform:scale(0.92); }
+.nav-item.active { color:var(--aqua-deep); font-weight:700; }
+.nav-item.active svg { background:var(--aqua); stroke:var(--on-primary); }
 
 /* ── CARDS ── */
 .card { background:#fff; border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-sm); margin-bottom:10px; overflow:hidden; }
@@ -467,7 +469,7 @@ html { height:100%; height:-webkit-fill-available; }
         </div>
         <div class="nw-fx" id="nwFx" style="display:none;" onclick="openFxModal()"></div>
         <div id="sadaqahBox" style="margin-top:10px;">
-          <div class="nw-label">💚 صدقه روزانه</div>
+          <div class="nw-label" id="sadaqahLabel">💚 صدقه روزانه</div>
           <div class="nw-amount" id="sadaqahAmount" style="font-size:20px;">۰</div>
         </div>
       </div>
@@ -629,7 +631,10 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">صدقه روزانه</div>
     <label class="settings-item" for="sadaqahOn"><span class="si-label">💚 محاسبه و نمایش در داشبورد</span><input type="checkbox" class="tgl" id="sadaqahOn" onchange="setSadaqahEnabled(this.checked)"></label>
-    <div class="settings-item" id="sadaqahPctRow" style="cursor:default;"><span class="si-label">درصد از خالص دارایی ریالی</span>
+    <div class="settings-item" id="sadaqahBasisRow" style="cursor:default;gap:10px;"><span class="si-label">مبنای محاسبه</span>
+      <select class="form-select" id="sadaqahBasis" onchange="setSadaqahBasis(this.value)" style="width:auto;max-width:62%;padding:7px 10px;font-size:13px;"><option value="rial">خالص دارایی ریالی</option><option value="total">کل دارایی (با معادل ارزها)</option></select></div>
+    <div class="fx-meta" id="sadaqahBasisNote" style="display:none;margin:4px 0 8px;"></div>
+    <div class="settings-item" id="sadaqahPctRow" style="cursor:default;"><span class="si-label" id="sadaqahPctLabel">درصد از خالص دارایی ریالی</span>
       <span style="display:flex;align-items:center;gap:5px;"><input type="text" inputmode="decimal" id="sadaqahPct" class="form-input pct-input" onchange="setSadaqahPct(this.value)" data-noclear="1"><span class="si-val">٪</span></span></div>
   </div></div>
   <div class="card"><div class="card-bar"></div><div class="card-body">
@@ -3749,9 +3754,9 @@ function fxSameDay(a, b) { var x = new Date(a), y = new Date(b); return x.toDate
 
 // totals = { USD: خالص دلاری, AED: خالص درهمی } — همان اعداد کارت خالص دارایی
 function renderFxNetWorth(totalRial, totals) {
-  var box = document.getElementById('nwFx'); if (!box) return;
+  var box = document.getElementById('nwFx'); if (!box) return null;
   var need = FX_CURS.filter(function(c){ return Math.abs(totals[c] || 0) >= 0.005; });
-  if (!need.length) { box.style.display = 'none'; return; }
+  if (!need.length) { box.style.display = 'none'; return { sum: totalRial, missing: [], need: 0 }; }
   var o = getFx(), sum = totalRial, missing = [], stale = false, oldest = Infinity, parts = [];
   need.forEach(function(c){
     var r = fxRateOf(o, c);
@@ -3765,11 +3770,12 @@ function renderFxNetWorth(totalRial, totals) {
   if (missing.length) {
     box.innerHTML = '<div class="nw-label" style="margin:0;">کل دارایی با نرخ روز</div><div class="nw-fx-sub">💱 برای دیدن معادل ریالی، نرخ ' +
       missing.map(function(c){ return c === 'USD' ? 'دلار' : 'درهم'; }).join(' و ') + ' را وارد کنید ←</div>';
-    return;
+    return { sum: sum, missing: missing, need: need.length };
   }
   box.innerHTML = '<div class="nw-label" style="margin:0;">کل دارایی با نرخ روز (ریال + معادل ارزها)</div>' +
     '<div class="nw-fx-val">' + toFa(addCommas(Math.round(sum))) + ' ریال</div>' +
     '<div class="nw-fx-sub">' + (stale ? '⚠️ ' : '') + 'نرخ خرید: ' + parts.join(' • ') + ' تومان • ' + fxAgeLabel(oldest) + '</div>';
+  return { sum: sum, missing: [], need: need.length };
 }
 function renderFxSettingsRow() {
   var el = document.getElementById('fxSetStatus'); if (!el) return;
@@ -3877,10 +3883,15 @@ function getSadaqahSettings() {
   var s = null;
   try { s = JSON.parse(localStorage.getItem(SADAQAH_KEY) || 'null'); } catch (e) {}
   var pct = s && typeof s.pct === 'number' && isFinite(s.pct) && s.pct >= 0 ? s.pct : SADAQAH_DEFAULT_PCT;
-  return { enabled: !s || s.enabled !== false, pct: pct };
+  return { enabled: !s || s.enabled !== false, pct: pct, basis: s && s.basis === 'total' ? 'total' : 'rial' };
 }
 function saveSadaqahSettings(s) {
-  try { localStorage.setItem(SADAQAH_KEY, JSON.stringify({ enabled: !!s.enabled, pct: s.pct })); } catch (e) {}
+  try { localStorage.setItem(SADAQAH_KEY, JSON.stringify({ enabled: !!s.enabled, pct: s.pct, basis: s.basis === 'total' ? 'total' : 'rial' })); } catch (e) {}
+}
+// v1.24.0: مبنای صدقه — 'rial' (خالص دارایی ریالی، مثل قبل) یا 'total' (کل دارایی با نرخ روز؛ اگر نرخ ارزی کم باشد، ریالی)
+function setSadaqahBasis(v) {
+  var s = getSadaqahSettings(); s.basis = v === 'total' ? 'total' : 'rial'; saveSadaqahSettings(s);
+  renderDashboard(); renderSettings();
 }
 function setSadaqahEnabled(on) {
   var s = getSadaqahSettings(); s.enabled = !!on; saveSadaqahSettings(s);
@@ -3958,13 +3969,16 @@ function renderDashboard() {
   var totalAED = accountsAED + getTotalReceivable('AED') - getTotalDebt('AED');
   document.getElementById('totalUSD').textContent = '$' + addCommas(totalUSD.toFixed(2));
   document.getElementById('totalAED').textContent = 'AED ' + addCommas(totalAED.toFixed(2));
-  renderFxNetWorth(totalRial, { USD: totalUSD, AED: totalAED });   // v1.23.0
+  var fxt = renderFxNetWorth(totalRial, { USD: totalUSD, AED: totalAED });   // v1.23.0
   // v1.13.0: صدقه روزانه قابل خاموش کردن و با درصد قابل تنظیم (پیش‌فرض ۰٫۰۲٪ = همان ضریب قبلی ۰٫۰۰۰۲)
   var sq = getSadaqahSettings();
   document.getElementById('sadaqahBox').style.display = sq.enabled ? '' : 'none';
   if (sq.enabled) {
-    var sadaqah = Math.max(0, Math.round(totalRial * sq.pct / 100));
+    // v1.24.0: مبنای «کل دارایی» فقط وقتی نرخ همه‌ی ارزهای دارای مانده هست؛ وگرنه ریالی
+    var useTotal = sq.basis === 'total' && fxt && !fxt.missing.length;
+    var sadaqah = Math.max(0, Math.round((useTotal ? fxt.sum : totalRial) * sq.pct / 100));
     document.getElementById('sadaqahAmount').textContent = toFa(addCommas(sadaqah)) + ' ریال';
+    document.getElementById('sadaqahLabel').textContent = '💚 صدقه روزانه' + (sq.basis === 'total' && fxt && fxt.need ? (useTotal ? ' (از کل دارایی)' : ' (ریالی؛ نرخ ارز ثبت نشده)') : '');
   }
 
   renderBudgetAlerts();
@@ -4701,6 +4715,19 @@ function renderSettings() {
   var sPct = document.getElementById('sadaqahPct');
   if (sPct && document.activeElement !== sPct) sPct.value = toFa(String(sq.pct)).replace('.', '٫');
   var sRow = document.getElementById('sadaqahPctRow'); if (sRow) sRow.style.display = sq.enabled ? '' : 'none';   // درصد فقط وقتی محاسبه روشن است
+  // v1.24.0: مبنای محاسبه
+  var sbRow = document.getElementById('sadaqahBasisRow'), sbSel = document.getElementById('sadaqahBasis'), sbNote = document.getElementById('sadaqahBasisNote');
+  if (sbRow) {
+    sbRow.style.display = sq.enabled ? '' : 'none';
+    sbSel.value = sq.basis;
+    document.getElementById('sadaqahPctLabel').textContent = sq.basis === 'total' ? 'درصد از کل دارایی' : 'درصد از خالص دارایی ریالی';
+    var note = '';
+    if (sq.enabled && sq.basis === 'total') {
+      var fo = getFx(), lack = DB.accounts.some(function(a){ return a.currency && a.currency !== 'IRR' && !fxRateOf(fo, a.currency); });
+      note = lack ? '⚠️ تا نرخ ارز ثبت نشود، صدقه از خالص دارایی ریالی حساب می‌شود.' : 'خالص ریالی + معادل ریالی دلار و درهم با نرخ خرید روز (همان «کل دارایی با نرخ روز» داشبورد).';
+    }
+    sbNote.textContent = note; sbNote.style.display = note ? '' : 'none';
+  }
 
   renderAutoBackupStatus();
 }
@@ -6601,13 +6628,17 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.23.0';
+var CURRENT_VERSION = '1.24.0';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.24.0', items:[
+    'در تنظیمات «صدقه روزانه»، گزینه‌ی «مبنای محاسبه» اضافه شد: می‌توانید صدقه را از کل دارایی، همراه با معادل ریالی دلار و درهم، حساب کنید.',
+    'نوار پایین صفحه بزرگ‌تر شد و صفحه‌ای که در آن هستید با یک قاب رنگی دور آیکونش مشخص‌تر دیده می‌شود.'
+  ]},
   { v:'1.23.0', items:[
     'زیر خالص دارایی در داشبورد، «کل دارایی با نرخ روز» اضافه شد: موجودی ریالی به‌اضافه‌ی معادل ریالی دلار و درهم با نرخ خرید بازار آزاد.',
     'وقتی به اینترنت وصل هستید، نرخ روزی یک بار خودکار به‌روز می‌شود. اگر دریافت نشد، همان آخرین نرخ می‌ماند و تاریخ آن نمایش داده می‌شود.',
