@@ -1180,6 +1180,7 @@ html { height:100%; height:-webkit-fill-available; }
     <button class="btn-primary" id="zk-pay" onclick="zakatPay()" style="margin-top:12px;">ثبت پرداخت زکات</button>
     <div id="zk-paid" style="margin-top:8px;"></div>
     <div class="zk-note" style="margin-top:12px;">این محاسبه کمکی است. در جزئیات و موارد خاص (بدهی‌ها، طلب‌ها، مال مشترک، شرکت‌ها) حکم نهایی با مرجع تقلید یا مفتی شماست. این ابزار با صندوق‌های تخصیصی شما کاری ندارد.</div>
+    <button class="btn-secondary" onclick="closeModal('modal-zakat')">بستن</button>
   </div>
 </div>
 
@@ -8587,7 +8588,7 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.32.0';
+var CURRENT_VERSION = '1.32.1';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
