@@ -438,6 +438,47 @@ html { height:100%; height:-webkit-fill-available; }
 .yr-stat .v { font-size:14px; font-weight:700; color:var(--text-main); unicode-bidi:isolate; }
 .yr-stat .c { font-size:10.5px; color:var(--text-sub); margin-top:2px; }
 .yr-list { margin-bottom:4px; }
+.rc-chk { display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-mid); margin:2px 0 12px; cursor:pointer; }
+.rc-chk input { width:18px; height:18px; accent-color:var(--aqua); }
+.rc-row, .chq-row { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:9px 4px; margin:0 -4px; border-bottom:1px solid var(--border); cursor:pointer; border-radius:6px; }
+.rc-row:active, .chq-row:active { background:var(--aqua-pale); }
+.rc-row.off { opacity:.55; }
+.rc-main { min-width:0; flex:1; }
+.rc-name { font-size:12.5px; color:var(--text-main); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rc-meta { font-size:10.5px; color:var(--text-sub); margin-top:2px; }
+.rc-amt { font-size:12px; font-weight:700; unicode-bidi:isolate; white-space:nowrap; }
+.rc-amt.inc { color:var(--success); } .rc-amt.exp { color:var(--danger); }
+.chq-st { display:inline-block; margin-top:3px; font-size:10px; padding:1px 8px; border-radius:99px; background:var(--aqua-pale); color:var(--text-mid); border:1px solid var(--border-aqua); }
+.chq-st.soon { background:rgba(225,179,36,0.15); color:#9a7d0a; border-color:rgba(225,179,36,0.45); }
+.chq-st.late, .chq-st.bounced { background:rgba(192,57,43,0.1); color:var(--danger); border-color:rgba(192,57,43,0.35); }
+.chq-st.cleared { background:rgba(39,174,96,0.1); color:var(--success); border-color:rgba(39,174,96,0.3); }
+.chq-btns { display:flex; gap:8px; } .chq-btns .btn-secondary { flex:1; }
+.due-card { display:flex; align-items:center; justify-content:space-between; gap:10px; background:rgba(225,179,36,0.12); border:1px solid rgba(225,179,36,0.45); border-radius:14px; padding:12px 14px; margin-bottom:8px; }
+.due-card.over { background:rgba(192,57,43,0.1); border-color:rgba(192,57,43,0.35); }
+.due-title { font-size:13px; font-weight:700; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.due-sub { font-size:12px; color:var(--text-main); }
+.due-acts { display:flex; flex-direction:column; align-items:center; gap:4px; flex-shrink:0; }
+.due-btn { border:none; border-radius:9px; padding:6px 12px; font-size:11px; color:#fff; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap; }
+.due-skip { background:none; border:none; font-size:10px; color:var(--text-sub); cursor:pointer; font-family:inherit; padding:0; }
+.split-btn { background:none; border:none; color:var(--aqua); font-family:inherit; font-size:12px; font-weight:600; padding:2px 0; cursor:pointer; margin-top:-4px; }
+.split-box { background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:10px; padding:8px; margin-top:6px; }
+.sp-row { display:flex; gap:6px; align-items:center; margin-bottom:6px; }
+.sp-row .sp-cat { flex:1.2; min-width:0; padding:7px 6px; font-size:12px; }
+.sp-row .sp-amt { flex:1; min-width:0; padding:7px 8px; font-size:13px; }
+.sp-x { width:30px; height:30px; flex-shrink:0; border:1px solid var(--border-aqua); background:#fff; border-radius:8px; color:var(--text-sub); cursor:pointer; }
+.sp-foot { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.sp-add { background:#fff; border:1px solid var(--border-aqua); border-radius:8px; padding:5px 10px; font-family:inherit; font-size:12px; color:var(--aqua-deep); cursor:pointer; }
+.sp-sum { font-size:11.5px; font-weight:600; } .sp-sum.ok { color:var(--success); } .sp-sum.bad { color:#9a7d0a; }
+/* v1.31.0 */
+.rep-span { font-weight:400; font-size:11px; color:var(--text-sub); }
+.bd-row { padding:6px 0 8px; border-bottom:1px solid var(--border); }
+.bd-row:last-of-type { border-bottom:none; }
+.bd-top { display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--text-main); margin-bottom:5px; }
+.bd-amt { font-size:11px; color:var(--text-mid); unicode-bidi:isolate; white-space:nowrap; }
+.bd-sub { font-size:10.5px; margin-top:4px; }
+.bd-sub.pos { color:var(--text-sub); } .bd-sub.warn { color:#9a7d0a; } .bd-sub.neg { color:var(--danger); font-weight:600; }
+.bar-fill.warn { background:linear-gradient(90deg,#F3DFA2,#D4A017); }
+.cat-bud { display:inline-block; margin-right:6px; font-size:10px; color:var(--aqua-deep); background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:99px; padding:1px 7px; }
 .yl-row { display:flex; justify-content:space-between; gap:10px; font-size:11.5px; padding:6px 0; border-bottom:1px dashed var(--border); }
 .yl-row span:first-child { color:var(--text-sub); flex-shrink:0; }
 .yl-row span:last-child { color:var(--text-main); text-align:left; }
@@ -571,6 +612,7 @@ html { height:100%; height:-webkit-fill-available; }
   </div>
   <div id="budgetAlerts"></div>
   <div id="bankDue"></div>
+  <div id="dueList"></div>
   <div class="sec-title">حساب‌ها<button class="order-btn" id="accOrderBtn" onclick="openReorder('accounts')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v15M8 4L4.5 7.5M8 4l3.5 3.5M16 20V5M16 20l-3.5-3.5M16 20l3.5-3.5"/></svg>جابجایی</button></div>
   <div class="accounts-grid" id="accountsGrid"></div>
   <div id="accMore"></div>
@@ -601,6 +643,7 @@ html { height:100%; height:-webkit-fill-available; }
 <div class="page" id="page-loans">
   <div id="loansSection"></div>
   <div id="bankLoansSection"></div>
+  <div id="chequesSection"></div>
 </div>
 
 <!-- PAGE: ACCOUNTS -->
@@ -699,6 +742,7 @@ html { height:100%; height:-webkit-fill-available; }
   </div>
   <div class="rep-save" id="rep-save"></div>
   <div class="rep-fx" id="rep-fx"></div>
+  <div class="card" id="repBudgetCard"><div class="card-bar"></div><div class="card-body"><div class="card-title">بودجه‌ی ماه</div><div id="repBudget"></div></div></div>
   <!-- v1.30.0: از کوچک‌ترین بازه به بزرگ‌ترین — دوره، مقایسه با دوره‌ی قبل/پارسال، سال، کارنامه -->
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">مقایسه با دوره‌ی قبل و پارسال <span id="repCompareLabel" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></div><div id="repCompare"></div></div></div>
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">هزینه بر اساس دسته‌بندی</div><div id="catChart"></div><div class="cb-hint" id="catChartHint">برای دیدن ریز هر دسته، روی آن بزنید</div></div></div>
@@ -722,9 +766,12 @@ html { height:100%; height:-webkit-fill-available; }
   </div></div>
   <!-- v1.13.0: فهرست دسته‌بندی‌ها در پنجره باز می‌شود؛ درصدهای تخصیصی فقط در صفحه‌ی حساب‌ها -->
   <div class="card"><div class="card-bar"></div><div class="card-body">
-    <div class="card-title">دسته‌بندی‌ها</div>
+    <div class="card-title">دسته‌بندی‌ها و ماه مالی</div>
     <div class="settings-item" onclick="openModal('modal-cats-exp')"><span class="si-label">💸 دسته‌بندی پرداخت</span><span class="si-val" id="catCountExp">←</span></div>
     <div class="settings-item" onclick="openModal('modal-cats-inc')"><span class="si-label">💵 دسته‌بندی دریافت</span><span class="si-val" id="catCountInc">←</span></div>
+    <div class="settings-item" onclick="openRecurList()"><span class="si-label">🔁 پرداخت و دریافت‌های تکراری</span><span class="si-val">←</span></div>
+    <div class="settings-item" style="cursor:default;"><span class="si-label">📅 روز شروع ماه</span><select id="monthStartSel" class="form-select" style="width:auto;padding:5px 8px;font-size:12px;" onchange="setMonthStart(this.value)"></select></div>
+    <div class="fx-meta" id="monthStartNote" style="margin:2px 0 4px;line-height:1.7;"></div>
   </div></div>
   <!-- v1.13.0: صدقه روزانه -->
   <!-- v1.23.0: نرخ ارز -->
@@ -853,6 +900,7 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="inc-desc" placeholder="حقوق، اجاره، قرض برگشتی، ..." autocomplete="off"><datalist id="inc-desc-suggestions"></datalist></div>
     <div id="inc-allocations" class="hint-box" style="display:none;"></div>
     <div class="form-group"><label class="form-label cat-lbl">دسته‌بندی دریافت<button type="button" class="cat-add" onclick="openCatsShortcut('inc')" aria-label="مدیریت دسته‌بندی‌های دریافت">+</button></label><div class="chips" id="inc-cats"></div></div>
+    <label class="rc-chk" id="inc-recur-wrap"><input type="checkbox" id="inc-recur"> 🔁 هر ماه تکرار شود (یادآور روی داشبورد)</label>
     <button class="btn-primary" id="inc-submit" onclick="submitIncome()">ثبت دریافت</button>
     <button class="btn-secondary" onclick="closeModal('modal-income')">انصراف</button>
   </div>
@@ -869,11 +917,13 @@ html { height:100%; height:-webkit-fill-available; }
       <span class="chip" data-mode="loan" onclick="setExpMode('loan')">📒 دفتر قروض</span>
     </div></div>
     <div id="exp-mode-panel" style="display:none;margin-bottom:12px;"></div>
-    <div class="form-group"><label class="form-label">مبلغ (ریال)</label><input type="text" inputmode="numeric" class="form-input" id="exp-amount" placeholder="مثال: 500,000" oninput="sanitizeNumberInput(this)"></div>
+    <div class="form-group"><label class="form-label">مبلغ (ریال)</label><input type="text" inputmode="numeric" class="form-input" id="exp-amount" placeholder="مثال: 500,000" oninput="sanitizeNumberInput(this);splitSum('exp')"></div>
     <div class="form-group"><label class="form-label">تاریخ</label><input type="date" class="form-input" id="exp-date"></div>
-    <div class="form-group"><label class="form-label cat-lbl">دسته‌بندی<button type="button" class="cat-add" onclick="openCatsShortcut('exp')" aria-label="مدیریت دسته‌بندی‌های پرداخت">+</button></label><div class="chips" id="exp-cats"></div></div>
+    <div class="form-group"><label class="form-label cat-lbl">دسته‌بندی<button type="button" class="cat-add" onclick="openCatsShortcut('exp')" aria-label="مدیریت دسته‌بندی‌های پرداخت">+</button></label><div class="chips" id="exp-cats"></div>
+      <button type="button" class="split-btn" id="exp-split-btn" onclick="splitToggle('exp')">✂️ تقسیم بین چند دسته</button><div class="split-box" id="exp-split" style="display:none;"></div></div>
     <div class="form-group"><label class="form-label">پرداخت از حساب</label><select class="form-select" id="exp-account"></select></div>
     <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="exp-desc" placeholder="توضیح مختصر..." autocomplete="off"><datalist id="exp-desc-suggestions"></datalist></div>
+    <label class="rc-chk" id="exp-recur-wrap"><input type="checkbox" id="exp-recur"> 🔁 هر ماه تکرار شود (یادآور روی داشبورد)</label>
     <button class="btn-primary" id="exp-submit" onclick="submitExpense()">ثبت پرداخت</button>
     <button class="btn-secondary" onclick="closeModal('modal-expense')">انصراف</button>
   </div>
@@ -1307,6 +1357,8 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="form-group"><label class="form-label">آیکون</label>
       <div data-icon-picker="ce"></div>
     </div>
+    <div class="form-group" id="ce-budget-wrap"><label class="form-label">بودجه‌ی ماهانه (ریال، اختیاری)</label><input type="text" inputmode="numeric" class="form-input" id="ce-budget" placeholder="بدون بودجه" oninput="sanitizeNumberInput(this)">
+      <div class="fx-meta" style="margin-top:4px;line-height:1.7;">با رسیدن خرج این دسته به ۸۰٪ و عبور از ۱۰۰٪ بودجه، روی داشبورد هشدار می‌گیرید. فقط پرداخت‌های ریالی حساب می‌شوند.</div></div>
     <button class="btn-primary" id="ce-save" onclick="saveCatEditor()">افزودن</button>
     <button class="btn-secondary" onclick="closeModal('modal-cat-edit')">انصراف</button>
   </div>
@@ -1907,7 +1959,8 @@ function renderDescSuggestions(input) {
 
 function openModal(id) {
   document.getElementById(id).classList.add('open');
-  if (id === 'modal-expense') { setExpMode('normal'); populateExpCats(); populateExpAccounts(); setDateDefault('exp-date'); populateDescSuggestions('expense','exp-desc-suggestions'); }
+  if (id === 'modal-expense' || id === 'modal-income') { var rw = document.getElementById(id === 'modal-expense' ? 'exp-recur-wrap' : 'inc-recur-wrap'); rw.style.display = ''; rw.querySelector('input').checked = false; }   // v1.31.0
+  if (id === 'modal-expense') { splitReset('exp'); setExpMode('normal'); populateExpCats(); populateExpAccounts(); setDateDefault('exp-date'); populateDescSuggestions('expense','exp-desc-suggestions'); }
   if (id === 'modal-income') { setIncMode('normal'); populateIncAccounts(); populateIncCats(); setDateDefault('inc-date'); populateDescSuggestions('income','inc-desc-suggestions'); }
   if (id === 'modal-auto-backup') renderAutoBackupList();
   if (id === 'modal-fund') pickerInit('fa', '🕌', 0, false);   // v1.15.3
@@ -1957,6 +2010,7 @@ function closeModal(id) {
   var a = document.activeElement;
   if (a && a !== document.body && m.contains(a) && a.blur) a.blur();
   m.classList.remove('open');
+  if (pendingLink && (id === 'modal-expense' || id === 'modal-income')) pendingLink = null;   // v1.31.0: بسته شد بدون ثبت
   if (catsShortcut && (id === 'modal-cats-exp' || id === 'modal-cats-inc')) refreshCatChipsFromShortcut();
   resetViewportSoon();
 }
@@ -2146,12 +2200,391 @@ function submitIncome() {
     }
   });
   DB.transactions.push(tx);
+  linkAfterSubmit(tx, 'income');   // v1.31.0
   saveDB(); closeModal('modal-income');
   document.getElementById('inc-amount').value = '';
   document.getElementById('inc-desc').value = '';
   document.getElementById('inc-date').value = '';
   document.getElementById('inc-allocations').style.display = 'none';
   renderAll();
+}
+
+
+// ═══════════════════════════════════════
+// SPLIT (v1.31.0) — تقسیم یک پرداخت بین چند دسته
+// ═══════════════════════════════════════
+// ذخیره به‌صورت چند تراکنش expense جدا با splitId مشترک (همان تاریخ، حساب، توضیح و صندوق)؛
+// پس همه‌ی گزارش‌ها، بودجه‌ها و موجودی بدون تغییر درست می‌مانند. px = 'exp' (ثبت پرداخت) یا 'edit' (ویرایش تراکنش).
+var SPLIT = { exp: null, edit: null };   // null = خاموش؛ وگرنه آرایه‌ی ردیف‌ها {catId, amt}
+function splitAmountOf(px) { return getNumericValue(px === 'exp' ? 'exp-amount' : 'edit-amount'); }
+function splitChipsId(px) { return px === 'exp' ? 'exp-cats' : 'edit-cats'; }
+function splitReset(px) {
+  SPLIT[px] = null;
+  var box = document.getElementById(px + '-split'), btn = document.getElementById(px + '-split-btn'), chips = document.getElementById(splitChipsId(px));
+  if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+  if (btn) btn.textContent = '✂️ تقسیم بین چند دسته';
+  if (chips) chips.style.display = '';
+}
+function splitToggle(px) {
+  if (SPLIT[px]) { splitReset(px); return; }
+  var sel = document.querySelector('#' + splitChipsId(px) + ' .chip.sel');
+  var first = sel ? sel.dataset.id : (DB.categories[0] ? DB.categories[0].id : '');
+  var total = splitAmountOf(px);
+  SPLIT[px] = [{ catId: first, amt: total || 0 }, { catId: '', amt: 0 }];
+  document.getElementById(splitChipsId(px)).style.display = 'none';
+  document.getElementById(px + '-split-btn').textContent = '✕ بدون تقسیم (یک دسته)';
+  splitRender(px);
+}
+function splitRender(px) {
+  var rows = SPLIT[px], box = document.getElementById(px + '-split'); if (!rows || !box) return;
+  var opts = function(cid){ return '<option value="">دسته…</option>' + DB.categories.map(function(c){ return '<option value="' + c.id + '"' + (c.id === cid ? ' selected' : '') + '>' + c.icon + ' ' + c.name + '</option>'; }).join(''); };
+  box.style.display = '';
+  box.innerHTML = rows.map(function(r, i) {
+    return '<div class="sp-row"><select class="form-select sp-cat" onchange="SPLIT.' + px + '[' + i + '].catId=this.value">' + opts(r.catId) + '</select>' +
+      '<input type="text" inputmode="numeric" class="form-input sp-amt" data-noclear="1" placeholder="مبلغ" value="' + (r.amt ? addCommas(r.amt) : '') + '" oninput="sanitizeNumberInput(this);SPLIT.' + px + '[' + i + '].amt=splitParse(this.value);splitSum(\'' + px + '\')">' +
+      (rows.length > 2 ? '<button type="button" class="sp-x" onclick="SPLIT.' + px + '.splice(' + i + ',1);splitRender(\'' + px + '\')" aria-label="حذف ردیف">✕</button>' : '') + '</div>';
+  }).join('') + '<div class="sp-foot"><button type="button" class="sp-add" onclick="SPLIT.' + px + '.push({catId:\'\',amt:0});splitRender(\'' + px + '\')">+ ردیف</button><span id="' + px + '-split-sum"></span></div>';
+  splitSum(px);
+}
+function splitParse(v) { return parseFloat(convertPersianToEn(String(v || '')).replace(/,/g, '')) || 0; }
+function splitSum(px) {
+  var rows = SPLIT[px], el = document.getElementById(px + '-split-sum'); if (!rows || !el) return;
+  var total = splitAmountOf(px), sum = rows.reduce(function(s, r){ return s + (r.amt || 0); }, 0), rest = total - sum;
+  el.className = 'sp-sum' + (Math.abs(rest) < 0.005 ? ' ok' : ' bad');
+  el.textContent = !total ? 'اول مبلغ کل را وارد کنید' : (Math.abs(rest) < 0.005 ? '✓ جمع ردیف‌ها = مبلغ کل' : (rest > 0 ? toFa(addCommas(Math.round(rest))) + ' مانده' : toFa(addCommas(Math.round(-rest))) + ' بیشتر از مبلغ کل'));
+}
+// خروجی: آرایه‌ی [{catId, amount}] با دست‌کم دو ردیف معتبر، یا null (با پیغام). یک ردیف بی‌مبلغ = باقی‌مانده.
+function splitRead(px, total) {
+  var rows = (SPLIT[px] || []).map(function(r){ return { catId: r.catId, amount: r.amt || 0 }; });
+  var empty = rows.filter(function(r){ return !r.amount; });
+  if (empty.length === 1) {
+    var sum0 = rows.reduce(function(s, r){ return s + r.amount; }, 0);
+    if (total - sum0 > 0) empty[0].amount = Math.round((total - sum0) * 100) / 100;
+  }
+  rows = rows.filter(function(r){ return r.amount > 0 || r.catId; });
+  if (rows.length < 2) { alert('برای تقسیم دست‌کم دو ردیف لازم است.'); return null; }
+  if (rows.some(function(r){ return !r.catId; })) { alert('دسته‌ی همه‌ی ردیف‌ها را انتخاب کنید.'); return null; }
+  if (rows.some(function(r){ return !(r.amount > 0); })) { alert('مبلغ همه‌ی ردیف‌ها را وارد کنید.'); return null; }
+  var sum = rows.reduce(function(s, r){ return s + r.amount; }, 0);
+  if (Math.abs(sum - total) > 0.005) { alert('جمع ردیف‌ها (' + toFa(addCommas(Math.round(sum))) + ') با مبلغ کل (' + toFa(addCommas(Math.round(total))) + ') برابر نیست.'); return null; }
+  return rows;
+}
+// ساختن بخش‌ها: base = تراکنش اول (موجود یا تازه)؛ بقیه کپی آن با مبلغ و دسته‌ی خودشان
+function splitApply(base, parts) {
+  var sid = base.splitId || ('sp' + Date.now());
+  base.splitId = sid; base.amount = parts[0].amount; base.catId = parts[0].catId;
+  var made = [base];
+  for (var i = 1; i < parts.length; i++) {
+    var t = { id: 'tx' + Date.now() + '_' + i, type: 'expense', amount: parts[i].amount, catId: parts[i].catId, accountId: base.accountId, desc: base.desc, date: base.date, splitId: sid };
+    if (base.fundId) t.fundId = base.fundId;
+    DB.transactions.push(t); made.push(t);
+  }
+  return made;
+}
+
+// ═══════════════════════════════════════
+// RECURRING + CHEQUES (v1.31.0)
+// ═══════════════════════════════════════
+// هر دو برای ثبت تراکنش از همان پنجره‌های «پرداخت»/«دریافت» استفاده می‌کنند (prefillTxModal) تا بررسی موجودی،
+// تخصیص صندوق‌ها و تقسیم دسته مثل ثبت دستی باشد. بعد از ثبت موفق، linkAfterSubmit(tx) نوبت تکراری را جلو می‌برد
+// یا چک را «وصول‌شده» می‌کند. بستن پنجره بدون ثبت، اتصال را رها می‌کند.
+var DUE_DAYS = 7;          // یادآوری روی داشبورد از ۷ روز مانده به سررسید
+var pendingLink = null;    // {kind:'recur'|'cheque', id}
+function recurItems() { return DB.recurring || (DB.recurring = []); }
+function chequeItems() { return DB.cheques || (DB.cheques = []); }
+function recurById(id) { return recurItems().find(function(r){ return r.id === id; }); }
+function chequeById(id) { return chequeItems().find(function(c){ return c.id === id; }); }
+function accCurOf(id) { var a = DB.accounts.find(function(x){ return x.id === id; }); return a ? (a.currency || 'IRR') : 'IRR'; }
+function accNameOf(id) { var a = DB.accounts.find(function(x){ return x.id === id; }); return a ? a.name : ''; }
+function whenLabel(days) { return days < 0 ? toFa(-days) + ' روز از سررسید گذشته' : (days === 0 ? 'سررسید امروز' : toFa(days) + ' روز تا سررسید'); }
+
+function prefillTxModal(type, o) {
+  if (type === 'expense') {
+    openModal('modal-expense');
+    document.getElementById('exp-amount').value = o.amount ? addCommas(o.amount) : '';
+    document.getElementById('exp-date').value = o.date || todayGregorian();
+    if (o.accountId && document.querySelector('#exp-account option[value="' + o.accountId + '"]')) document.getElementById('exp-account').value = o.accountId;
+    if (o.catId) { var ch = document.querySelector('#exp-cats .chip[data-id="' + o.catId + '"]'); if (ch) selChip(ch, 'exp-cats'); }
+    document.getElementById('exp-desc').value = o.desc || '';
+  } else {
+    openModal('modal-income');
+    document.getElementById('inc-amount').value = o.amount ? addCommas(o.amount) : '';
+    document.getElementById('inc-date').value = o.date || todayGregorian();
+    if (o.group) document.getElementById('inc-group').value = o.group;
+    if (o.accountId && document.querySelector('#inc-account option[value="' + o.accountId + '"]')) document.getElementById('inc-account').value = o.accountId;
+    if (o.incCatId) { var ic = document.querySelector('#inc-cats .chip[data-id="' + o.incCatId + '"]'); if (ic) selChip(ic, 'inc-cats'); }
+    document.getElementById('inc-desc').value = o.desc || '';
+    updateAllocPreview();
+  }
+  document.getElementById(type === 'expense' ? 'exp-recur-wrap' : 'inc-recur-wrap').style.display = 'none';
+}
+// از submitExpense / submitIncome، بعد از اضافه شدن تراکنش و قبل از saveDB
+function linkAfterSubmit(tx, kind) {
+  var rc = document.getElementById(kind === 'expense' ? 'exp-recur' : 'inc-recur');
+  if (rc && rc.checked && !pendingLink && tx) recurFromTx(tx, kind);
+  if (rc) rc.checked = false;
+  var L = pendingLink; pendingLink = null;
+  if (!L || !tx) return;
+  if (L.kind === 'recur') { var r = recurById(L.id); if (r) { r.last = txDay(tx); r.next = recurAdvance(r); } }
+  if (L.kind === 'cheque') { var c = chequeById(L.id); if (c) { c.status = 'cleared'; c.txId = tx.id; c.clearedAt = txDay(tx); tx.chequeId = c.id; } }
+}
+
+// ── تکراری‌ها: {id, type:'expense'|'income', amount, accountId, catId|incCatId, group, desc, every (ماه), day (روز شمسی), next 'YYYY-MM-DD', active} ──
+var RECUR_EVERY = [[1, 'هر ماه'], [2, 'هر ۲ ماه'], [3, 'هر ۳ ماه'], [6, 'هر ۶ ماه'], [12, 'هر سال']];
+function recurEveryLabel(n) { var e = RECUR_EVERY.find(function(x){ return x[0] === n; }); return e ? e[1] : 'هر ' + toFa(n) + ' ماه'; }
+function recurAdvance(r) {
+  var j = jPartsOf(r.next);
+  var n = jAddMonths({ jy: j.jy, jm: j.jm, jd: r.day || j.jd }, r.every || 1);
+  return jToG(n.jy, n.jm, n.jd);
+}
+function recurFromTx(tx, kind) {
+  var j = jPartsOf(txDay(tx));
+  var r = { id: 'rc' + Date.now(), type: kind, amount: tx.amount, accountId: tx.accountId, desc: tx.desc || '', every: 1, day: j.jd, active: true };
+  if (kind === 'expense') r.catId = tx.catId; else { r.incCatId = tx.incCatId; r.group = tx.group || 'monthly'; }
+  r.next = txDay(tx); r.next = recurAdvance(r);
+  recurItems().push(r);
+}
+function recurRecord(id) {
+  var r = recurById(id); if (!r) return;
+  closeModal('modal-recur');
+  prefillTxModal(r.type, { amount: r.amount, date: r.next <= todayGregorian() ? r.next : todayGregorian(), accountId: r.accountId, catId: r.catId, incCatId: r.incCatId, group: r.group, desc: r.desc });
+  pendingLink = { kind: 'recur', id: id };
+}
+function recurSkip(id) {
+  var r = recurById(id); if (!r) return;
+  if (!confirm('این نوبت (' + jLabel(r.next) + ') بدون ثبت تراکنش رد شود؟')) return;
+  r.next = recurAdvance(r); saveDB(); renderAll(); renderRecurList();
+}
+function recurLabel(r) {
+  var c = r.type === 'income' ? (DB.incomeCategories || []).find(function(x){ return x.id === r.incCatId; }) : DB.categories.find(function(x){ return x.id === r.catId; });
+  return (c ? c.icon + ' ' : (r.type === 'income' ? '💵 ' : '💸 ')) + (r.desc ? escHtml(r.desc) : (c ? c.name : (r.type === 'income' ? 'دریافت' : 'پرداخت')));
+}
+function openRecurList() { renderRecurList(); openModal('modal-recur'); }
+function renderRecurList() {
+  var el = document.getElementById('recurList'); if (!el) return;
+  var list = recurItems().slice().sort(function(a, b){ return (b.active ? 1 : 0) - (a.active ? 1 : 0) || (a.next < b.next ? -1 : 1); });
+  if (!list.length) { el.innerHTML = '<div class="cmp-note" style="margin:6px 0 10px;">موردی ثبت نشده. اجاره، قبض، اشتراک، قسط غیربانکی یا حقوق را اینجا تعریف کنید، یا موقع ثبت پرداخت/دریافت تیک «هر ماه تکرار شود» را بزنید.</div>'; return; }
+  el.innerHTML = list.map(function(r) {
+    var d = daysFromToday(r.next);
+    return '<div class="rc-row' + (r.active ? '' : ' off') + '" onclick="openRecurEdit(\'' + r.id + '\')">' +
+      '<div class="rc-main"><div class="rc-name">' + recurLabel(r) + '</div>' +
+      '<div class="rc-meta">' + recurEveryLabel(r.every || 1) + ' · ' + (r.active ? 'نوبت بعد: ' + jLabel(r.next) + (d <= DUE_DAYS ? ' (' + whenLabel(d) + ')' : '') : 'غیرفعال') + (r.accountId ? ' · ' + escHtml(accNameOf(r.accountId)) : '') + '</div></div>' +
+      '<div class="rc-amt ' + (r.type === 'income' ? 'inc' : 'exp') + '">' + fmtCur(r.amount, accCurOf(r.accountId)) + '</div></div>';
+  }).join('');
+}
+var recurEditId = null, recurEditType = 'expense';
+function openRecurEdit(id) {
+  var r = id ? recurById(id) : null;
+  recurEditId = r ? r.id : null;
+  document.getElementById('re-title').textContent = r ? '✏️ ویرایش مورد تکراری' : '🔁 مورد تکراری تازه';
+  setRecurType(r ? r.type : 'expense', r);
+  document.getElementById('re-amount').value = r ? addCommas(r.amount) : '';
+  document.getElementById('re-desc').value = r ? (r.desc || '') : '';
+  document.getElementById('re-every').innerHTML = RECUR_EVERY.map(function(e){ return '<option value="' + e[0] + '">' + e[1] + '</option>'; }).join('');
+  document.getElementById('re-every').value = String(r ? (r.every || 1) : 1);
+  document.getElementById('re-next').value = r ? r.next : todayGregorian();
+  document.getElementById('re-active').checked = r ? r.active !== false : true;
+  document.getElementById('re-active-wrap').style.display = r ? '' : 'none';
+  document.getElementById('re-del').style.display = r ? '' : 'none';
+  document.getElementById('re-rec').style.display = r && r.active !== false ? '' : 'none';
+  updateRecurNextLabel();
+  openModal('modal-recur-edit');
+}
+function setRecurType(t, r) {
+  recurEditType = t;
+  document.querySelectorAll('#re-type .chip').forEach(function(c){ c.classList.toggle('sel', c.dataset.t === t); });
+  var cats = t === 'income' ? (DB.incomeCategories || []) : DB.categories, cur = r ? (t === 'income' ? r.incCatId : r.catId) : '';
+  document.getElementById('re-cat').innerHTML = '<option value="">بدون دسته</option>' + cats.map(function(c){ return '<option value="' + c.id + '"' + (c.id === cur ? ' selected' : '') + '>' + c.icon + ' ' + c.name + '</option>'; }).join('');
+  // دریافت فقط به حساب ریالی (مثل پنجره‌ی «ثبت دریافت»)
+  var accs = t === 'income' ? DB.accounts.filter(function(a){ return (a.currency || 'IRR') === 'IRR'; }) : DB.accounts;
+  document.getElementById('re-account').innerHTML = accs.map(function(a){ return '<option value="' + a.id + '"' + (r && r.accountId === a.id ? ' selected' : '') + '>' + escHtml(a.name) + '</option>'; }).join('') || '<option value="">-- بدون حساب --</option>';
+  document.getElementById('re-group-wrap').style.display = t === 'income' ? '' : 'none';
+  document.getElementById('re-group').value = r && r.group ? r.group : 'monthly';
+}
+function updateRecurNextLabel() {
+  var v = document.getElementById('re-next').value, el = document.getElementById('re-next-lbl');
+  el.textContent = v ? jLabel(v) + ' — نوبت‌های بعد هر بار روز ' + toFa(jPartsOf(v).jd) + ' ماه' : '';
+}
+function saveRecurEdit() {
+  var amount = getNumericValue('re-amount');
+  if (!(amount > 0)) { alert('مبلغ را وارد کنید'); return; }
+  var next = document.getElementById('re-next').value;
+  if (!next) { alert('تاریخ نوبت بعد را وارد کنید'); return; }
+  var r = recurEditId ? recurById(recurEditId) : null;
+  if (!r) { r = { id: 'rc' + Date.now() }; recurItems().push(r); }
+  r.type = recurEditType; r.amount = amount;
+  r.accountId = document.getElementById('re-account').value || '';
+  var cat = document.getElementById('re-cat').value || null;
+  if (r.type === 'income') { r.incCatId = cat; delete r.catId; r.group = document.getElementById('re-group').value || 'monthly'; }
+  else { r.catId = cat; delete r.incCatId; delete r.group; }
+  r.desc = document.getElementById('re-desc').value.trim();
+  r.every = parseInt(document.getElementById('re-every').value, 10) || 1;
+  r.next = next; r.day = jPartsOf(next).jd;
+  r.active = recurEditId ? document.getElementById('re-active').checked : true;
+  saveDB(); closeModal('modal-recur-edit'); renderRecurList(); renderAll();
+}
+function deleteRecurEdit() {
+  if (!recurEditId || !confirm('این مورد تکراری حذف شود؟ تراکنش‌هایی که قبلاً ثبت شده‌اند دست نمی‌خورند.')) return;
+  DB.recurring = recurItems().filter(function(r){ return r.id !== recurEditId; });
+  saveDB(); closeModal('modal-recur-edit'); renderRecurList(); renderAll();
+}
+function recordFromRecurEdit() { var id = recurEditId; closeModal('modal-recur-edit'); recurRecord(id); }
+
+// ── چک‌ها: {id, dir:'out'(صادره)|'in'(دریافتی), amount, due, party, sayad, accountId, desc, status:'pending'|'cleared'|'bounced'|'cancelled', txId, clearedAt} ──
+var CHQ_STATUS = { pending: 'در جریان', cleared: 'وصول شد', bounced: 'برگشت خورد', cancelled: 'باطل شد' };
+var chqEditId = null, chqDir = 'out', chqShowAll = false;
+function chequeTitle(c) { return (c.dir === 'in' ? '📥 ' : '📤 ') + (c.party ? escHtml(c.party) : (c.dir === 'in' ? 'چک دریافتی' : 'چک صادره')); }
+function renderCheques() {
+  var el = document.getElementById('chequesSection'); if (!el) return;
+  var list = chequeItems();
+  // همان ساختار کارت «وام‌های بانکی»
+  var head = '<div class="card"><div class="card-bar"></div><div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,0.06);">' +
+    '<span style="font-size:13px;font-weight:600;color:var(--text-main);">📑 چک‌ها</span><button onclick="openCheque()" style="background:var(--aqua);border:none;border-radius:9px;padding:7px 14px;font-size:12px;color:var(--on-primary);font-weight:700;cursor:pointer;font-family:inherit;">+ چک</button></div>';
+  if (!list.length) { el.innerHTML = head + '<div class="card-body"><div class="cmp-note" style="margin:0;">چک‌هایی را که صادر کرده‌اید یا گرفته‌اید ثبت کنید تا سررسیدشان از ۷ روز مانده روی داشبورد یادآوری شود و با «وصول شد» تراکنشش ثبت شود.</div></div></div>'; return; }
+  var pend = list.filter(function(c){ return c.status === 'pending'; }).sort(function(a, b){ return a.due < b.due ? -1 : 1; });
+  var rest = list.filter(function(c){ return c.status !== 'pending'; }).sort(function(a, b){ return a.due > b.due ? -1 : 1; });
+  var tot = {};
+  pend.forEach(function(c){ var cur = accCurOf(c.accountId), k = c.dir + '|' + cur; tot[k] = (tot[k] || 0) + c.amount; });
+  var sumParts = [];
+  ['out', 'in'].forEach(function(d){ Object.keys(tot).sort().forEach(function(k){ var p = k.split('|'); if (p[0] === d) sumParts.push((d === 'out' ? 'پرداختنی ' : 'دریافتنی ') + '<b>' + fmtCur(tot[k], p[1]) + '</b>'); }); });
+  var row = function(c) {
+    var d = daysFromToday(c.due), cur = accCurOf(c.accountId);
+    var stCls = c.status === 'pending' ? (d < 0 ? 'late' : (d <= DUE_DAYS ? 'soon' : '')) : c.status;
+    return '<div class="chq-row" onclick="openCheque(\'' + c.id + '\')"><div class="rc-main"><div class="rc-name">' + chequeTitle(c) + '</div>' +
+      '<div class="rc-meta">سررسید ' + jLabel(c.due) + (c.status === 'pending' ? ' · ' + whenLabel(d) : '') + (c.sayad ? ' · صیادی …' + toFa(String(c.sayad).slice(-4)) : '') + '</div></div>' +
+      '<div style="text-align:left;"><div class="rc-amt ' + (c.dir === 'in' ? 'inc' : 'exp') + '">' + fmtCur(c.amount, cur) + '</div><span class="chq-st ' + stCls + '">' + CHQ_STATUS[c.status] + '</span></div></div>';
+  };
+  var html = head + '<div class="card-body">';
+  html += pend.length ? '<div class="cmp-note">در جریان: ' + sumParts.join(' · ') + '</div>' + pend.map(row).join('') : '<div class="cmp-note" style="margin:0;">چک در جریانی نیست.</div>';
+  if (rest.length) {
+    html += '<button type="button" class="rep-more" onclick="chqShowAll=!chqShowAll;renderCheques()">' + (chqShowAll ? 'پنهان کردن سابقه' : 'سابقه‌ی چک‌ها (' + toFa(rest.length) + ')') + '</button>';
+    if (chqShowAll) html += '<div style="margin-top:8px;">' + rest.map(row).join('') + '</div>';
+  }
+  el.innerHTML = html + '</div></div>';
+}
+function openCheque(id) {
+  var c = id ? chequeById(id) : null;
+  chqEditId = c ? c.id : null;
+  document.getElementById('chq-title').textContent = c ? '📑 چک — ' + CHQ_STATUS[c.status] : '📑 چک تازه';
+  setChequeDir(c ? c.dir : 'out');
+  document.getElementById('chq-account').innerHTML = DB.accounts.map(function(a){ return '<option value="' + a.id + '">' + escHtml(a.name) + '</option>'; }).join('') || '<option value="">-- بدون حساب --</option>';
+  if (c && c.accountId) document.getElementById('chq-account').value = c.accountId;
+  document.getElementById('chq-amount').value = c ? addCommas(c.amount) : '';
+  document.getElementById('chq-due').value = c ? c.due : todayGregorian();
+  document.getElementById('chq-party').value = c ? (c.party || '') : '';
+  document.getElementById('chq-sayad').value = c ? (c.sayad || '') : '';
+  document.getElementById('chq-desc').value = c ? (c.desc || '') : '';
+  updateChequeDueLabel();
+  var act = document.getElementById('chq-actions'), info = '';
+  if (c) {
+    var h = '';
+    if (c.status === 'pending') {
+      h += '<button class="btn-primary" style="margin-top:0;" onclick="clearCheque()">✅ وصول شد (ثبت ' + (c.dir === 'in' ? 'دریافت' : 'پرداخت') + ')</button>';
+      h += '<div class="chq-btns"><button class="btn-secondary" onclick="setChequeStatus(\'bounced\')">↩️ برگشت خورد</button><button class="btn-secondary" onclick="setChequeStatus(\'cancelled\')">🚫 باطل شد</button></div>';
+    } else {
+      var tx = c.txId ? DB.transactions.find(function(t){ return t.id === c.txId; }) : null;
+      if (c.status === 'cleared') info = tx ? 'تراکنش ' + (tx.type === 'income' ? 'دریافت' : 'پرداخت') + ' در ' + jLabel(txDay(tx)) + ' ثبت شده است.' : 'تراکنش مربوط پیدا نشد (شاید حذف شده).';
+      h += '<button class="btn-secondary" onclick="reopenCheque()">↺ برگرداندن به «در جریان»' + (tx ? ' (تراکنش ثبت‌شده حذف می‌شود)' : '') + '</button>';
+    }
+    act.innerHTML = (info ? '<div class="hint-box" style="margin-bottom:8px;">' + info + '</div>' : '') + h;
+  } else act.innerHTML = '';
+  document.getElementById('chq-del').style.display = c ? '' : 'none';
+  openModal('modal-cheque');
+}
+function setChequeDir(d) {
+  chqDir = d;
+  document.querySelectorAll('#chq-dir .chip').forEach(function(c){ c.classList.toggle('sel', c.dataset.d === d); });
+  document.getElementById('chq-acc-lbl').textContent = d === 'in' ? 'واریز به حساب (هنگام وصول)' : 'از حساب (دسته‌چک)';
+  document.getElementById('chq-party-lbl').textContent = d === 'in' ? 'از طرف (صادرکننده)' : 'در وجه (گیرنده)';
+}
+function updateChequeDueLabel() { var v = document.getElementById('chq-due').value; document.getElementById('chq-due-lbl').textContent = v ? jLabel(v) : ''; }
+function readChequeForm() {
+  var amount = getNumericValue('chq-amount'), due = document.getElementById('chq-due').value;
+  if (!(amount > 0)) { alert('مبلغ چک را وارد کنید'); return null; }
+  if (!due) { alert('تاریخ سررسید را وارد کنید'); return null; }
+  return { dir: chqDir, amount: amount, due: due, accountId: document.getElementById('chq-account').value || '',
+    party: document.getElementById('chq-party').value.trim(), sayad: normalizeDigits(document.getElementById('chq-sayad').value).replace(/\D/g, ''),
+    desc: document.getElementById('chq-desc').value.trim() };
+}
+function saveCheque() {
+  var f = readChequeForm(); if (!f) return;
+  var c = chqEditId ? chequeById(chqEditId) : null;
+  if (!c) { c = { id: 'chq' + Date.now(), status: 'pending' }; chequeItems().push(c); }
+  if (c.status === 'cleared' && (c.amount !== f.amount || c.accountId !== f.accountId)) alert('توجه: این چک وصول شده؛ تغییر مبلغ یا حساب روی تراکنش ثبت‌شده اثری ندارد. برای اصلاح، خود تراکنش را ویرایش کنید.');
+  Object.keys(f).forEach(function(k){ c[k] = f[k]; });
+  if (!c.sayad) delete c.sayad;
+  saveDB(); closeModal('modal-cheque'); renderAll();
+}
+function clearCheque() {
+  var f = readChequeForm(); if (!f) return;
+  var c = chequeById(chqEditId); if (!c) return;
+  Object.keys(f).forEach(function(k){ c[k] = f[k]; });
+  saveDB(); closeModal('modal-cheque');
+  var desc = (c.dir === 'in' ? 'وصول چک' : 'پاس شدن چک') + (c.party ? ' — ' + c.party : '') + (c.desc ? ' (' + c.desc + ')' : '');
+  prefillTxModal(c.dir === 'in' ? 'income' : 'expense', { amount: c.amount, date: c.due <= todayGregorian() ? c.due : todayGregorian(), accountId: c.accountId, desc: desc });
+  pendingLink = { kind: 'cheque', id: c.id };
+}
+function setChequeStatus(st) {
+  var c = chequeById(chqEditId); if (!c) return;
+  var f = readChequeForm(); if (f) Object.keys(f).forEach(function(k){ c[k] = f[k]; });
+  c.status = st; saveDB(); closeModal('modal-cheque'); renderAll();
+}
+function reopenCheque() {
+  var c = chequeById(chqEditId); if (!c) return;
+  var tx = c.txId ? DB.transactions.find(function(t){ return t.id === c.txId; }) : null;
+  if (tx && !confirm('تراکنش ثبت‌شده‌ی این چک (' + fmtCur(tx.amount, accCurOf(tx.accountId)) + ') حذف و چک «در جریان» می‌شود. ادامه می‌دهید؟')) return;
+  if (tx) removeTxWithEffects(tx);
+  c.status = 'pending'; delete c.txId; delete c.clearedAt;
+  saveDB(); closeModal('modal-cheque'); renderAll();
+}
+function deleteCheque() {
+  var c = chequeById(chqEditId); if (!c) return;
+  if (!confirm('این چک حذف شود؟' + (c.txId ? ' تراکنش ثبت‌شده‌ی آن باقی می‌ماند.' : ''))) return;
+  if (c.txId) { var tx = DB.transactions.find(function(t){ return t.id === c.txId; }); if (tx) delete tx.chequeId; }
+  DB.cheques = chequeItems().filter(function(x){ return x.id !== c.id; });
+  saveDB(); closeModal('modal-cheque'); renderAll();
+}
+// حذف تراکنش با برگرداندن اثرش روی صندوق‌ها (همان منطق deleteTx؛ برای درآمد، fund-inهای تخصیص هم برداشته می‌شوند)
+function removeTxWithEffects(tx) {
+  if (tx.type === 'income' && tx.allocations && tx.allocations.length) {
+    var allocs = tx.allocations.slice();
+    allocs.forEach(function(al){ var f = DB.funds.find(function(x){ return x.id === al.fundId; }); if (f) f.totalIn = Math.max(0, (f.totalIn || 0) - al.amount); });
+    DB.transactions = DB.transactions.filter(function(t){
+      if (t.type !== 'fund-in' || t.date !== tx.date) return true;
+      var i = allocs.findIndex(function(al){ return al.fundId === t.fundId && al.amount === t.amount; });
+      if (i !== -1) { allocs.splice(i, 1); return false; }
+      return true;
+    });
+  }
+  DB.transactions = DB.transactions.filter(function(t){ return t.id !== tx.id; });
+}
+
+// ── یادآوری داشبورد: تکراری‌های فعال و چک‌های در جریان با سررسید ≤ ۷ روز (یا گذشته) ──
+function renderDueList() {
+  var el = document.getElementById('dueList'); if (!el) return;
+  var items = [];
+  recurItems().forEach(function(r){ if (r.active === false || !r.next) return; var d = daysFromToday(r.next); if (d <= DUE_DAYS) items.push({ k: 'r', o: r, d: d, date: r.next }); });
+  chequeItems().forEach(function(c){ if (c.status !== 'pending') return; var d = daysFromToday(c.due); if (d <= DUE_DAYS) items.push({ k: 'c', o: c, d: d, date: c.due }); });
+  if (!items.length) { el.innerHTML = ''; return; }
+  items.sort(function(a, b){ return a.date < b.date ? -1 : 1; });
+  el.innerHTML = items.map(function(it) {
+    var over = it.d < 0, color = over ? 'var(--danger)' : '#9a7d0a', o = it.o;
+    var title = it.k === 'r' ? '🔁 ' + recurLabel(o) : '📑 چک ' + (o.dir === 'in' ? 'دریافتی' : 'صادره') + (o.party ? ' — ' + escHtml(o.party) : '');
+    var amt = fmtCur(o.amount, accCurOf(o.accountId));
+    var btns = it.k === 'r'
+      ? '<button data-rrec="' + o.id + '" class="due-btn" style="background:' + color + ';">ثبت</button><button data-rskip="' + o.id + '" class="due-skip">رد این نوبت</button>'
+      : '<button data-chq="' + o.id + '" class="due-btn" style="background:' + color + ';">وضعیت</button>';
+    return '<div class="due-card' + (over ? ' over' : '') + '"><div style="min-width:0;">' +
+      '<div class="due-title" style="color:' + color + ';">' + title + '</div>' +
+      '<div class="due-sub">' + amt + ' • ' + jLabel(it.date) + ' (' + whenLabel(it.d) + ')</div></div>' +
+      '<div class="due-acts">' + btns + '</div></div>';
+  }).join('');
+  el.onclick = function(e) {
+    var b = e.target.closest('[data-rrec],[data-rskip],[data-chq]'); if (!b) return;
+    if (b.dataset.rrec) recurRecord(b.dataset.rrec);
+    else if (b.dataset.rskip) recurSkip(b.dataset.rskip);
+    else openCheque(b.dataset.chq);
+  };
 }
 
 function submitExpense() {
@@ -2175,7 +2608,16 @@ function submitExpense() {
     alert('موجودی حساب «' + acc.name + '» کافی نیست.');
     return;
   }
-  DB.transactions.push({id:'tx'+Date.now(),type:'expense',amount:amount,catId:catId,accountId:accountId,desc:desc,date:dateISO});
+  var parts = null;
+  if (SPLIT.exp) {   // v1.31.0
+    parts = splitRead('exp', amount); if (!parts) return;
+    if (!document.getElementById('exp-desc').value.trim()) desc = 'پرداخت تقسیم‌شده';
+  }
+  var newTx = {id:'tx'+Date.now(),type:'expense',amount:amount,catId:catId,accountId:accountId,desc:desc,date:dateISO};
+  DB.transactions.push(newTx);
+  linkAfterSubmit(newTx, 'expense');   // v1.31.0: تکراری / چک (قبل از تقسیم، تا مبلغ کل ثبت شود)
+  if (parts) splitApply(newTx, parts);
+  splitReset('exp');
   saveDB(); closeModal('modal-expense');
   document.getElementById('exp-amount').value = '';
   document.getElementById('exp-desc').value = '';
@@ -2190,6 +2632,8 @@ function setExpMode(mode) {
   document.querySelectorAll('#exp-mode .chip').forEach(function(c){ c.classList.toggle('sel', c.dataset.mode === mode); });
   var panel = document.getElementById('exp-mode-panel');
   document.getElementById('exp-submit').style.display = mode === 'normal' ? '' : 'none';
+  if (mode !== 'normal' && SPLIT.exp) splitReset('exp');   // v1.31.0
+  document.getElementById('exp-recur-wrap').style.display = mode === 'normal' && !pendingLink ? '' : 'none';
   if (mode === 'normal') { panel.style.display = 'none'; panel.innerHTML = ''; return; }
   var h = '';
   if (mode === 'fund') {
@@ -2546,6 +2990,7 @@ function deleteLoan(loanId) {
 function renderLoans() {
   if (ensureLoanNumbers()) saveDB();     // v1.17.0 (مثلاً بعد از بازگردانی پشتیبان قدیمی)
   renderBankLoans(); renderBankDue();
+  renderCheques(); renderDueList();   // v1.31.0
   var el = document.getElementById('loansSection');
   if (!el) return;
   var loans = (DB.loans || []).filter(function(l){ return l.type !== 'bank'; });
@@ -3782,6 +4227,7 @@ function setIncMode(mode) {
   document.querySelectorAll('#inc-mode .chip').forEach(function(c){ c.classList.toggle('sel', c.dataset.mode === mode); });
   var panel = document.getElementById('inc-mode-panel');
   document.getElementById('inc-submit').style.display = mode === 'normal' ? '' : 'none';
+  document.getElementById('inc-recur-wrap').style.display = mode === 'normal' && !pendingLink ? '' : 'none';   // v1.31.0
   if (mode === 'normal') { panel.style.display = 'none'; panel.innerHTML = ''; return; }
   var h = '<button class="exp-choice-btn" style="width:100%;margin-bottom:8px;" onclick="incToLoanTaken()">' +
       '<span class="exp-choice-icon">🤝</span><div><span class="exp-choice-title">قرض گرفتن (بدهی جدید)</span>' +
@@ -3939,7 +4385,7 @@ function groupLabel(key) {
 }
 
 function computeBudgetAlerts() {
-  var today = J.today();
+  var today = finToday();   // v1.31.0: ماه مالی
   var curKey = today.jy + '-' + String(today.jm).padStart(2,'0');
 
   // جمع هزینه‌ی هر گروه به تفکیک ماه
@@ -3947,9 +4393,9 @@ function computeBudgetAlerts() {
   var groups = {};
   DB.transactions.forEach(function(t) {
     if (t.type !== 'expense' && t.type !== 'fund-out') return;
+    if (!isRialTx(t)) return;   // v1.31.0: قبلاً مبلغ ارزی با ریال جمع می‌شد
     var gk = groupKeyForTx(t); if (!gk) return;
-    var d = new Date(t.date);
-    var j = J.toJalali(d.getFullYear(), d.getMonth()+1, d.getDate());
+    var j = finYM(txDay(t));
     var mk = j.jy + '-' + String(j.jm).padStart(2,'0');
     if (!groups[gk]) groups[gk] = {};
     groups[gk][mk] = (groups[gk][mk] || 0) + t.amount;
@@ -3981,7 +4427,10 @@ function computeBudgetAlerts() {
       dismissKey: gk + '|' + curKey + '|' + level
     });
   });
-  return alerts;
+  // v1.31.0: دسته‌ای که بودجه‌ی دستی دارد فقط هشدار بودجه می‌گیرد، نه هشدار میانگین
+  var manual = computeManualBudgetAlerts();
+  var budKeys = budgetedCats().map(function(c){ return 'exp:' + c.id; });
+  return manual.concat(alerts.filter(function(a){ return budKeys.indexOf(a.key) === -1; }));
 }
 
 function renderBudgetAlerts() {
@@ -3989,7 +4438,7 @@ function renderBudgetAlerts() {
   if (!el) return;
 
   // پاکسازی هشدارهای محوشده‌ی ماه‌های گذشته (فقط ماه جاری نگه داشته شود)
-  var today = J.today();
+  var today = finToday();   // v1.31.0
   var curKey = today.jy + '-' + String(today.jm).padStart(2,'0');
   if (DB.alertDismissals) {
     var pruned = false;
@@ -4020,15 +4469,17 @@ function renderBudgetAlerts() {
     var color = isOver ? 'var(--danger)' : '#9a7d0a';
     var icon = isOver ? '🚨' : '⚠️';
     var pctText = toFa(String(Math.round(a.ratio * 100)));
-    var msg = isOver
+    var msg = a.manual
+      ? (isOver ? 'از بودجه‌ی این ماه عبور کرد (' + pctText + '٪ بودجه)' : pctText + '٪ بودجه‌ی این ماه خرج شده')
+      : (isOver
       ? 'هزینه‌ی این ماه از میانگین عبور کرد (' + pctText + '٪ میانگین)'
-      : 'هزینه‌ی این ماه به میانگین نزدیک شده (' + pctText + '٪ میانگین)';
+      : 'هزینه‌ی این ماه به میانگین نزدیک شده (' + pctText + '٪ میانگین)');
     return '<div style="background:' + bg + ';border:1px solid ' + border + ';border-radius:14px;padding:12px 14px;margin-bottom:8px;">' +
       '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">' +
         '<div style="min-width:0;">' +
           '<div style="font-size:13px;font-weight:700;color:' + color + ';margin-bottom:3px;">' + icon + ' ' + a.label + '</div>' +
           '<div style="font-size:12px;color:var(--text-main);">' + msg + '</div>' +
-          '<div style="font-size:11px;color:var(--text-sub);margin-top:4px;direction:ltr;">این ماه: ' + toFa(addCommas(Math.round(a.current))) + ' • میانگین: ' + toFa(addCommas(Math.round(a.avg))) + '</div>' +
+          '<div style="font-size:11px;color:var(--text-sub);margin-top:4px;direction:ltr;">این ماه: ' + toFa(addCommas(Math.round(a.current))) + (a.manual ? ' • بودجه: ' + toFa(addCommas(Math.round(a.budget))) : ' • میانگین: ' + toFa(addCommas(Math.round(a.avg)))) + '</div>' +
         '</div>' +
         '<button data-dismiss="' + a.dismissKey.replace(/"/g,'&quot;') + '" style="background:' + color + ';border:none;border-radius:9px;padding:6px 12px;font-size:11px;color:#fff;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;white-space:nowrap;">فهمیدم</button>' +
       '</div>' +
@@ -4201,6 +4652,8 @@ function openCatEditor(kind, id) {
   var nm = document.getElementById('ce-name');
   nm.value = cat ? cat.name : '';
   nm.placeholder = kind === 'inc' ? 'مثال: پاداش' : 'مثال: پوشاک';
+  document.getElementById('ce-budget-wrap').style.display = kind === 'inc' ? 'none' : '';   // v1.31.0
+  document.getElementById('ce-budget').value = cat && cat.budget > 0 ? addCommas(cat.budget) : '';
   openModal('modal-cat-edit');
   pickerInit('ce', cat ? (cat.icon || '⭐') : defIcon, (kind === 'inc' && !cat) ? 7 : 0, !!cat);
 }
@@ -4214,7 +4667,12 @@ function saveCatEditor() {
     var cat = list.find(function(c){ return c.id === ceState.id; });
     if (cat) { cat.name = name; cat.icon = icon; }
   } else {
-    list.push({ id: (ceState.kind === 'inc' ? 'ic' : 'cat') + Date.now(), name: name, icon: icon });
+    cat = { id: (ceState.kind === 'inc' ? 'ic' : 'cat') + Date.now(), name: name, icon: icon };
+    list.push(cat);
+  }
+  if (cat && ceState.kind !== 'inc') {   // v1.31.0: بودجه‌ی ماهانه (اختیاری)
+    var bud = getNumericValue('ce-budget') || 0;
+    if (bud > 0) cat.budget = bud; else delete cat.budget;
   }
   saveDB(); closeModal('modal-cat-edit');
   renderAll();
@@ -4949,6 +5407,7 @@ function renderTransactions() {
     if (t.type==='expense' && fund) {
       feeSubLine += '<div style="font-size:10px;color:var(--aqua-dark);margin-top:1px;">' + fund.icon + ' کسر از صندوق ' + fund.name + '</div>';
     }
+    if (t.splitId) feeSubLine += '<div style="font-size:10px;color:var(--text-sub);margin-top:1px;">✂️ بخشی از پرداخت تقسیم‌شده · ' + (cat ? cat.icon + ' ' + cat.name : 'سایر') + '</div>';   // v1.31.0
     html += '<div class="card" style="margin-bottom:7px;"><div class="card-body" style="padding:10px;">' +
       '<div class="tx-item" style="padding:0;border:none;">' +
       '<div class="tx-icon ' + cls + '">' + icon + '</div>' +
@@ -4980,16 +5439,17 @@ function renderReports() {
 
   if (repYearSel && !repYearSel.dataset.init) {
     repYearSel.dataset.init = '1';
-    for (var y = today.jy; y >= today.jy - 5; y--) {
+    var ftY = finToday().jy;   // v1.31.0
+    for (var y = ftY; y >= ftY - 5; y--) {
       var opt = document.createElement('option');
       opt.value = y; opt.textContent = toFa(String(y));
-      if (y === today.jy) opt.selected = true;
+      if (y === ftY) opt.selected = true;
       repYearSel.appendChild(opt);
     }
   }
   if (repMonthSel && !repMonthSel.dataset.init) {
     repMonthSel.dataset.init = '1';
-    repMonthSel.value = String(today.jm);
+    repMonthSel.value = String(finToday().jm);
   }
 
   // v1.30.0: دوره‌ی بخش اول = ماه یا بازه‌ی دلخواه (repPeriod)؛ بخش سال = سالِ ماه، یا سالِ پایان بازه
@@ -4999,8 +5459,9 @@ function renderReports() {
   repSel = { y: selYear, m: P.m, from: P.from, to: P.to, label: P.label, unit: P.unit };
   repYearShown = selYear;
   // v1.15.2: عنوان دو بخش صفحه — دوره‌ی انتخاب‌شده و کل همان سال
-  document.getElementById('repSecMonth').textContent = (P.mode === 'month' ? '📅 ' : '📆 ') + P.label;
-  document.getElementById('repSecYear').textContent = '🗓️ کل سال ' + toFa(String(selYear));
+  document.getElementById('repSecMonth').innerHTML = (P.mode === 'month' ? '📅 ' : '📆 ') + P.label + (P.span ? ' <span class="rep-span">' + P.span + '</span>' : '');
+  var fyb = finYearBounds(selYear);
+  document.getElementById('repSecYear').innerHTML = '🗓️ کل سال ' + toFa(String(selYear)) + (monthStartDay() !== 1 ? ' <span class="rep-span">' + jLabel(fyb.from) + ' تا ' + jLabel(fyb.to) + '</span>' : '');
   // v1.15.0: جمع‌ها و نمودارهای گزارش فقط ریالی‌اند؛ ارزهای دیگر جدا (پایین کادرها و پایین نمودار دسته‌ها)
   var filteredTxs = monthTxs.filter(isRialTx);
   var isPay = function(t){ return t.type === 'expense' || t.type === 'fund-out'; };
@@ -5051,6 +5512,7 @@ function renderReports() {
   document.getElementById('catChartHint').textContent = curs.length ? 'برای دیدن ریز هر دسته، روی آن بزنید' : '';
 
   document.getElementById('rep-save').innerHTML = savingsLineHtml(income, expense);   // v1.30.0
+  renderRepBudget(P);   // v1.31.0
   renderRepCompare(P, rialSums(monthTxs));
   renderRepTop(monthTxs, P);
   renderAvgStats(selYear);
@@ -5088,6 +5550,96 @@ function gAddDays(gStr, k) { var p = gStr.split('-'); var d = new Date(+p[0], +p
 function gDayCount(a, b) { var pa = a.split('-'), pb = b.split('-'); return Math.round((new Date(+pb[0], +pb[1] - 1, +pb[2]) - new Date(+pa[0], +pa[1] - 1, +pa[2])) / 86400000) + 1; }
 function jShiftYear(gStr, k) { var j = jPartsOf(gStr), jy = j.jy + k; return jToG(jy, j.jm, Math.min(j.jd, jMonthLen(jy, j.jm))); }
 function jYearBounds(jy) { return { from: jToG(jy, 1, 1), to: jToG(jy, 12, jMonthLen(jy, 12)) }; }
+// ── v1.31.0: روز شروع ماه مالی (کلید دستگاهی pfm_month_start، ۱ تا ۲۹؛ پیش‌فرض ۱ = ماه شمسی معمولی) ──
+// ماه مالی به نام ماهی است که در آن «تمام» می‌شود: با شروع ۲۵، «آذر» = ۲۵ آبان تا ۲۴ آذر.
+// گزارش‌ها (حالت ماه و بخش سال)، هشدارهای بودجه و بودجه‌ی دسته‌ها از این استفاده می‌کنند؛ فیلتر تاریخ تراکنش‌ها و پیش‌تنظیم‌های بازه‌ی دلخواه تقویمی می‌مانند.
+function monthStartDay() { var v = parseInt(localStorage.getItem('pfm_month_start') || '1', 10); return v >= 1 && v <= 29 ? v : 1; }
+function finYM(dayStr) {
+  var j = jPartsOf(dayStr), st = monthStartDay();
+  if (st === 1 || j.jd < st) return { jy: j.jy, jm: j.jm };
+  var n = jAddMonths({ jy: j.jy, jm: j.jm, jd: 1 }, 1);
+  return { jy: n.jy, jm: n.jm };
+}
+function finToday() { return finYM(todayGregorian()); }
+function finMonthBounds(jy, jm) {
+  var st = monthStartDay();
+  if (st === 1) return { from: jToG(jy, jm, 1), to: jToG(jy, jm, jMonthLen(jy, jm)) };
+  var p = jAddMonths({ jy: jy, jm: jm, jd: 1 }, -1);
+  return { from: jToG(p.jy, p.jm, st), to: gAddDays(jToG(jy, jm, st), -1) };
+}
+function finYearBounds(jy) { return { from: finMonthBounds(jy, 1).from, to: finMonthBounds(jy, 12).to }; }
+function setMonthStart(v) {
+  var n = parseInt(v, 10);
+  if (n >= 2 && n <= 29) localStorage.setItem('pfm_month_start', String(n)); else localStorage.removeItem('pfm_month_start');
+  var ms = document.getElementById('rep-month'), ys = document.getElementById('rep-year'), ft = finToday();
+  if (ms) ms.value = String(ft.jm);
+  if (ys && ys.querySelector('option[value="' + ft.jy + '"]')) ys.value = String(ft.jy);
+  renderAll();
+}
+function renderMonthStartSetting() {
+  var sel = document.getElementById('monthStartSel'); if (!sel) return;
+  if (!sel.options.length) {
+    var o = '<option value="1">اول ماه (معمولی)</option>';
+    for (var d = 2; d <= 29; d++) o += '<option value="' + d + '">روز ' + toFa(d) + '</option>';
+    sel.innerHTML = o;
+  }
+  var st = monthStartDay();
+  sel.value = String(st);
+  var note = document.getElementById('monthStartNote');
+  if (note) {
+    if (st === 1) note.textContent = 'گزارش‌ها و بودجه با ماه شمسی معمولی کار می‌کنند. اگر درآمد اصلی‌تان روز ثابتی (مثلاً ۲۵ هر ماه) واریز می‌شود، همان روز را انتخاب کنید.';
+    else { var ft = finToday(), b = finMonthBounds(ft.jy, ft.jm); note.textContent = 'ماه جاری: «' + J.monthName(ft.jm) + '» = ' + jLabel(b.from) + ' تا ' + jLabel(b.to) + '. هر ماه به نام ماهی است که در آن تمام می‌شود.'; }
+  }
+}
+
+// ── v1.31.0: بودجه‌ی دستی هر دسته‌ی پرداخت (c.budget، ریال در ماه مالی؛ اختیاری) ──
+// خرج = پرداخت‌های ریالی (expense + fund-out) با همان گروه expGroupOf ('c:'+id)، در ماه مالی.
+var BUDGET_NEAR = 0.8;
+function budgetedCats() { return DB.categories.filter(function(c){ return c.budget > 0; }); }
+function budgetSpent(from, to) {
+  var m = {};
+  repTxsIn(from, to).forEach(function(t) {
+    if (!isPayTx(t) || !isRialTx(t)) return;
+    var k = expGroupOf(t).key; m[k] = (m[k] || 0) + t.amount;
+  });
+  return m;
+}
+function budgetRowsHtml(from, to, partialInfo) {
+  var cats = budgetedCats(); if (!cats.length) return '';
+  var spent = budgetSpent(from, to);
+  return cats.map(function(c) {
+    var sp = spent['c:' + c.id] || 0, r = sp / c.budget;
+    var cls = r > 1 ? 'neg' : (r >= BUDGET_NEAR ? 'warn' : 'pos');
+    var rest = c.budget - sp;
+    return '<div class="bd-row"><div class="bd-top"><span>' + c.icon + ' ' + c.name + '</span><span class="bd-amt">' + rialStr(sp) + ' از ' + rialStr(c.budget) + '</span></div>' +
+      '<div class="bar-wrap"><div class="bar-fill ' + cls + '" style="width:' + Math.min(100, r * 100).toFixed(1) + '%"></div></div>' +
+      '<div class="bd-sub ' + cls + '">' + (rest >= 0 ? rialStr(rest) + ' ریال مانده (' + faPct(r * 100) + ' خرج شده)' : rialStr(-rest) + ' ریال بیشتر از بودجه (' + faPct(r * 100) + ')') + '</div></div>';
+  }).join('') + (partialInfo ? '<div class="cmp-note" style="margin:8px 0 0;">' + partialInfo + '</div>' : '');
+}
+function renderRepBudget(P) {
+  var card = document.getElementById('repBudgetCard'), el = document.getElementById('repBudget');
+  if (!card || !el) return;
+  if (P.mode !== 'month') { card.style.display = 'none'; return; }
+  card.style.display = '';
+  if (!budgetedCats().length) { el.innerHTML = '<div class="cmp-note" style="margin:0;">برای هر دسته‌ی پرداخت می‌توانید بودجه‌ی ماهانه تعیین کنید: تنظیمات ← دسته‌بندی پرداخت ← ✏️ کنار دسته.</div>'; return; }
+  var len = gDayCount(P.from, P.to);
+  var info = P.partial ? toFa(P.upto) + ' روز از ' + toFa(len) + ' روز این ماه گذشته (' + faPct(P.upto / len * 100) + ').' : '';
+  el.innerHTML = budgetRowsHtml(P.from, P.to, info);
+}
+// هشدار داشبورد: ≥۸۰٪ = نزدیک، >۱۰۰٪ = عبور (در ماه مالی جاری)
+function computeManualBudgetAlerts() {
+  var ft = finToday(), b = finMonthBounds(ft.jy, ft.jm), curKey = ft.jy + '-' + String(ft.jm).padStart(2, '0');
+  var spent = budgetSpent(b.from, b.to), out = [];
+  budgetedCats().forEach(function(c) {
+    var sp = spent['c:' + c.id] || 0, r = sp / c.budget;
+    var level = r > 1 ? 'over' : (r >= BUDGET_NEAR ? 'near' : null);
+    if (!level) return;
+    out.push({ manual: true, key: 'c:' + c.id, label: c.icon + ' ' + c.name, current: sp, budget: c.budget, ratio: r, level: level, month: curKey,
+      dismissKey: 'b:' + c.id + '|' + curKey + '|' + level });
+  });
+  return out;
+}
+
 function txDay(t) { return String(t.date || '').slice(0, 10); }
 function repTxsIn(a, b) { return DB.transactions.filter(function(t){ var d = txDay(t); return d >= a && d <= b; }); }
 function isPayTx(t) { return t.type === 'expense' || t.type === 'fund-out'; }
@@ -5119,17 +5671,20 @@ function repPeriod() {
       ly: { from: jShiftYear(from, -1), to: jShiftYear(effTo, -1), short: 'پارسال' },
       year: jPartsOf(to).jy, tag: from + '_' + to };
   }
-  var t = J.today();
+  // v1.31.0: ماه مالی (finMonthBounds)؛ با شروع ۱ همان ماه شمسی است
+  var t = finToday();
   var ys = document.getElementById('rep-year'), ms = document.getElementById('rep-month');
   var y = ys && ys.value ? parseInt(ys.value, 10) : t.jy, m = ms && ms.value ? parseInt(ms.value, 10) : t.jm;
-  var len = jMonthLen(y, m), mFrom = jToG(y, m, 1), mTo = jToG(y, m, len);
+  var B = finMonthBounds(y, m), mFrom = B.from, mTo = B.to;
   var partial = today >= mFrom && today < mTo;
-  var upto = partial ? jPartsOf(today).jd : len;
-  var py = m === 1 ? y - 1 : y, pm = m === 1 ? 12 : m - 1;
-  var pLen = jMonthLen(py, pm), lLen = jMonthLen(y - 1, m);
+  var upto = gDayCount(mFrom, partial ? today : mTo);
+  var pv = jAddMonths({ jy: y, jm: m, jd: 1 }, -1);
+  var cut = function(b){ if (!partial) return b; var e = gAddDays(b.from, upto - 1); return { from: b.from, to: e < b.to ? e : b.to }; };
+  var PB = cut(finMonthBounds(pv.jy, pv.jm)), LB = cut(finMonthBounds(y - 1, m));
   return { mode: 'month', y: y, m: m, from: mFrom, to: mTo, label: J.monthName(m) + ' ' + toFa(y), unit: 'ماه', partial: partial, upto: upto,
-    prev: { from: jToG(py, pm, 1), to: jToG(py, pm, partial ? Math.min(upto, pLen) : pLen), short: 'ماه قبل', name: J.monthName(pm) + ' ' + toFa(py) },
-    ly: { from: jToG(y - 1, m, 1), to: jToG(y - 1, m, partial ? Math.min(upto, lLen) : lLen), short: 'پارسال', name: J.monthName(m) + ' ' + toFa(y - 1) },
+    span: monthStartDay() !== 1 ? jLabel(mFrom) + ' تا ' + jLabel(mTo) : '',
+    prev: { from: PB.from, to: PB.to, short: 'ماه قبل', name: J.monthName(pv.jm) + ' ' + toFa(pv.jy) },
+    ly: { from: LB.from, to: LB.to, short: 'پارسال', name: J.monthName(m) + ' ' + toFa(y - 1) },
     year: y, tag: y + String(m).padStart(2, '0') };
 }
 
@@ -5197,7 +5752,7 @@ function renderRepCompare(P, S) {
   var note;
   if (P.mode === 'month') {
     note = '«ماه قبل» = ' + P.prev.name + '، «پارسال» = ' + P.ly.name + '.' +
-      (P.partial ? ' این ماه هنوز تمام نشده؛ هر سه ماه از روز ۱ تا ' + toFa(P.upto) + ' مقایسه می‌شوند.' : '');
+      (P.partial ? ' این ماه هنوز تمام نشده؛ از هر سه ماه فقط ' + toFa(P.upto) + ' روز اول مقایسه می‌شود.' : '');
   } else {
     note = '«بازه‌ی قبل» = ' + toFa(P.days) + ' روزِ پیش از آن (' + span(P.prev) + ')، «پارسال» = ' + span(P.ly) + '.' +
       (P.partial ? ' بازه هنوز تمام نشده؛ مقایسه تا امروز است.' : '');
@@ -5262,7 +5817,7 @@ function renderSaveTrend(jy) {
   var inc = {}, pay = {}, ti = 0, tp = 0;
   DB.transactions.forEach(function(t) {
     if (!isRialTx(t) || (t.type !== 'income' && !isPayTx(t))) return;
-    var j = jPartsOf(txDay(t)); if (j.jy !== jy) return;
+    var j = finYM(txDay(t)); if (j.jy !== jy) return;
     if (t.type === 'income') { inc[j.jm] = (inc[j.jm] || 0) + t.amount; ti += t.amount; }
     else { pay[j.jm] = (pay[j.jm] || 0) + t.amount; tp += t.amount; }
   });
@@ -5287,7 +5842,7 @@ function renderCatTrend(jy) {
   var by = {}, tot = {}, labels = {};
   DB.transactions.forEach(function(t) {
     if (!isPayTx(t) || !isRialTx(t)) return;
-    var j = jPartsOf(txDay(t)); if (j.jy !== jy) return;
+    var j = finYM(txDay(t)); if (j.jy !== jy) return;
     var g = expGroupOf(t);
     labels[g.key] = g.label; tot[g.key] = (tot[g.key] || 0) + t.amount;
     by[g.key] = by[g.key] || {}; by[g.key][j.jm] = (by[g.key][j.jm] || 0) + t.amount;
@@ -5298,7 +5853,7 @@ function renderCatTrend(jy) {
   if (!catTrendKey || !(catTrendKey in tot)) catTrendKey = keys[0];
   sel.style.display = '';
   sel.innerHTML = keys.map(function(k){ return '<option value="' + escHtml(k) + '"' + (k === catTrendKey ? ' selected' : '') + '>' + labels[k] + '</option>'; }).join('');
-  var t = J.today(), lastM = jy === t.jy ? t.jm : (jy < t.jy ? 12 : 0);
+  var t = finToday(), lastM = jy === t.jy ? t.jm : (jy < t.jy ? 12 : 0);
   var d = by[catTrendKey], max = 1, hi = null;
   for (var m = 1; m <= lastM; m++) { var v = d[m] || 0; if (v > max) max = v; if (v && (!hi || v > d[hi])) hi = m; }
   var html = '';
@@ -5331,11 +5886,12 @@ function fxPartsStr(f, c) {
   return p.join(' · ');
 }
 function yearReportData(jy) {
-  var b = jYearBounds(jy), today = todayGregorian(), tj = J.today();
+  var b = finYearBounds(jy), today = todayGregorian(), tj = finToday();
   var partial = today >= b.from && today < b.to;
   var txs = repTxsIn(b.from, b.to);
   var S = rialSums(txs);
-  var pb = jYearBounds(jy - 1), pTo = partial ? jShiftYear(today, -1) : pb.to;
+  var pb = finYearBounds(jy - 1), pTo = partial ? gAddDays(pb.from, gDayCount(b.from, today) - 1) : pb.to;
+  if (pTo > pb.to) pTo = pb.to;
   var PS = rialSums(repTxsIn(pb.from, pTo));
   var lastM = partial ? tj.jm : 12, months = [];
   for (var m = 1; m <= lastM; m++) months.push({ m: m, inc: 0, pay: 0 });
@@ -5344,7 +5900,7 @@ function yearReportData(jy) {
     var cur = txCur(t);
     if (t.type !== 'income' && !isPayTx(t)) return;
     if (cur !== 'IRR') { fx[cur] = fx[cur] || { inc: 0, pay: 0 }; if (t.type === 'income') fx[cur].inc += t.amount; else fx[cur].pay += t.amount; return; }
-    var row = months[jPartsOf(txDay(t)).jm - 1];
+    var row = months[finYM(txDay(t)).jm - 1];
     if (t.type === 'income') { if (row) row.inc += t.amount; return; }
     if (row) row.pay += t.amount;
     if (!big || t.amount > big.amount) big = t;
@@ -5537,8 +6093,7 @@ function renderAvgStats(selYear) {
   var yearTxs = DB.transactions.filter(function(t) {
     if (!(t.type==='income' || t.type==='expense' || t.type==='fund-out')) return false;
     if (!isRialTx(t)) return false;   // v1.15.0: فقط ریالی
-    var d = new Date(t.date);
-    return J.toJalali(d.getFullYear(), d.getMonth()+1, d.getDate()).jy === selYear;
+    return finYM(txDay(t)).jy === selYear;   // v1.31.0: ماه مالی
   });
 
   if (!yearTxs.length) {
@@ -5554,8 +6109,7 @@ function renderAvgStats(selYear) {
     var set = {};
     yearTxs.forEach(function(t) {
       if (types.indexOf(t.type) === -1) return;
-      var d = new Date(t.date);
-      set[J.toJalali(d.getFullYear(), d.getMonth()+1, d.getDate()).jm] = true;
+      set[finYM(txDay(t)).jm] = true;
     });
     return Object.keys(set).length;
   }
@@ -5563,16 +6117,9 @@ function renderAvgStats(selYear) {
   var expMonths = monthsWith(['expense','fund-out']) || 1;
 
   // روزهای سپری‌شده در بازه‌ی سال: از ابتدای سال تا امروز (اگر سال جاری) یا کل روزهای سال
-  var today = J.today();
-  var elapsedDays;
-  if (selYear === today.jy) {
-    // تعداد روز سپری‌شده از ابتدای سال شمسی تا امروز
-    elapsedDays = J.dayOfYear ? J.dayOfYear(today) : approxDayOfYear(today);
-  } else if (selYear < today.jy) {
-    elapsedDays = isLeapJalali(selYear) ? 366 : 365;
-  } else {
-    elapsedDays = 1;
-  }
+  // v1.31.0: روزهای سپری‌شده از سال مالی (finYearBounds)
+  var fyb = finYearBounds(selYear), tdy = todayGregorian();
+  var elapsedDays = tdy < fyb.from ? 1 : gDayCount(fyb.from, tdy < fyb.to ? tdy : fyb.to);
   if (!elapsedDays || elapsedDays < 1) elapsedDays = 1;
 
   var avgIncMonthly = totalIncome / incMonths;
@@ -5627,8 +6174,7 @@ function renderTrendChart(selYear) {
   DB.transactions.forEach(function(t) {
     if (t.type!=='income' && t.type!=='expense' && t.type!=='fund-out') return;
     if (!isRialTx(t)) return;
-    var d = new Date(t.date);
-    var j = J.toJalali(d.getFullYear(), d.getMonth()+1, d.getDate());
+    var j = finYM(txDay(t));   // v1.31.0
     if (j.jy !== selYear) return;
     if (t.type==='income') incByMonth[j.jm] = (incByMonth[j.jm]||0) + t.amount;
     else expByMonth[j.jm] = (expByMonth[j.jm]||0) + t.amount;
@@ -5701,9 +6247,7 @@ function renderExpensePie(selYear) {
   // Gather all expense + fund-out for the selected year, grouped like catChart
   var yearTxs = DB.transactions.filter(function(t) {
     if (!isRialTx(t)) return false;   // v1.15.0: فقط ریالی
-    var d = new Date(t.date);
-    var j = J.toJalali(d.getFullYear(), d.getMonth()+1, d.getDate());
-    return j.jy === selYear;
+    return finYM(txDay(t)).jy === selYear;   // v1.31.0
   });
 
   var totals = {};
@@ -5784,6 +6328,7 @@ function renderExpensePie(selYear) {
 }
 
 function renderSettings() {
+  renderMonthStartSetting();   // v1.31.0
   renderFxSettingsRow();   // v1.23.0
   var ps = document.getElementById('pinStatus'); if (ps) ps.textContent = getStoredPin() ? '✓ فعال' + (bioEnabled() ? ' • Face ID' : '') : 'فعال نیست';
   // v1.28.0: سوییچ Face ID فقط اگر گوشی/مرورگر پشتیبانی کند و رمز تنظیم شده باشد
@@ -5796,7 +6341,7 @@ function renderSettings() {
   var cl = document.getElementById('catList');
   var cHtml = '';
   DB.categories.forEach(function(c) {
-    cHtml += '<div class="list-item"><span class="cat-row-name">' + c.icon + ' ' + c.name + '</span><span class="cat-row-btns"><button class="icon-btn" data-id="' + c.id + '" data-action="ec" aria-label="ویرایش">✏️</button><button class="icon-btn danger" data-id="' + c.id + '" data-action="dc">🗑</button></span></div>';
+    cHtml += '<div class="list-item"><span class="cat-row-name">' + c.icon + ' ' + c.name + (c.budget > 0 ? '<span class="cat-bud">بودجه ' + toFa(addCommas(c.budget)) + '</span>' : '') + '</span><span class="cat-row-btns"><button class="icon-btn" data-id="' + c.id + '" data-action="ec" aria-label="ویرایش">✏️</button><button class="icon-btn danger" data-id="' + c.id + '" data-action="dc">🗑</button></span></div>';
   });
   cl.innerHTML = cHtml || '<div style="color:var(--text-sub);font-size:12px;padding:8px 0;">دسته‌بندی‌ای ثبت نشده</div>';
   cl.querySelectorAll('[data-action="dc"]').forEach(function(btn){ btn.addEventListener('click', function(){ deleteCat(this.dataset.id); }); });
@@ -5962,7 +6507,7 @@ function deleteTx(id) {
     alert('این تراکنش مربوط به دفتر قروض است. لطفاً از بخش «دفتر قروض» در داشبورد آن را مدیریت یا حذف کنید.');
     return;
   }
-  if (!confirm('این تراکنش حذف شود؟')) return;
+  if (!confirm(tx.splitId ? 'این تراکنش بخشی از یک پرداخت تقسیم‌شده است و فقط همین بخش حذف می‌شود (موجودی حساب به همان اندازه برمی‌گردد). ادامه می‌دهید؟' : 'این تراکنش حذف شود؟')) return;
   // فقط اثر صندوق را برمی‌گردانیم — موجودی حساب real-time محاسبه می‌شود
   if (tx.fundId) {
     var fund = DB.funds.find(function(f){ return f.id===tx.fundId; });
@@ -5972,6 +6517,7 @@ function deleteTx(id) {
     }
   }
   DB.transactions = DB.transactions.filter(function(t){ return t.id!==id; });
+  if (tx.chequeId) { var chq = chequeById(tx.chequeId); if (chq && chq.txId === tx.id) { chq.status = 'pending'; delete chq.txId; delete chq.clearedAt; } }   // v1.31.0
   saveDB(); renderAll();
 }
 
@@ -5981,6 +6527,8 @@ function openEditTx(id) {
   if (tx.loanId) { alert('تراکنش‌های قرض از بخش «دفتر قروض» مدیریت می‌شوند'); return; }
   document.getElementById('edit-tx-id').value = id;
   document.getElementById('edit-tx-type').value = tx.type;
+  splitReset('edit');   // v1.31.0
+  document.getElementById('edit-split-btn').style.display = tx.type === 'expense' ? '' : 'none';
   document.getElementById('edit-amount').value = addCommas(tx.amount);
   document.getElementById('edit-desc').value = tx.desc || '';
   populateDescSuggestions(tx.type, 'edit-desc-suggestions');
@@ -6056,6 +6604,8 @@ function submitEditTx() {
 
   var tx = DB.transactions.find(function(t){ return t.id===id; });
   if (!tx) return;
+  var eparts = null;   // v1.31.0: اعتبارسنجی تقسیم قبل از هر تغییری
+  if (SPLIT.edit && txType === 'expense' && !tx.loanId) { eparts = splitRead('edit', newAmount); if (!eparts) return; }
 
   // نکته: موجودی حساب real-time از getAccountBalance محاسبه می‌شود،
   // پس acc.balance را مستقیم دستکاری نمی‌کنیم.
@@ -6117,6 +6667,7 @@ function submitEditTx() {
       // صندوق تخصیصی (اختیاری) — اگر انتخاب شود از موجودی صندوق هم کم می‌شود
       var selFund = document.getElementById('edit-tx-fund').value;
       if (selFund) tx.fundId = selFund; else delete tx.fundId;
+      if (eparts) splitApply(tx, eparts);   // v1.31.0: تقسیم همین تراکنش
     }
     if (txType==='fund-out') {
       var selFoCat = document.querySelector('#edit-cats .chip.sel');
@@ -7741,13 +8292,20 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.30.1';
+var CURRENT_VERSION = '1.31.0';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.31.0', items:[
+    'مدیریت چک: در صفحه‌ی «قروض» چک‌های صادره و دریافتی را با سررسید، طرف حساب و شناسه‌ی صیادی ثبت کنید. از ۷ روز مانده به سررسید روی داشبورد یادآوری می‌شود؛ با «وصول شد» تراکنشش ثبت می‌شود و برگشتی یا باطل شدن هم ثبت می‌شود.',
+    'پرداخت و دریافت‌های تکراری (اجاره، قبض، حقوق و…): موقع ثبت، تیک «هر ماه تکرار شود» را بزنید یا از تنظیمات تعریف کنید. نوبت‌ها روی داشبورد یادآوری می‌شوند و با «ثبت» همان پنجره با مبلغ آماده باز می‌شود.',
+    'بودجه‌ی ماهانه برای هر دسته‌ی پرداخت: در تنظیمات ← دسته‌بندی پرداخت ← ✏️. در ۸۰٪ و با عبور از بودجه روی داشبورد هشدار می‌گیرید و در گزارش‌ها کارت «بودجه‌ی ماه» آمده است.',
+    'روز شروع ماه: اگر حقوقتان مثلاً ۲۵ هر ماه واریز می‌شود، در تنظیمات همان روز را انتخاب کنید تا گزارش‌ها و بودجه با دوره‌ی حقوق حساب شوند.',
+    'تقسیم یک پرداخت بین چند دسته: در پنجره‌ی پرداخت یا ویرایش تراکنش، «✂️ تقسیم بین چند دسته» را بزنید؛ ردیفی که مبلغش خالی بماند باقی‌مانده را می‌گیرد.'
+  ]},
   { v:'1.30.1', items:[
     'متن مقایسه‌ها در گزارش‌ها صریح‌تر شد: مثلاً «۵۵٪ بیشتر از ماه قبل» یا «۲۰٪ کمتر از پارسال»؛ یعنی این دوره نسبت به آن دوره.'
   ]},
@@ -8013,6 +8571,55 @@ setTimeout(function() {
 }, 2500);
 </script>
 <!-- Edit Account Modal -->
+<!-- v1.31.0: پرداخت و دریافت‌های تکراری -->
+<div class="modal-overlay" id="modal-recur" onclick="closeModalOutside(event,'modal-recur')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🔁 پرداخت و دریافت‌های تکراری</div>
+    <div class="hint-box" style="margin-bottom:10px;">💡 از ۷ روز مانده به هر نوبت، روی داشبورد یادآوری می‌شود. با «ثبت»، پنجره‌ی پرداخت یا دریافت با همین مبلغ باز می‌شود و می‌توانید پیش از ثبت اصلاحش کنید؛ هیچ تراکنشی خودکار ثبت نمی‌شود.</div>
+    <div id="recurList"></div>
+    <button class="btn-primary" onclick="openRecurEdit()" style="margin-top:10px;">+ مورد تازه</button>
+    <button class="btn-secondary" onclick="closeModal('modal-recur')">بستن</button>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-recur-edit" onclick="closeModalOutside(event,'modal-recur-edit')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="re-title">🔁 مورد تکراری تازه</div>
+    <div class="chips" id="re-type"><span class="chip sel" data-t="expense" onclick="setRecurType('expense')">💸 پرداخت</span><span class="chip" data-t="income" onclick="setRecurType('income')">💵 دریافت</span></div>
+    <div class="form-group"><label class="form-label">مبلغ</label><input type="text" inputmode="numeric" class="form-input" id="re-amount" placeholder="مبلغ معمول هر نوبت" oninput="sanitizeNumberInput(this)"></div>
+    <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="re-desc" placeholder="مثال: اجاره‌ی خانه" autocomplete="off"></div>
+    <div class="form-group"><label class="form-label">دسته‌بندی</label><select class="form-select" id="re-cat"></select></div>
+    <div class="form-group" id="re-group-wrap" style="display:none;"><label class="form-label">گروه دریافتی</label><select class="form-select" id="re-group"><option value="monthly">ماهیانه</option><option value="extra">اضافی</option><option value="other">سایر</option></select></div>
+    <div class="form-group"><label class="form-label">حساب</label><select class="form-select" id="re-account"></select></div>
+    <div class="form-group"><label class="form-label">تکرار</label><select class="form-select" id="re-every"></select></div>
+    <div class="form-group"><label class="form-label">نوبت بعد</label><input type="date" class="form-input" id="re-next" onchange="updateRecurNextLabel()"><div class="fx-meta" id="re-next-lbl" style="margin-top:4px;"></div></div>
+    <label class="rc-chk" id="re-active-wrap"><input type="checkbox" id="re-active"> فعال (یادآوری شود)</label>
+    <button class="btn-primary" onclick="saveRecurEdit()">ذخیره</button>
+    <button class="btn-secondary" id="re-rec" onclick="recordFromRecurEdit()">ثبت نوبت بعد همین حالا</button>
+    <button class="btn-secondary" id="re-del" onclick="deleteRecurEdit()" style="color:var(--danger);">حذف</button>
+    <button class="btn-secondary" onclick="closeModal('modal-recur-edit')">انصراف</button>
+  </div>
+</div>
+<!-- v1.31.0: چک -->
+<div class="modal-overlay" id="modal-cheque" onclick="closeModalOutside(event,'modal-cheque')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="chq-title">📑 چک تازه</div>
+    <div class="chips" id="chq-dir"><span class="chip sel" data-d="out" onclick="setChequeDir('out')">📤 صادره (پرداختنی)</span><span class="chip" data-d="in" onclick="setChequeDir('in')">📥 دریافتی (دریافتنی)</span></div>
+    <div class="form-group"><label class="form-label">مبلغ</label><input type="text" inputmode="numeric" class="form-input" id="chq-amount" placeholder="مبلغ چک" oninput="sanitizeNumberInput(this)"></div>
+    <div class="form-group"><label class="form-label">تاریخ سررسید</label><input type="date" class="form-input" id="chq-due" onchange="updateChequeDueLabel()"><div class="fx-meta" id="chq-due-lbl" style="margin-top:4px;"></div></div>
+    <div class="form-group"><label class="form-label" id="chq-party-lbl">در وجه (گیرنده)</label><input type="text" class="form-input" id="chq-party" placeholder="نام شخص یا شرکت" autocomplete="off"></div>
+    <div class="form-group"><label class="form-label" id="chq-acc-lbl">از حساب (دسته‌چک)</label><select class="form-select" id="chq-account"></select></div>
+    <div class="form-group"><label class="form-label">شناسه‌ی صیادی (اختیاری)</label><input type="text" inputmode="numeric" class="form-input" id="chq-sayad" placeholder="۱۶ رقم" autocomplete="off"></div>
+    <div class="form-group"><label class="form-label">توضیحات (اختیاری)</label><input type="text" class="form-input" id="chq-desc" placeholder="مثال: قسط سوم خرید ماشین" autocomplete="off"></div>
+    <div id="chq-actions"></div>
+    <button class="btn-primary" onclick="saveCheque()">ذخیره</button>
+    <button class="btn-secondary" id="chq-del" onclick="deleteCheque()" style="color:var(--danger);">حذف چک</button>
+    <button class="btn-secondary" onclick="closeModal('modal-cheque')">انصراف</button>
+  </div>
+</div>
+
 <!-- v1.29.0: یادآوری پشتیبان‌گیری روی همان صفحه‌ای که کاربر هست (قبلاً confirm و رفتن به تنظیمات) -->
 <div class="modal-overlay" id="modal-backup-remind" style="z-index:520;" onclick="closeModalOutside(event,'modal-backup-remind')">
   <div class="modal-sheet">
@@ -8068,11 +8675,12 @@ setTimeout(function() {
     <div class="modal-title">✏️ ویرایش تراکنش</div>
     <input type="hidden" id="edit-tx-id">
     <input type="hidden" id="edit-tx-type">
-    <div class="form-group"><label class="form-label">مبلغ (ریال)</label><input type="text" inputmode="numeric" class="form-input" id="edit-amount" placeholder="مبلغ" oninput="sanitizeNumberInput(this)"></div>
+    <div class="form-group"><label class="form-label">مبلغ (ریال)</label><input type="text" inputmode="numeric" class="form-input" id="edit-amount" placeholder="مبلغ" oninput="sanitizeNumberInput(this);splitSum('edit')"></div>
     <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="edit-desc" placeholder="توضیح تراکنش" autocomplete="off"><datalist id="edit-desc-suggestions"></datalist></div>
     <div class="form-group"><label class="form-label">تاریخ</label><input type="date" class="form-input" id="edit-date"></div>
     <div class="form-group"><label class="form-label">حساب</label><select class="form-select" id="edit-account" onchange="updateLoanLinkUI()"></select></div>
-    <div class="form-group" id="edit-cat-group" style="display:none;"><label class="form-label cat-lbl">دسته‌بندی<button type="button" class="cat-add" onclick="openCatsShortcut(document.getElementById('edit-tx-type').value === 'income' ? 'inc' : 'exp', 'edit-cats')" aria-label="مدیریت دسته‌بندی‌ها">+</button></label><div class="chips" id="edit-cats"></div></div>
+    <div class="form-group" id="edit-cat-group" style="display:none;"><label class="form-label cat-lbl">دسته‌بندی<button type="button" class="cat-add" onclick="openCatsShortcut(document.getElementById('edit-tx-type').value === 'income' ? 'inc' : 'exp', 'edit-cats')" aria-label="مدیریت دسته‌بندی‌ها">+</button></label><div class="chips" id="edit-cats"></div>
+      <button type="button" class="split-btn" id="edit-split-btn" onclick="splitToggle('edit')" style="display:none;">✂️ تقسیم بین چند دسته</button><div class="split-box" id="edit-split" style="display:none;"></div></div>
     <div class="form-group" id="edit-fund-wrap" style="display:none;"><label class="form-label">کسر از صندوق (اختیاری)</label><select class="form-select" id="edit-tx-fund"></select><div class="hint-box" style="margin-top:6px;">💡 اگر صندوقی انتخاب شود، این مبلغ علاوه بر حساب، از موجودی آن صندوق هم کم می‌شود. دسته‌بندی هزینه دست‌نخورده می‌ماند.</div></div>
     <div class="form-group" id="edit-group-wrap" style="display:none;"><label class="form-label">گروه دریافتی</label><select class="form-select" id="edit-group"><option value="monthly">ماهیانه</option><option value="extra">اضافی</option><option value="other">سایر</option><option value="none">هیچکدام</option></select></div>
     <div class="form-group" id="edit-convert-wrap" style="display:none;">

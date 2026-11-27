@@ -210,6 +210,16 @@
 - **روند یک دسته:** `catTrendKey` (کلید `expGroupOf`)، پیش‌فرض پرخرج‌ترین دسته‌ی سال؛ ماه‌ها تا ماه جاری. از پنجره‌ی ریز دسته دکمه‌ی `#cb-trend` → `showCatTrend()` (اسکرول با `scrollTop` خود `#scrollArea`، نه `scrollIntoView`).
 - **کارنامه‌ی سال:** `yearReportData(jy)` (مشترک کارت و `exportYearPDF`): سال جاری تا امروز و مقایسه با همین بازه در سال قبل؛ کم‌خرج‌ترین ماه ماه جاری را حساب نمی‌کند؛ سود وام = پرداخت‌های `LOAN_INT_CAT_ID`. **تغییر خالص دارایی عمداً در آن نیست**: موجودی پیش از تاریخ مبنا و نرخ‌های گذشته‌ی ارز/طلا در داده نیست. PDF همان سبک رنگی خروجی‌های قبلی را دارد.
 
+## چک، تکراری، بودجه، روز شروع ماه و تقسیم (v1.31.0، درخواست صادق)
+
+- **ثبت تراکنش برای تکراری و چک فقط از پنجره‌های موجود:** `prefillTxModal(type, o)` پنجره‌ی `modal-expense`/`modal-income` را پر می‌کند و `pendingLink = {kind:'recur'|'cheque', id}`؛ `submitExpense`/`submitIncome` بعد از push تراکنش `linkAfterSubmit(tx, kind)` را صدا می‌زنند (در پرداخت **قبل از** `splitApply`). بستن پنجره بدون ثبت (`closeModal`) اتصال را رها می‌کند. پس بررسی موجودی، تخصیص صندوق، تقسیم و… مثل ثبت دستی است. **هیچ تراکنشی خودکار ثبت نمی‌شود.**
+- **تکراری‌ها:** `DB.recurring = [{id, type:'expense'|'income', amount, accountId, catId|incCatId, group, desc, every (ماه: ۱/۲/۳/۶/۱۲), day (روز شمسی), next 'YYYY-MM-DD', active, last}]` (داخل `pfm_db_v3`، پس در پشتیبان). `recurAdvance` = `jAddMonths` با `day` (روز ۳۱ در ماه کوتاه‌تر = آخر ماه، بعد دوباره ۳۱). ساختن: تیک `#exp-recur`/`#inc-recur` (نوبت بعد = یک ماه بعد از تاریخ تراکنش، `recurFromTx`) یا `modal-recur` ← `modal-recur-edit` (تنظیمات ← «🔁 پرداخت و دریافت‌های تکراری»). دریافت تکراری فقط حساب ریالی (مثل پنجره‌ی دریافت). «رد این نوبت» = `recurSkip`.
+- **چک‌ها:** `DB.cheques = [{id, dir:'out'|'in', amount, due, party, sayad, accountId, desc, status:'pending'|'cleared'|'bounced'|'cancelled', txId, clearedAt}]`؛ بخش `#chequesSection` آخر صفحه‌ی قروض (`renderCheques` از `renderLoans`)، پنجره‌ی `modal-cheque`. «وصول شد» → `clearCheque` → پنجره‌ی پرداخت (صادره) یا دریافت (دریافتی) با توضیح «پاس شدن/وصول چک — طرف» → `status:'cleared'`، `tx.chequeId`. `reopenCheque` تراکنش را با `removeTxWithEffects` (همراه fund-inهای تخصیص درآمد) حذف می‌کند؛ `deleteTx` روی تراکنش دارای `chequeId` چک را «در جریان» برمی‌گرداند. چک برای تسویه‌ی قرض به دفتر قروض وصل **نمی‌شود** (پرداخت/دریافت عادی است).
+- **یادآوری داشبورد** `#dueList` (`renderDueList`، زیر `#bankDue`): تکراری‌های فعال و چک‌های در جریان با سررسید ≤ `DUE_DAYS` (۷) روز یا گذشته.
+- **بودجه‌ی دستی:** `c.budget` (ریال، فقط دسته‌های پرداخت، فیلد `#ce-budget` در `modal-cat-edit`). خرج = پرداخت‌های ریالی `expense`+`fund-out` با گروه `expGroupOf` `'c:'+id` در **ماه مالی**. کارت `#repBudgetCard` در بخش دوره‌ی گزارش‌ها (فقط حالت ماه). هشدار داشبورد `computeManualBudgetAlerts` (≥ `BUDGET_NEAR` ۸۰٪ = نزدیک، >۱۰۰٪ = عبور؛ `dismissKey` با پیشوند `b:`) داخل همان `computeBudgetAlerts`/`renderBudgetAlerts`؛ دسته‌ی بودجه‌دار هشدار «میانگین» (`exp:<id>`) نمی‌گیرد. `computeBudgetAlerts` حالا فقط ریالی است (قبلاً مبلغ ارزی با ریال جمع می‌شد).
+- **روز شروع ماه:** کلید دستگاهی `pfm_month_start` (۲ تا ۲۹؛ نبود = ۱؛ در پشتیبان نیست). ماه مالی به نام ماهی است که در آن **تمام** می‌شود (شروع ۲۵: «آذر» = ۲۵ آبان تا ۲۴ آذر). `finYM(day)`، `finToday()`، `finMonthBounds(jy, jm)`، `finYearBounds(jy)`. استفاده: `repPeriod` حالت ماه (`span` = بازه‌ی تاریخ در عنوان)، همه‌ی کارت‌های بخش سال، کارنامه، میانگین‌ها (روز سپری‌شده از سال مالی)، هشدارهای بودجه. **تقویمی می‌مانند:** فیلتر تاریخ تراکنش‌ها، پیش‌تنظیم‌های بازه‌ی دلخواه، سررسیدها. با شروع ۱ همه‌چیز مثل قبل است (تست v1.30 بدون تغییر گذشت).
+- **تقسیم:** چند تراکنش `expense` جدا با `splitId` مشترک (همان تاریخ/حساب/توضیح/صندوق) — گزارش‌ها و موجودی بدون تغییر درست‌اند. `SPLIT[px]` (`'exp'`/`'edit'`)، `splitToggle`/`splitRender`/`splitRead(px, total)` (یک ردیف بی‌مبلغ = باقی‌مانده؛ جمع باید برابر کل باشد)/`splitApply(base, parts)`. در ویرایش، اعتبارسنجی **قبل از** هر تغییری در `submitEditTx` است. فهرست تراکنش‌ها برچسب «✂️ بخشی از پرداخت تقسیم‌شده» و حذف یک بخش پیغام جدا دارد.
+
 ## سه نقطه‌ی نسخه — همیشه هرسه با هم عوض شوند
 
 نسخه در سه جای مستقل نگه‌داری می‌شود و **باید همیشه هم‌زمان با هم آپدیت شوند**، وگرنه منطق «بررسی به‌روزرسانی» نادرست کار می‌کند یا کش قدیمی می‌ماند:
@@ -251,7 +261,7 @@ navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
 
 ## داده‌ی کاربر
 
-- کلید اصلی دیتابیس: `localStorage['pfm_db_v3']` (از طریق `saveDB()`/`loadDB()`) — یک شیء JSON با این فیلدها: `accounts` (فیلد اختیاری `number` از v1.29.0)، `funds`، `transactions`، `categories`، `incomeCategories`، و اختیاری `loans` (v1.17.0) و `golds` (v1.27.0).
+- کلید اصلی دیتابیس: `localStorage['pfm_db_v3']` (از طریق `saveDB()`/`loadDB()`) — یک شیء JSON با این فیلدها: `accounts` (فیلد اختیاری `number` از v1.29.0)، `funds`، `transactions` (اختیاری `splitId`، `chequeId` از v1.31.0)، `categories` (اختیاری `budget` از v1.31.0)، `incomeCategories`، و اختیاری `loans` (v1.17.0)، `golds` (v1.27.0)، `recurring` و `cheques` (v1.31.0).
 - کلیدهای دیگر:
   - `pfm_pin` — رمز ۴ رقمی قفل اپ (از v1.28.0 درهم‌شده `h1:salt:hash`)
   - `pfm_pin_fail` — (v1.28.0) شمارنده‌ی تلاش اشتباه و زمان پایان مکث
@@ -261,6 +271,7 @@ navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
   - `pfm_sadaqah` — (v1.13.0) تنظیم صدقه روزانه `{enabled, pct, basis}` (`basis` از v1.24.0)
   - `pfm_fx` — (v1.23.0) نرخ ارز و تنظیم به‌روزرسانی خودکار (از v1.25.0 `GOLD18` = قیمت گرم ۱۸ عیار)
   - `pfm_gold_nw` — (v1.27.0) `'0'` یعنی «طلاهای من» در کل دارایی حساب نشود
+  - `pfm_month_start` — (v1.31.0) روز شروع ماه مالی (۲ تا ۲۹؛ نبود = ۱)
   - `pfm_auto_backup` — (v1.13.0) `'0'` یعنی پشتیبان خودکار خاموش
   - `pfm_seen_version` — (v1.14.0) آخرین نسخه‌ای که پنجره‌ی «تازه‌های نسخه» آن دیده شده؛ مخصوص همین دستگاه، در پشتیبان JSON نیست
 - IndexedDB `pfm_backups` — (v1.13.0) نسخه‌های پشتیبان خودکار روزانه
