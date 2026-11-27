@@ -275,6 +275,10 @@ html { height:100%; height:-webkit-fill-available; }
 .gi-val span { font-size:10.5px; unicode-bidi:isolate; }
 .gi-sum { background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:12px; padding:10px 12px; margin-bottom:8px; }
 .gc-box { font-size:13.5px !important; line-height:1.85 !important; }
+/* v1.34.0: حالت نمایشی */
+#demoBar { flex-shrink:0; align-items:center; gap:8px; padding:7px 12px; background:var(--accent-light); color:var(--text-main); font-size:12px; font-weight:700; border-bottom:1px solid var(--accent); }
+#demoBar span { flex:1; min-width:0; line-height:1.6; }
+#demoBar button { flex-shrink:0; font-family:inherit; font-size:12px; font-weight:700; background:var(--aqua); color:var(--on-primary); border:none; border-radius:9px; padding:6px 14px; cursor:pointer; }
 /* v1.33.0: راهنمای اپ */
 #tour { position:fixed; inset:0; z-index:600; }
 .tour-block { position:absolute; inset:0; }
@@ -591,6 +595,7 @@ html { height:100%; height:-webkit-fill-available; }
 
 <!-- MAIN APP -->
 <div id="appShell" style="display:none;">
+<div id="demoBar" style="display:none;"><span>🧪 حالت نمایشی — داده‌ها ساختگی‌اند و ذخیره نمی‌شوند</span><button onclick="exitDemo()">خروج</button></div>
 <div id="scrollArea">
 <div id="mainApp" style="display:none;">
 
@@ -833,6 +838,7 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel"></span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="startTour()"><span class="si-label">📖 راهنمای اپ</span><span class="si-val">←</span></div>
+    <div class="settings-item" onclick="DEMO ? exitDemo() : enterDemo()"><span class="si-label">🧪 حالت نمایشی (داده‌ی نمونه)</span><span class="si-val" id="demoStatus">←</span></div>
     <div class="settings-item" onclick="openSmsGuide()"><span class="si-label">📲 راهنمای خواندن خودکار پیامک‌ها</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="requestPersistentStorage(true)"><span class="si-label">🛡️ ماندگاری داده‌ها</span><span class="si-val" id="persistStatus">…</span></div>
     <div class="settings-item" onclick="document.getElementById('smsImportFile').click()"><span class="si-label">🏦 ورود پیامک بانک (فایل)</span><span class="si-val">←</span></div>
@@ -1592,6 +1598,7 @@ var DB = { accounts:[], funds:[], transactions:[], categories:[
   {id:'ic3',name:'قرض برگشتی',icon:'🔄'},{id:'ic4',name:'فروش',icon:'🏷️'},
   {id:'ic5',name:'سایر',icon:'⭐'}
 ]};
+var DB_DEFAULT_JSON = JSON.stringify(DB);   // v1.34.0: نسخه‌ی خالیِ پیش‌فرض (برای حالت نمایشی و خروج از آن)
 
 function saveDB() {
   try {
@@ -1599,7 +1606,7 @@ function saveDB() {
     // Auto-backup reminder every 10 transactions
     var txCount = DB.transactions.length;
     var lastRemind = parseInt(localStorage.getItem('pfm_last_backup_remind') || '0');
-    if (txCount > 0 && Math.floor(txCount / 10) > Math.floor(lastRemind / 10)) {
+    if (!DEMO && txCount > 0 && Math.floor(txCount / 10) > Math.floor(lastRemind / 10)) {
       localStorage.setItem('pfm_last_backup_remind', txCount);
       setTimeout(function() {
         openBackupRemind(txCount);   // v1.29.0: پنجره روی همین صفحه، نه رفتن به تنظیمات
@@ -1841,6 +1848,7 @@ function bioSupported() {
   return PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().catch(function(){ return false; });
 }
 function setBioEnabled(on) {
+  if (DEMO) { var bcb = document.getElementById('bioOn'); if (bcb) bcb.checked = !on; demoBlocked(); return; }   // v1.34.0
   var cb = document.getElementById('bioOn');
   if (!on) { bioDisable(); renderSettings(); renderBioKey(); return; }
   if (!getStoredPin()) { alert('اول رمز ۴ رقمی را تنظیم کنید'); cb.checked = false; return; }
@@ -2056,6 +2064,7 @@ function renderDescSuggestions(input) {
 }
 
 function openModal(id) {
+  if (DEMO && (id === 'modal-pin' || id === 'modal-auto-backup')) { demoBlocked(); return; }   // v1.34.0
   document.getElementById(id).classList.add('open');
   if (id === 'modal-expense' || id === 'modal-income') { var rw = document.getElementById(id === 'modal-expense' ? 'exp-recur-wrap' : 'inc-recur-wrap'); rw.style.display = ''; rw.querySelector('input').checked = false; }   // v1.31.0
   if (id === 'modal-expense') { splitReset('exp'); setExpMode('normal'); populateExpCats(); populateExpAccounts(); setDateDefault('exp-date'); populateDescSuggestions('expense','exp-desc-suggestions'); }
@@ -5488,7 +5497,8 @@ function renderDashboard() {
 
   var grid = document.getElementById('accountsGrid');
   if (!DB.accounts.length) {
-    grid.innerHTML = '<div class="empty" style="grid-column:span 2"><div class="ei">🏦</div><p>حسابی ثبت نشده</p></div>';
+    grid.innerHTML = '<div class="empty" style="grid-column:span 2"><div class="ei">🏦</div><p>حسابی ثبت نشده</p>' +
+      '<button class="btn-secondary" onclick="enterDemo()" style="width:auto;padding:8px 16px;font-size:12px;">🧪 اول با داده‌ی نمونه امتحان کنید</button></div>';   // v1.34.0
   } else {
     var html = '';
     DB.accounts.forEach(function(a, ai) {
@@ -6658,6 +6668,7 @@ function renderExpensePie(selYear) {
 }
 
 function renderSettings() {
+  var dmS = document.getElementById('demoStatus'); if (dmS) dmS.textContent = DEMO ? 'روشن — خروج' : '←';   // v1.34.0
   renderMonthStartSetting();   // v1.31.0
   renderFxSettingsRow();   // v1.23.0
   var ps = document.getElementById('pinStatus'); if (ps) ps.textContent = getStoredPin() ? '✓ فعال' + (bioEnabled() ? ' • Face ID' : '') : 'فعال نیست';
@@ -7104,6 +7115,7 @@ function exportReportExcel() {
 }
 
 function exportData() {
+  if (demoBlocked()) return;   // v1.34.0
   var jsonStr = JSON.stringify(DB, null, 2);
   var d = J.today();
   var fname = 'pfm-' + d.jy + String(d.jm).padStart(2,'0') + String(d.jd).padStart(2,'0');
@@ -8435,6 +8447,7 @@ function confirmBankSMSImport() {
   }
 
 function importData(e) {
+  if (DEMO) { e.target.value = ''; demoBlocked(); return; }   // v1.34.0
   var file = e.target.files[0]; if (!file) return;
   var isGzip = /\.gz$/i.test(file.name) || file.type === 'application/gzip';
 
@@ -8456,6 +8469,7 @@ function importData(e) {
 }
 
 function confirmClear() {
+  if (demoBlocked()) return;   // v1.34.0
   if (!confirm('تمام داده‌ها پاک شوند؟')) return;
   localStorage.removeItem('pfm_db_v3');
   DB = {accounts:[],funds:[],transactions:[],categories:DB.categories};
@@ -8489,6 +8503,7 @@ function abOpen() {
   });
 }
 function abTx(mode, fn) {
+  if (DEMO && mode !== 'readonly') return Promise.reject(new Error('demo'));   // v1.34.0: در حالت نمایشی هیچ نوشتنی در IndexedDB
   return abOpen().then(function(db) {
     return new Promise(function(resolve, reject) {
       var tx = db.transaction(AB_STORE, mode), st = tx.objectStore(AB_STORE), out;
@@ -8534,7 +8549,7 @@ function abPrune() {
   });
 }
 function autoBackupTick() {
-  if (!autoBackupEnabled() || abBusy) return;
+  if (DEMO || !autoBackupEnabled() || abBusy) return;   // v1.34.0
   var day = todayGregorian();
   if (abLastDay === day) return;
   abBusy = true;
@@ -8591,6 +8606,7 @@ function downloadAutoBackup(rec) {
   exportPlainJSON(rec.data, 'pfm-auto-' + j.jy + String(j.jm).padStart(2,'0') + String(j.jd).padStart(2,'0'));
 }
 function restoreAutoBackup(rec) {
+  if (demoBlocked()) return;   // v1.34.0
   if (!confirm('داده‌های فعلی با نسخه‌ی ' + abWhen(rec) + ' (' + toFa(rec.txCount || 0) + ' تراکنش) جایگزین شود؟\n\n' +
       'یک نسخه از وضعیت فعلی هم با عنوان «قبل از بازگردانی» نگه داشته می‌شود.')) return;
   // اول وضعیت فعلی ذخیره شود؛ اگر نشد، بازگردانی انجام نمی‌شود تا چیزی از دست نرود
@@ -8615,7 +8631,7 @@ document.addEventListener('visibilitychange', function() {
 function updateDateHeader() {
   var now = new Date();
   var j = J.today();
-  document.getElementById('todayDate').textContent = J.dayName(now) + ' · ' + toFa(j.jd) + ' ' + J.monthName(j.jm) + ' ' + toFa(j.jy);
+  document.getElementById('todayDate').textContent = J.dayName(now) + '، ' + toFa(j.jd) + ' ' + J.monthName(j.jm) + ' ' + toFa(j.jy);
 }
 
 // ═══════════════════════════════════════
@@ -8623,13 +8639,16 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.33.0';
+var CURRENT_VERSION = '1.34.0';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.34.0', items:[
+    'حالت نمایشی: از تنظیمات ← «🧪 حالت نمایشی» اپ را با داده‌های ساختگی (حساب، تراکنش، گزارش، وام، چک و طلا) ببینید و امتحان کنید. داده‌های واقعی شما دست نمی‌خورد و هر چه در این حالت ثبت شود ذخیره نمی‌شود؛ با «خروج» در نوار بالا یا بستن اپ همه‌چیز به حالت قبل برمی‌گردد.'
+  ]},
   { v:'1.33.0', items:[
     'راهنمای اپ اضافه شد: کاربر تازه بار اول، روی همین صفحه‌ها و قدم‌به‌قدم، با کارهای اصلی اپ آشنا می‌شود. شما هم هر وقت خواستید آن را از تنظیمات ← «📖 راهنمای اپ» ببینید.'
   ]},
@@ -8788,7 +8807,7 @@ var TOUR_STEPS = [
   { t: '🤝 قروض، وام و چک', x: 'قرض‌های شخصی، وام‌های بانکی با جدول اقساط، و چک‌های صادره و دریافتی. سررسیدهای نزدیک روی داشبورد یادآوری می‌شوند.', el: tourNav(3) },
   { t: '📊 گزارش‌ها', x: 'گزارش ماه یا هر بازه‌ی دلخواه: هزینه به تفکیک دسته، مقایسه با ماه قبل و پارسال، نرخ پس‌انداز و کارنامه‌ی سال، با خروجی PDF و Excel.', el: tourNav(4) },
   { t: '✨ دستیار سین', x: 'ابزارهای کمکی: محاسبه‌گر وام بانکی، خرید و فروش طلا، و زکات. این ابزارها چیزی در حساب‌های شما ثبت نمی‌کنند، مگر خودتان بخواهید.', el: function(){ return document.querySelector('.top-actions .export-fab'); } },
-  { t: '⚙️ تنظیمات و پشتیبان', x: 'دسته‌بندی‌ها، رمز و Face ID، و پشتیبان‌گیری. چون اطلاعات فقط روی همین گوشی است، از «📤 خروجی» مرتب فایل پشتیبان بگیرید و جای امنی نگه دارید. این راهنما را هم هر وقت خواستید از تنظیمات ← «📖 راهنمای اپ» دوباره ببینید.', el: tourNav(5) }
+  { t: '⚙️ تنظیمات و پشتیبان', x: 'دسته‌بندی‌ها، رمز و Face ID، و پشتیبان‌گیری. چون اطلاعات فقط روی همین گوشی است، از «📤 خروجی» مرتب فایل پشتیبان بگیرید و جای امنی نگه دارید. این راهنما را هم هر وقت خواستید از تنظیمات ← «📖 راهنمای اپ» دوباره ببینید؛ برای امتحان بی‌خطر، «🧪 حالت نمایشی» هم همان‌جاست.', el: tourNav(5) }
 ];
 var tourIdx = -1;
 function tourDone() { try { return localStorage.getItem(TOUR_KEY) === '1'; } catch (e) { return true; } }
@@ -8854,6 +8873,162 @@ function tourPlace() {
   if (vh - bot - gap >= ch + 8) card.style.top = (bot + gap) + 'px';            // زیر هدف
   else if (top - gap >= ch + 8) card.style.top = (top - gap - ch) + 'px';      // بالای هدف
   else card.style.top = Math.max(8, (vh - ch) / 2) + 'px';
+}
+
+// ═══════════════════════════════════════
+// DEMO MODE (v1.34.0) — حالت نمایشی با داده‌ی ساختگی
+// ═══════════════════════════════════════
+// ایمنی داده‌ی واقعی (درخواست صادق) — سه لایه:
+// ۱) در حالت نمایشی Storage.prototype.setItem/removeItem/clear برای localStorage به یک «سایه»ی فقط‌حافظه‌ای
+//    (DEMO_SHADOW) می‌روند و getItem اول سایه را می‌خواند؛ پس هیچ کدی (saveDB، تنظیمات، نرخ ارز، …) به localStorage واقعی
+//    نمی‌نویسد. وضعیت فقط در حافظه است: بستن یا بارگذاری دوباره‌ی اپ = خروج خودکار.
+// ۲) کارهای پرخطر قفل‌اند (demoBlocked): پشتیبان/ورود JSON، پاک کردن همه، بازگردانی پشتیبان خودکار، تغییر رمز و Face ID؛
+//    هر نوشتن IndexedDB (abTx readwrite) رد می‌شود و پشتیبان خودکار اجرا نمی‌شود.
+// ۳) خروج: متدهای اصلی برمی‌گردند، رشته‌ی pfm_db_v3 با نسخه‌ی لحظه‌ی ورود مقایسه می‌شود (اگر فرق داشت همان برمی‌گردد)
+//    و DB از نو از localStorage خوانده می‌شود.
+var DEMO = false, DEMO_SHADOW = null, DEMO_ORIG = null, DEMO_REAL_RAW = null;
+var DEMO_BLOCK_MSG = 'در حالت نمایشی این کار انجام نمی‌شود تا داده‌های واقعی شما دست نخورد. اول از حالت نمایشی خارج شوید (نوار بالای صفحه).';
+function demoBlocked() { if (!DEMO) return false; alert(DEMO_BLOCK_MSG); return true; }
+function demoInstallStorage() {
+  var P = Storage.prototype, LS = window.localStorage;
+  DEMO_ORIG = { get: P.getItem, set: P.setItem, rem: P.removeItem, clear: P.clear };
+  DEMO_SHADOW = {};
+  P.setItem = function(k, v) { if (this === LS) { DEMO_SHADOW[String(k)] = String(v); return; } return DEMO_ORIG.set.call(this, k, v); };
+  P.getItem = function(k) { if (this === LS && Object.prototype.hasOwnProperty.call(DEMO_SHADOW, String(k))) return DEMO_SHADOW[String(k)]; return DEMO_ORIG.get.call(this, k); };
+  P.removeItem = function(k) { if (this === LS) { DEMO_SHADOW[String(k)] = null; return; } return DEMO_ORIG.rem.call(this, k); };
+  P.clear = function() { if (this === LS) return; return DEMO_ORIG.clear.call(this); };
+}
+function demoRemoveStorage() {
+  if (!DEMO_ORIG) return;
+  var P = Storage.prototype;
+  P.getItem = DEMO_ORIG.get; P.setItem = DEMO_ORIG.set; P.removeItem = DEMO_ORIG.rem; P.clear = DEMO_ORIG.clear;
+  DEMO_ORIG = null; DEMO_SHADOW = null;
+}
+function demoCloseAll() {
+  document.querySelectorAll('.modal-overlay.open').forEach(function(m){ m.classList.remove('open'); });
+  if (typeof tourIdx !== 'undefined' && tourIdx >= 0) { document.getElementById('tour').style.display = 'none'; tourIdx = -1; }
+  pendingLink = null;
+}
+function enterDemo() {
+  if (DEMO) return;
+  if (!confirm('حالت نمایشی: اپ با داده‌های ساختگی (حساب، تراکنش، وام، چک، طلا) باز می‌شود تا با خیال راحت امتحانش کنید.\n\nداده‌های واقعی شما دست نمی‌خورد و هر چه در این حالت ثبت کنید ذخیره نمی‌شود. با «خروج» در نوار بالا یا بستن اپ، همه‌چیز به حالت قبل برمی‌گردد.\n\nادامه می‌دهید؟')) return;
+  demoCloseAll();
+  DEMO_REAL_RAW = localStorage.getItem('pfm_db_v3');   // پیش از نصب سایه = مقدار واقعی
+  demoInstallStorage();
+  DEMO = true;
+  // نرخ‌ها: اگر کاربر نرخ دارد همان، وگرنه نرخ نمونه (فقط در سایه)
+  var fx = getFx(), now = Date.now(), DEMO_FX = { USD: 2930000, AED: 797500, GOLD18: 258276000 }, fxSet = false;
+  Object.keys(DEMO_FX).forEach(function(c){ if (!fxRateOf(fx, c)) { fx[c] = { rate: DEMO_FX[c], at: now, src: 'manual' }; fxSet = true; } });
+  if (fxSet) localStorage.setItem('pfm_fx', JSON.stringify(fx));   // فقط در سایه
+  DB = JSON.parse(DB_DEFAULT_JSON);
+  buildDemoDB();
+  saveDB();   // → سایه
+  document.getElementById('demoBar').style.display = 'flex';
+  var dash = document.querySelectorAll('#bottomNav .nav-item')[0];
+  navigate('dashboard', dash);
+  var sa = document.getElementById('scrollArea'); if (sa) sa.scrollTop = 0;
+}
+function exitDemo() {
+  if (!DEMO) return;
+  demoCloseAll();
+  demoRemoveStorage();
+  DEMO = false;
+  // لایه‌ی سوم: داده‌ی واقعی باید دقیقاً همان لحظه‌ی ورود باشد
+  var now = localStorage.getItem('pfm_db_v3');
+  if (DEMO_REAL_RAW !== null && now !== DEMO_REAL_RAW) localStorage.setItem('pfm_db_v3', DEMO_REAL_RAW);
+  DEMO_REAL_RAW = null;
+  DB = JSON.parse(DB_DEFAULT_JSON);
+  loadDB();
+  if (typeof catTrendKey !== 'undefined') catTrendKey = null;
+  if (typeof txDateFrom !== 'undefined') { txDateFrom = null; txDateTo = null; }
+  document.getElementById('demoBar').style.display = 'none';
+  var dash = document.querySelectorAll('#bottomNav .nav-item')[0];
+  navigate('dashboard', dash);
+  var sa = document.getElementById('scrollArea'); if (sa) sa.scrollTop = 0;
+}
+
+// ── داده‌ی نمونه (تاریخ‌ها نسبت به امروز؛ مبالغ ثابت تا هر بار یکسان باشد) ──
+function buildDemoDB() {
+  var M = 1000000, today = todayGregorian(), seq = 0;
+  function d(k) { return gAddDays(today, k); }
+  function iso(k, hm) { return d(k) + 'T' + (hm || '12:00') + ':00'; }
+  function id(p) { seq++; return 'demo_' + p + seq; }
+  var start = -125;
+  DB.accounts = [
+    { id: 'demo_a1', name: 'بانک ملت — حقوق', currency: 'IRR', balance: 420 * M, seedBalance: 420 * M, seedDate: d(start), logo: null },
+    { id: 'demo_a2', name: 'بانک سپه — کارت روزانه', currency: 'IRR', balance: 85 * M, seedBalance: 85 * M, seedDate: d(start), logo: null },
+    { id: 'demo_a3', name: 'حساب دلاری', currency: 'USD', balance: 1500, seedBalance: 1500, seedDate: d(start), logo: null },
+    { id: 'demo_a4', name: 'حساب درهمی', currency: 'AED', balance: 3000, seedBalance: 3000, seedDate: d(start), logo: null }
+  ];
+  DB.funds = [
+    { id: 'demo_f1', name: 'زکات', icon: '🕌', balance: 0, seedBalance: 0, totalIn: 0, totalOut: 0, rates: { monthly: 2.5, extra: 0, other: 0 } },
+    { id: 'demo_f2', name: 'سفر', icon: '✈️', balance: 20 * M, seedBalance: 20 * M, totalIn: 20 * M, totalOut: 0, rates: { monthly: 10, extra: 20, other: 0 } }
+  ];
+  DB.categories[0].budget = 180 * M;   // خوراک: بودجه‌ی ماهانه
+  var T = DB.transactions = [];
+  function income(k, amt, group, cat, desc, acc) {
+    var tx = { id: id('tx'), type: 'income', amount: amt, group: group, accountId: acc || 'demo_a1', desc: desc, date: iso(k, '09:30'), incCatId: cat, allocations: [] };
+    DB.funds.forEach(function(f) {
+      var rate = f.rates[group] || 0; if (!rate) return;
+      var v = Math.round(amt * rate / 100);
+      tx.allocations.push({ fundId: f.id, amount: v });
+      T.push({ id: id('tx'), type: 'fund-in', amount: v, fundId: f.id, desc: rate + '٪ از: ' + desc, date: tx.date });
+    });
+    T.push(tx);
+  }
+  function pay(k, amt, cat, desc, acc, hm) { T.push({ id: id('tx'), type: 'expense', amount: amt, catId: cat, accountId: acc || 'demo_a2', desc: desc, date: iso(k, hm || '18:20') }); }
+  // چهار ماه: حقوق، اجاره، قبض، خوراک، رفت‌وآمد، …
+  var groc = [[38, 'سوپرمارکت'], [24, 'میوه و تره‌بار'], [41, 'سوپرمارکت'], [17, 'نانوایی و لبنیات']];
+  var groc2 = [[33, 'سوپرمارکت'], [29, 'میوه و تره‌بار'], [46, 'سوپرمارکت'], [12, 'نانوایی و لبنیات']];
+  for (var m = 3; m >= 0; m--) {
+    var b = -30 * m;   // ابتدای «ماه» نمونه نسبت به امروز
+    if (b - 26 >= start) income(b - 26, 950 * M, 'monthly', 'ic1', 'حقوق ماهانه');
+    if (b - 24 >= start) pay(b - 24, 150 * M, 'cat6', 'اجاره‌ی خانه', 'demo_a1', '10:00');
+    if (b - 23 >= start) T.push({ id: id('tx'), type: 'transfer', amount: 100 * M, fromAccountId: 'demo_a1', toAccountId: 'demo_a2', desc: 'شارژ کارت روزانه', date: iso(b - 23, '10:15'), fee: 0 });
+    var g = m % 2 ? groc : groc2;
+    g.forEach(function(x, i) { var k = b - 22 + i * 6; if (k <= 0 && k >= start) pay(k, x[0] * M + (m * 1.3 * M | 0), 'cat1', x[1]); });
+    if (b - 18 >= start && b - 18 <= 0) pay(b - 18, (14 + m) * M, 'cat7', 'قبض برق و گاز', 'demo_a1', '11:00');
+    if (b - 15 >= start && b - 15 <= 0) pay(b - 15, 9 * M, 'cat2', 'بنزین');
+    if (b - 8 >= start && b - 8 <= 0) pay(b - 8, 6 * M, 'cat2', 'تاکسی اینترنتی');
+    if (b - 12 >= start && b - 12 <= 0) pay(b - 12, (m === 1 ? 32 : 11) * M, 'cat5', m === 1 ? 'رستوران' : 'سینما');
+    if (b - 5 >= start && b - 5 <= 0) pay(b - 5, 4 * M, 'cat7', 'اینترنت');
+  }
+  pay(-70, 27 * M, 'cat3', 'داروخانه');
+  pay(-52, 64 * M, 'cat4', 'پوشاک زمستانی');
+  pay(-33, 45 * M, 'cat8', 'کلاس زبان');
+  pay(-9, 18 * M, 'cat9', 'هدیه‌ی تولد');
+  income(-40, 120 * M, 'extra', 'ic4', 'فروش دوچرخه‌ی قدیمی', 'demo_a2');
+  T.push({ id: id('tx'), type: 'fund-out', amount: 60 * M, fundId: 'demo_f2', accountId: 'demo_a1', desc: 'بلیت سفر مشهد', date: iso(-47, '20:10') });
+  pay(-20, 35, 'cat5', 'اشتراک نرم‌افزار', 'demo_a3');
+  pay(-11, 260, 'cat4', 'خرید از دبی', 'demo_a4');
+  // قرض شخصی داده‌شده
+  DB.loans = [];
+  DB.loans.push({ id: 'demo_l1', type: 'given', no: 1, counterparty: 'علی رضایی', principal: 50 * M, remaining: 50 * M, currency: 'IRR', accountId: 'demo_a1', date: iso(-45), status: 'open', note: '', repayments: [] });
+  T.push({ id: id('tx'), type: 'loan-given', amount: 50 * M, accountId: 'demo_a1', loanId: 'demo_l1', desc: 'قرض به علی رضایی', date: iso(-45) });
+  // وام بانکی: دو قسط پرداخت‌شده، قسط بعدی حدود دو هفته دیگر
+  var lj = jPartsOf(d(-75)), fd = jAddMonths(lj, 1);
+  var l = { id: 'demo_l2', type: 'bank', no: 1, counterparty: 'بانک ملت', principal: 300 * M, remaining: 300 * M, currency: 'IRR', accountId: 'demo_a1', date: iso(-75, '10:00'),
+            status: 'open', note: 'وام خرید خودرو', repayments: [], rate: 23, months: 24, method: 'annuity', installment: bankCalcInstallment(300 * M, 23, 24, 'annuity'),
+            firstDue: jToG(fd.jy, fd.jm, fd.jd), paidBefore: 0, payments: [] };
+  DB.loans.push(l);
+  T.push({ id: id('tx'), type: 'loan-taken', amount: 300 * M, accountId: 'demo_a1', loanId: 'demo_l2', desc: 'دریافت وام ۱ — بانک ملت (وام خرید خودرو)', date: l.date });
+  bankSchedule(l).forEach(function(row) { if (row.due <= today && daysFromToday(row.due) < -1) bankPayCore(l, row.n, row.payment, 'demo_a1', row.due + 'T10:05:00', null); });
+  bankRefresh(l);
+  // چک‌ها، تکراری‌ها، طلا
+  DB.cheques = [
+    { id: 'demo_c1', dir: 'out', amount: 80 * M, due: d(4), party: 'نمایشگاه مبل', sayad: '', accountId: 'demo_a1', desc: 'قسط دوم مبلمان', status: 'pending' },
+    { id: 'demo_c2', dir: 'in', amount: 45 * M, due: d(19), party: 'حسین کریمی', sayad: '', accountId: 'demo_a1', desc: 'بابت فروش لپ‌تاپ', status: 'pending' }
+  ];
+  var rj = jPartsOf(d(3));
+  DB.recurring = [
+    { id: 'demo_r1', type: 'expense', amount: 150 * M, accountId: 'demo_a1', catId: 'cat6', desc: 'اجاره‌ی خانه', every: 1, day: rj.jd, next: d(3), active: true },
+    { id: 'demo_r2', type: 'expense', amount: 4 * M, accountId: 'demo_a2', catId: 'cat7', desc: 'اینترنت', every: 1, day: jPartsOf(d(25)).jd, next: d(25), active: true }
+  ];
+  DB.golds = [
+    { id: 'demo_g1', name: 'سکه‌ی بهار آزادی', w: 8.133, k: 900, p0: 215000000, paid: null, date: d(-300) },
+    { id: 'demo_g2', name: 'گردنبند', w: 12.4, k: 750, p0: null, paid: 2950000000, date: d(-180) }
+  ];
+  DB.alertDismissals = {};
 }
 
 var WN_KEY = 'pfm_seen_version';
