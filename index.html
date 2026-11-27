@@ -96,6 +96,9 @@ html { height:100%; height:-webkit-fill-available; }
 .pkey { height:60px; border-radius:13px; border:none; cursor:pointer; font-family:'Vazirmatn',sans-serif; font-size:22px; font-weight:600; background:rgba(255,255,255,0.6); color:var(--text-main); border:1px solid rgba(255,255,255,0.8); box-shadow:0 2px 8px rgba(0,0,0,0.08); transition:all 0.15s; }
 .pkey:active { background:rgba(255,255,255,0.65); transform:scale(0.93); }
 .pkey.empty { background:transparent; border:none; box-shadow:none; cursor:default; }
+.pkey.bio { cursor:pointer; display:flex; align-items:center; justify-content:center; }   /* v1.28.0: Face ID در جای خالی صفحه‌کلید */
+.pkey.bio svg { width:30px; height:30px; stroke:var(--aqua-deep); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.pkey:disabled { opacity:0.45; }
 .lock-err { color:#8B0000; font-size:12px; margin-top:10px; min-height:18px; text-align:center; }
 .lock-note { font-size:11px; color:rgba(30,43,49,0.75); margin-top:5px; text-align:center; }
 .lock-credit { position:absolute; bottom:calc(20px + var(--safe-bottom)); font-size:13px; font-weight:400; color:var(--text-main); text-align:center; line-height:1.7; font-family:'Vazirmatn',sans-serif; }
@@ -456,7 +459,7 @@ html { height:100%; height:-webkit-fill-available; }
     <button class="pkey" onclick="pinPress(1)">۱</button><button class="pkey" onclick="pinPress(2)">۲</button><button class="pkey" onclick="pinPress(3)">۳</button>
     <button class="pkey" onclick="pinPress(4)">۴</button><button class="pkey" onclick="pinPress(5)">۵</button><button class="pkey" onclick="pinPress(6)">۶</button>
     <button class="pkey" onclick="pinPress(7)">۷</button><button class="pkey" onclick="pinPress(8)">۸</button><button class="pkey" onclick="pinPress(9)">۹</button>
-    <button class="pkey empty"></button><button class="pkey" onclick="pinPress(0)">۰</button><button class="pkey" onclick="pinDel()" style="font-size:18px;">⌫</button>
+    <button class="pkey empty" id="pkBio" onclick="bioUnlock(true)" aria-label="ورود با Face ID"></button><button class="pkey" onclick="pinPress(0)">۰</button><button class="pkey" onclick="pinDel()" style="font-size:18px;">⌫</button>
   </div>
   <div class="lock-err" id="lockErr"></div>
   <div class="lock-note" id="lockNote"></div>
@@ -1268,7 +1271,9 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="form-group"><label class="form-label">رمز جدید (۴ رقم)</label><input type="password" inputmode="numeric" maxlength="4" class="form-input" id="newPin" placeholder="····" style="text-align:center;letter-spacing:8px;font-size:22px;"></div>
     <div class="form-group"><label class="form-label">تکرار رمز</label><input type="password" inputmode="numeric" maxlength="4" class="form-input" id="confirmPin" placeholder="····" style="text-align:center;letter-spacing:8px;font-size:22px;"></div>
     <button class="btn-primary" onclick="savePin()">ذخیره رمز</button>
-    <button class="btn-secondary" onclick="removePin()" style="color:rgba(255,150,150,1);">حذف رمز</button>
+    <label class="settings-item" for="bioOn" id="bioWrap" style="display:none;margin:4px 0 2px;"><span class="si-label">🙂 ورود با Face ID / اثر انگشت</span><input type="checkbox" class="tgl" id="bioOn" onchange="setBioEnabled(this.checked)"></label>
+    <div class="lc-note" id="bioNote" style="display:none;margin:0 0 10px;">بعد از روشن کردن، صفحه‌ی قفل خودش Face ID را می‌خواهد؛ رمز ۴ رقمی همیشه جایگزین است.</div>
+    <button class="btn-secondary" onclick="removePin()" style="color:var(--danger);">حذف رمز</button>
     <button class="btn-secondary" onclick="closeModal('modal-pin')">انصراف</button>
   </div>
 </div>
@@ -1555,9 +1560,112 @@ var pinBuf = '';
 var pinMode = 'unlock';
 var pinStep1 = '';
 
+// v1.28.0: رمز به‌صورت «درهم‌شده» (SHA-256 با نمک تصادفی) ذخیره می‌شود: 'h1:<salt hex>:<hash hex>'.
+// رمزهای قدیمی (۴ رقم ساده) بعد از اولین ورود موفق خودکار تبدیل می‌شوند. اگر crypto.subtle نباشد (فقط http غیر محلی) ساده می‌ماند.
+// تذکر: با ۱۰٬۰۰۰ حالت، درهم‌سازی فقط «دیدن مستقیم» رمز را می‌بندد، نه حدس آفلاین؛ داده‌ها هنوز رمزنگاری نشده‌اند.
 function getStoredPin() { return localStorage.getItem('pfm_pin') || ''; }
-function setStoredPin(p) { localStorage.setItem('pfm_pin', p); }
-function clearStoredPin() { localStorage.removeItem('pfm_pin'); }
+function clearStoredPin() { localStorage.removeItem('pfm_pin'); localStorage.removeItem('pfm_pin_fail'); bioDisable(); }
+function pinHex(buf) { return Array.prototype.map.call(new Uint8Array(buf), function(b){ return ('0' + b.toString(16)).slice(-2); }).join(''); }
+function pinHash(pin, saltHex) {
+  return crypto.subtle.digest('SHA-256', new TextEncoder().encode('pfm|' + saltHex + '|' + pin)).then(pinHex);
+}
+function setStoredPin(p) {
+  if (!(window.crypto && crypto.subtle && window.TextEncoder)) { localStorage.setItem('pfm_pin', p); return Promise.resolve(); }
+  var salt = pinHex(crypto.getRandomValues(new Uint8Array(16)));
+  return pinHash(p, salt).then(function(h){ localStorage.setItem('pfm_pin', 'h1:' + salt + ':' + h); })
+    .catch(function(){ localStorage.setItem('pfm_pin', p); });
+}
+function verifyPin(p) {
+  var st = getStoredPin();
+  if (st.indexOf('h1:') !== 0) {   // قدیمی: ساده → اگر درست بود درهم کن
+    var ok = st === p;
+    if (ok) setStoredPin(p);
+    return Promise.resolve(ok);
+  }
+  var parts = st.split(':');
+  return pinHash(p, parts[1]).then(function(h){ return h === parts[2]; }).catch(function(){ return false; });
+}
+// ─── محدودیت تلاش (v1.28.0): ۵ تلاش آزاد، بعد مکث ۳۰ ثانیه که با هر خطای بعدی دو برابر می‌شود (سقف ۱۵ دقیقه) ───
+// pfm_pin_fail = {n, until}؛ داده هرگز پاک نمی‌شود.
+var PIN_FREE_TRIES = 5, PIN_MAX_WAIT = 900;
+function pinFail() { try { return JSON.parse(localStorage.getItem('pfm_pin_fail') || 'null') || { n: 0, until: 0 }; } catch (e) { return { n: 0, until: 0 }; } }
+var pinWaitTimer = null;
+function pinLockedSecs() { return Math.max(0, Math.ceil((pinFail().until - Date.now()) / 1000)); }
+function pinShowWait() {
+  clearInterval(pinWaitTimer);
+  var tick = function(){
+    var sec = pinLockedSecs(), err = document.getElementById('lockErr');
+    document.querySelectorAll('#lockScreen .pkey:not(.empty)').forEach(function(b){ b.disabled = sec > 0; });
+    if (sec > 0) err.textContent = 'تلاش‌های اشتباه زیاد بود؛ ' + (sec >= 60 ? toFa(Math.ceil(sec / 60)) + ' دقیقه' : toFa(sec) + ' ثانیه') + ' دیگر دوباره امتحان کنید';
+    else { clearInterval(pinWaitTimer); if (/تلاش‌های اشتباه/.test(err.textContent)) err.textContent = ''; }
+  };
+  tick(); pinWaitTimer = setInterval(tick, 1000);
+}
+function pinRegisterFail() {
+  var f = pinFail(); f.n++;
+  if (f.n >= PIN_FREE_TRIES) f.until = Date.now() + Math.min(PIN_MAX_WAIT, 30 * Math.pow(2, f.n - PIN_FREE_TRIES)) * 1000;
+  localStorage.setItem('pfm_pin_fail', JSON.stringify(f));
+  return f;
+}
+
+// ─── Face ID / اثر انگشت (v1.28.0) با WebAuthn — فقط قفل محلی، بدون سرور ───
+// pfm_bio = {id: base64 credential id}. موفقیتِ navigator.credentials.get با userVerification:'required' = تأیید صاحب دستگاه
+// (Face ID/Touch ID یا رمز خود گوشی). مثل رمز ۴ رقمی فقط «قفل صفحه» است. iOS 17.4+ لازم ندارد کاربر اول دکمه‌ای را لمس کند؛
+// قبل از آن ممکن است اجرای خودکار رد شود و کلید Face ID روی صفحه‌کلید قفل جایگزین است.
+function b64(buf) { return btoa(String.fromCharCode.apply(null, new Uint8Array(buf))); }
+function unb64(s) { var b = atob(s), a = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; }
+function bioGet() { try { return JSON.parse(localStorage.getItem('pfm_bio') || 'null'); } catch (e) { return null; } }
+function bioEnabled() { var b = bioGet(); return !!(b && b.id && getStoredPin() && window.PublicKeyCredential); }
+function bioDisable() { localStorage.removeItem('pfm_bio'); }
+function bioSupported() {
+  if (!window.PublicKeyCredential || !PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) return Promise.resolve(false);
+  return PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().catch(function(){ return false; });
+}
+function setBioEnabled(on) {
+  var cb = document.getElementById('bioOn');
+  if (!on) { bioDisable(); renderSettings(); renderBioKey(); return; }
+  if (!getStoredPin()) { alert('اول رمز ۴ رقمی را تنظیم کنید'); cb.checked = false; return; }
+  navigator.credentials.create({ publicKey: {
+    challenge: crypto.getRandomValues(new Uint8Array(32)),
+    rp: { name: 'سین — مدیریت مالی شخصی' },
+    user: { id: crypto.getRandomValues(new Uint8Array(16)), name: 'pfm', displayName: 'مدیریت مالی شخصی' },
+    pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+    authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'discouraged' },
+    timeout: 60000, attestation: 'none'
+  }}).then(function(cred){
+    localStorage.setItem('pfm_bio', JSON.stringify({ id: b64(cred.rawId) }));
+    renderSettings(); renderBioKey();
+    alert('ورود با Face ID روشن شد ✓');
+  }).catch(function(e){
+    cb.checked = false;
+    alert('Face ID فعال نشد' + (e && e.name === 'NotAllowedError' ? ' (لغو شد یا اجازه داده نشد).' : '. ممکن است این گوشی یا مرورگر پشتیبانی نکند.'));
+  });
+}
+var bioBusy = false;
+function bioUnlock(fromTap) {
+  var b = bioGet();
+  if (!bioEnabled() || bioBusy || pinMode !== 'unlock' || !document.getElementById('lockScreen').classList.contains('vis')) return;
+  bioBusy = true;
+  navigator.credentials.get({ publicKey: {
+    challenge: crypto.getRandomValues(new Uint8Array(32)),
+    allowCredentials: [{ type: 'public-key', id: unb64(b.id), transports: ['internal', 'hybrid'] }],
+    userVerification: 'required', timeout: 60000
+  }}).then(function(){
+    bioBusy = false;
+    localStorage.removeItem('pfm_pin_fail'); clearInterval(pinWaitTimer);
+    hideLock();
+  }).catch(function(e){
+    bioBusy = false;
+    if (fromTap) document.getElementById('lockErr').textContent = 'Face ID انجام نشد؛ رمز ۴ رقمی را وارد کنید';
+  });
+}
+var BIO_SVG = '<svg viewBox="0 0 24 24"><path d="M7 3H5a2 2 0 0 0-2 2v2M17 3h2a2 2 0 0 1 2 2v2M7 21H5a2 2 0 0 1-2-2v-2M17 21h2a2 2 0 0 0 2-2v-2"/><path d="M9 9v1.5M15 9v1.5M12 9v4.5h-1M9.5 16.5c1.5 1 3.5 1 5 0"/></svg>';
+function renderBioKey() {
+  var k = document.getElementById('pkBio'); if (!k) return;
+  var on = bioEnabled() && pinMode === 'unlock';
+  k.className = 'pkey empty' + (on ? ' bio' : '');
+  k.innerHTML = on ? BIO_SVG : '';
+}
 
 function showLock() {
   pinBuf = ''; updateDots();
@@ -1569,6 +1677,9 @@ function showLock() {
     pinMode = 'unlock';
     document.getElementById('lockSub').textContent = 'رمز ۴ رقمی خود را وارد کنید';
     document.getElementById('lockNote').textContent = '';
+    renderBioKey();
+    if (pinLockedSecs() > 0) pinShowWait();
+    if (bioEnabled()) setTimeout(function(){ bioUnlock(false); }, 450);   // v1.28.0
   } else {
     pinMode = 'setup1';
     document.getElementById('lockSub').textContent = 'یک رمز ۴ رقمی انتخاب کنید';
@@ -1591,6 +1702,7 @@ function hideLock() {
 
 function pinPress(d) {
   if (pinBuf.length >= 4) return;
+  if (pinMode === 'unlock' && pinLockedSecs() > 0) { pinShowWait(); return; }   // v1.28.0
   pinBuf += String(d); updateDots();
   document.getElementById('lockErr').textContent = '';
   if (pinBuf.length === 4) setTimeout(checkPin, 160);
@@ -1609,18 +1721,22 @@ function updateDots() {
 
 function checkPin() {
   if (pinMode === 'unlock') {
-    if (pinBuf === getStoredPin()) { hideLock(); }
-    else {
-      document.getElementById('lockErr').textContent = 'رمز اشتباه است';
+    var entered = pinBuf;
+    verifyPin(entered).then(function(ok){
+      if (ok) { localStorage.removeItem('pfm_pin_fail'); clearInterval(pinWaitTimer); hideLock(); return; }
+      var f = pinRegisterFail();
       pinBuf = ''; updateDots();
-    }
+      if (f.until > Date.now()) pinShowWait();
+      else document.getElementById('lockErr').textContent = 'رمز اشتباه است' +
+        (PIN_FREE_TRIES - f.n <= 2 ? ' — ' + toFa(PIN_FREE_TRIES - f.n) + ' تلاش دیگر تا مکث' : '');
+    });
   } else if (pinMode === 'setup1') {
     pinStep1 = pinBuf; pinBuf = ''; updateDots();
     pinMode = 'setup2';
     document.getElementById('lockSub').textContent = 'رمز را دوباره وارد کنید';
     document.getElementById('lockNote').textContent = 'تأیید رمز';
   } else if (pinMode === 'setup2') {
-    if (pinBuf === pinStep1) { setStoredPin(pinBuf); hideLock(); }
+    if (pinBuf === pinStep1) { setStoredPin(pinBuf).then(hideLock); }
     else {
       document.getElementById('lockErr').textContent = 'رمزها یکسان نیستند';
       pinBuf = ''; pinStep1 = ''; updateDots();
@@ -1636,12 +1752,14 @@ function savePin() {
   var cp = document.getElementById('confirmPin').value;
   if (!/^\d{4}$/.test(np)) { alert('رمز باید ۴ رقم عددی باشد'); return; }
   if (np !== cp) { alert('رمزها یکسان نیستند'); return; }
-  setStoredPin(np);
-  document.getElementById('newPin').value = '';
-  document.getElementById('confirmPin').value = '';
-  closeModal('modal-pin');
-  renderSettings();
-  alert('رمز ذخیره شد ✓');
+  setStoredPin(np).then(function(){
+    localStorage.removeItem('pfm_pin_fail');
+    document.getElementById('newPin').value = '';
+    document.getElementById('confirmPin').value = '';
+    closeModal('modal-pin');
+    renderSettings();
+    alert('رمز ذخیره شد ✓');
+  });
 }
 
 function removePin() {
@@ -5169,7 +5287,14 @@ function renderExpensePie(selYear) {
 
 function renderSettings() {
   renderFxSettingsRow();   // v1.23.0
-  var ps = document.getElementById('pinStatus'); if (ps) ps.textContent = getStoredPin() ? '✓ فعال' : 'فعال نیست';
+  var ps = document.getElementById('pinStatus'); if (ps) ps.textContent = getStoredPin() ? '✓ فعال' + (bioEnabled() ? ' • Face ID' : '') : 'فعال نیست';
+  // v1.28.0: سوییچ Face ID فقط اگر گوشی/مرورگر پشتیبانی کند و رمز تنظیم شده باشد
+  bioSupported().then(function(ok){
+    var w = document.getElementById('bioWrap'); if (!w) return;
+    var show = ok && !!getStoredPin();
+    w.style.display = show ? '' : 'none'; document.getElementById('bioNote').style.display = show ? '' : 'none';
+    document.getElementById('bioOn').checked = bioEnabled();
+  });
   var cl = document.getElementById('catList');
   var cHtml = '';
   DB.categories.forEach(function(c) {
@@ -7113,13 +7238,17 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.27.1';
+var CURRENT_VERSION = '1.28.0';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.28.0', items:[
+    'ورود با Face ID یا اثر انگشت اضافه شد. از تنظیمات › 🔒 رمز ورود، گزینه‌ی «ورود با Face ID» را روشن کنید؛ رمز ۴ رقمی همیشه جایگزین است.',
+    'برای امنیت بیشتر، بعد از ۵ رمز اشتباه، ورود چند ثانیه تا چند دقیقه متوقف می‌شود. رمز شما هم دیگر به‌صورت خوانا در گوشی ذخیره نمی‌شود.'
+  ]},
   { v:'1.27.0', items:[
     'بخش «💰 طلاهای من» در صفحه‌ی حساب‌ها اضافه شد: زیورآلات، سکه یا طلای آب‌شده را با وزن، عیار و اطلاعات فاکتور خرید ثبت کنید تا ارزش امروز و سود یا زیان هر قطعه و کل طلاها را ببینید.',
     'ارزش طلاها با قیمت روز خودکار به‌روز می‌شود و اگر بخواهید در «کل دارایی با نرخ روز» داشبورد هم حساب می‌شود.',
