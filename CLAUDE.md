@@ -193,6 +193,13 @@
 - **محدودیت تلاش:** `pfm_pin_fail = {n, until}`؛ ۵ تلاش آزاد (`PIN_FREE_TRIES`)، بعد مکث `30 × 2^(n−5)` ثانیه با سقف `PIN_MAX_WAIT` (۹۰۰). کلیدها غیرفعال و شمارش معکوس در `#lockErr` (`pinShowWait`). ورود موفق (رمز یا Face ID) و ذخیره‌ی رمز تازه پاکش می‌کند. **هیچ‌وقت داده را بعد از تلاش‌های اشتباه پاک نکن.**
 - **Face ID / اثر انگشت** با WebAuthn پلتفرم (`authenticatorAttachment:'platform'`، `userVerification:'required'`، بدون `rp.id` = دامنه‌ی `sadeghmajedi.github.io`) — فقط قفل محلی، بدون سرور. `pfm_bio = {id}` (دستگاهی، در پشتیبان نیست). روشن کردن از پنجره‌ی رمز (`#bioOn`، `setBioEnabled` → `credentials.create`)؛ سوییچ فقط وقتی `isUserVerifyingPlatformAuthenticatorAvailable` و رمز تنظیم شده باشد. صفحه‌ی قفل: کلید خالی پایین‌چپ = کلید Face ID (`#pkBio`، `renderBioKey`)، و `showLock` بعد از ۴۵۰ms خودکار `bioUnlock(false)` را صدا می‌زند (iOS 17.4+ برای WebAuthn لمس کاربر لازم ندارد؛ قبل از آن ممکن است رد شود و کلید جایگزین است). حذف رمز (`clearStoredPin`) Face ID را هم خاموش می‌کند. با Chromium و authenticator مجازی (CDP `WebAuthn.*`) تست شد؛ روی آیفون و در حالت نصب‌شده هنوز نه.
 
+## شماره‌ی حساب، میانبر دسته‌بندی و پنجره‌ی پشتیبان (v1.29.0، درخواست صادق)
+
+- **`a.number`** (اختیاری، رشته): فیلد «شماره‌ی حساب یا کارت» در `modal-account` (`#acc-number`) و `modal-edit-account` (`#edit-acc-number`). `cleanAccNumber` رقم‌ها را نگه می‌دارد؛ چند شماره با «،» یا «,» جدا می‌شوند و فاصله/خط‌تیره داخل هر شماره حذف می‌شود (شماره‌ی کارت با فاصله‌ی چهاررقمی یک شماره می‌ماند). خالی = فیلد حذف می‌شود. `accNumberList` فقط بخش‌های ≥۴ رقم را می‌گیرد.
+- **تطبیق پیامک:** `matchAccountByNumber` اول در `a.number` می‌گردد، بعد مثل قبل در رقم‌های نام (`accMatchCandidates`)؛ قاعده همان است: شماره‌ی پیامک داخل شماره‌ی ثبت‌شده، یا شماره‌ی ثبت‌شده (≥۶ رقم) داخل شماره‌ی پیامک. `fuzzyMatchAccountByNumber` هم روی همه‌ی نامزدها. راهنمای ردیف‌های غیر دقیق در صفحه‌ی بررسی حالا به «ویرایش حساب» اشاره می‌کند. انتخاب دستی در صفحه‌ی بررسی هنوز ذخیره نمی‌شود.
+- **میانبر «+»** (`.cat-add` در `.cat-lbl`) کنار «دسته‌بندی» در `modal-expense` و «دسته‌بندی دریافت» در `modal-income` → `openCatsShortcut(kind)`: همان `modal-cats-exp/inc` تنظیمات روی پنجره باز می‌شود (در DOM بعدشان است). `closeModal` برای این دو پنجره `refreshCatChipsFromShortcut()` را صدا می‌زند: چیپ‌ها از نو ساخته می‌شوند، انتخاب قبلی می‌ماند و اگر دسته‌ی تازه‌ای ساخته شده، آخرین دسته‌ی تازه انتخاب می‌شود.
+- **یادآوری پشتیبان** (هر ۱۰ تراکنش در `saveDB`): به‌جای `confirm` و رفتن به تنظیمات، `openBackupRemind(n)` → `modal-backup-remind` (`z-index:520` تا روی هر پنجره‌ی باز بیاید) با دکمه‌ی `backupRemindExport()` = همان `exportData()` و بستن پنجره؛ صفحه‌ی فعلی عوض نمی‌شود.
+
 ## سه نقطه‌ی نسخه — همیشه هرسه با هم عوض شوند
 
 نسخه در سه جای مستقل نگه‌داری می‌شود و **باید همیشه هم‌زمان با هم آپدیت شوند**، وگرنه منطق «بررسی به‌روزرسانی» نادرست کار می‌کند یا کش قدیمی می‌ماند:
@@ -234,7 +241,7 @@ navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
 
 ## داده‌ی کاربر
 
-- کلید اصلی دیتابیس: `localStorage['pfm_db_v3']` (از طریق `saveDB()`/`loadDB()`) — یک شیء JSON با این فیلدها: `accounts`، `funds`، `transactions`، `categories`، `incomeCategories`، و اختیاری `loans` (v1.17.0) و `golds` (v1.27.0).
+- کلید اصلی دیتابیس: `localStorage['pfm_db_v3']` (از طریق `saveDB()`/`loadDB()`) — یک شیء JSON با این فیلدها: `accounts` (فیلد اختیاری `number` از v1.29.0)، `funds`، `transactions`، `categories`، `incomeCategories`، و اختیاری `loans` (v1.17.0) و `golds` (v1.27.0).
 - کلیدهای دیگر:
   - `pfm_pin` — رمز ۴ رقمی قفل اپ (از v1.28.0 درهم‌شده `h1:salt:hash`)
   - `pfm_pin_fail` — (v1.28.0) شمارنده‌ی تلاش اشتباه و زمان پایان مکث

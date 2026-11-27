@@ -229,6 +229,10 @@ html { height:100%; height:-webkit-fill-available; }
 /* ── MODAL ── */
 .modal-overlay { display:none; position:fixed; inset:0; background:rgba(30,43,49,0.3); backdrop-filter:blur(4px); z-index:500; align-items:flex-end; }
 .modal-overlay.open { display:flex; }
+/* v1.29.0: میانبر «+» کنار دسته‌بندی در پنجره‌ی دریافت/پرداخت */
+.cat-lbl { display:flex; align-items:center; justify-content:space-between; }
+.cat-add { width:32px; height:32px; border-radius:50%; border:1.5px solid var(--aqua); background:var(--aqua-pale); color:var(--aqua); font-family:inherit; font-size:18px; font-weight:700; line-height:1; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
+.cat-add:active { background:var(--aqua); color:var(--on-primary); }
 .modal-sheet { background:#fff; border-radius:22px 22px 0 0; padding:18px 16px calc(18px + var(--safe-bottom)); width:100%; max-height:92vh; overflow-y:auto; animation:su 0.3s ease; box-shadow:0 -4px 32px rgba(0,0,0,0.1); }
 @keyframes su{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .modal-handle { width:36px; height:4px; background:var(--border-aqua); border-radius:99px; margin:0 auto 14px; }
@@ -782,7 +786,7 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="form-group"><label class="form-label">واریز به حساب</label><select class="form-select" id="inc-account"></select></div>
     <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="inc-desc" placeholder="حقوق، اجاره، قرض برگشتی، ..." autocomplete="off"><datalist id="inc-desc-suggestions"></datalist></div>
     <div id="inc-allocations" class="hint-box" style="display:none;"></div>
-    <div class="form-group"><label class="form-label">دسته‌بندی دریافت</label><div class="chips" id="inc-cats"></div></div>
+    <div class="form-group"><label class="form-label cat-lbl">دسته‌بندی دریافت<button type="button" class="cat-add" onclick="openCatsShortcut('inc')" aria-label="مدیریت دسته‌بندی‌های دریافت">+</button></label><div class="chips" id="inc-cats"></div></div>
     <button class="btn-primary" id="inc-submit" onclick="submitIncome()">ثبت دریافت</button>
     <button class="btn-secondary" onclick="closeModal('modal-income')">انصراف</button>
   </div>
@@ -801,7 +805,7 @@ html { height:100%; height:-webkit-fill-available; }
     <div id="exp-mode-panel" style="display:none;margin-bottom:12px;"></div>
     <div class="form-group"><label class="form-label">مبلغ (ریال)</label><input type="text" inputmode="numeric" class="form-input" id="exp-amount" placeholder="مثال: 500,000" oninput="sanitizeNumberInput(this)"></div>
     <div class="form-group"><label class="form-label">تاریخ</label><input type="date" class="form-input" id="exp-date"></div>
-    <div class="form-group"><label class="form-label">دسته‌بندی</label><div class="chips" id="exp-cats"></div></div>
+    <div class="form-group"><label class="form-label cat-lbl">دسته‌بندی<button type="button" class="cat-add" onclick="openCatsShortcut('exp')" aria-label="مدیریت دسته‌بندی‌های پرداخت">+</button></label><div class="chips" id="exp-cats"></div></div>
     <div class="form-group"><label class="form-label">پرداخت از حساب</label><select class="form-select" id="exp-account"></select></div>
     <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="exp-desc" placeholder="توضیح مختصر..." autocomplete="off"><datalist id="exp-desc-suggestions"></datalist></div>
     <button class="btn-primary" id="exp-submit" onclick="submitExpense()">ثبت پرداخت</button>
@@ -1158,6 +1162,7 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="modal-handle"></div>
     <div class="modal-title">🏦 افزودن حساب</div>
     <div class="form-group"><label class="form-label">نام حساب</label><input type="text" class="form-input" id="acc-name" placeholder="مثال: بانک ملت"></div>
+    <div class="form-group"><label class="form-label">شماره‌ی حساب یا کارت (اختیاری)</label><input type="text" inputmode="numeric" class="form-input" id="acc-number" placeholder="برای تشخیص خودکار پیامک‌ها" autocomplete="off"><div class="fx-meta" style="margin-top:4px;line-height:1.7;">همان شماره‌ای که در پیامک بانک می‌آید (حساب یا کارت) تا پیامک‌ها خودکار به این حساب وصل شوند؛ ۶ رقم آخر هم کافی است. چند شماره را با «،» جدا کنید.</div></div>
     <div class="form-group"><label class="form-label">ارز</label><select class="form-select" id="acc-currency"><option value="IRR">ریال (IRR)</option><option value="USD">دلار (USD)</option><option value="AED">درهم (AED)</option></select></div>
     <div class="form-group"><label class="form-label">موجودی اولیه</label><input type="text" inputmode="numeric" class="form-input" id="acc-balance" placeholder="0" oninput="sanitizeNumberInput(this)"></div>
     <div class="form-group"><label class="form-label">تاریخ مبنای موجودی</label><input type="date" class="form-input" id="acc-seed-date"></div>
@@ -1381,9 +1386,7 @@ function saveDB() {
     if (txCount > 0 && Math.floor(txCount / 10) > Math.floor(lastRemind / 10)) {
       localStorage.setItem('pfm_last_backup_remind', txCount);
       setTimeout(function() {
-        if (confirm('💾 یادآوری پشتیبان‌گیری\n\n' + toFa(txCount) + ' تراکنش ثبت شده.\nپیشنهاد می‌شود از داده‌ها خروجی JSON بگیرید.\n\nاکنون به صفحه تنظیمات بروید؟')) {
-          navigate('settings', document.querySelector('.nav-item:last-child'));
-        }
+        openBackupRemind(txCount);   // v1.29.0: پنجره روی همین صفحه، نه رفتن به تنظیمات
       }, 800);
     }
   } catch(e) {}
@@ -1842,6 +1845,38 @@ function openModal(id) {
   if (id === 'modal-auto-backup') renderAutoBackupList();
   if (id === 'modal-fund') pickerInit('fa', '🕌', 0, false);   // v1.15.3
 }
+// v1.29.0: میانبر «+» کنار دسته‌بندی در پنجره‌ی دریافت/پرداخت: فهرست دسته‌بندی‌های تنظیمات روی همان پنجره باز می‌شود
+// (modal-cats-* در DOM بعد از modal-income/expense است، پس رویش دیده می‌شود)؛ با بستنش چیپ‌ها تازه می‌شوند،
+// انتخاب قبلی می‌ماند و اگر دسته‌ی تازه‌ای ساخته شده، همان انتخاب می‌شود.
+var catsShortcut = null;   // {kind, before: [ids]}
+function openBackupRemind(txCount) {
+  document.getElementById('br-count').textContent = toFa(txCount);
+  openModal('modal-backup-remind');
+}
+function backupRemindExport() {
+  exportData();
+  closeModal('modal-backup-remind');
+}
+function openCatsShortcut(kind) {
+  var list = kind === 'inc' ? (DB.incomeCategories || []) : DB.categories;
+  catsShortcut = { kind: kind, before: list.map(function(c){ return c.id; }) };
+  renderSettings();
+  openModal(kind === 'inc' ? 'modal-cats-inc' : 'modal-cats-exp');
+}
+function refreshCatChipsFromShortcut() {
+  var k = catsShortcut; catsShortcut = null;
+  if (!k) return;
+  var box = k.kind === 'inc' ? 'inc-cats' : 'exp-cats';
+  var cur = document.querySelector('#' + box + ' .chip.sel');
+  var curId = cur ? cur.dataset.id : null;
+  if (k.kind === 'inc') populateIncCats(); else populateExpCats();
+  var list = k.kind === 'inc' ? (DB.incomeCategories || []) : DB.categories;
+  var added = list.filter(function(c){ return k.before.indexOf(c.id) === -1; });
+  var pick = added.length ? added[added.length - 1].id : curId;
+  if (!pick) return;
+  var chip = document.querySelector('#' + box + ' .chip[data-id="' + pick + '"]');
+  if (chip) selChip(chip, box);
+}
 function closeModal(id) {
   var m = document.getElementById(id);
   // v1.14.1: اگر فیلدی داخل این پنجره فوکوس دارد، اول blur شود تا iOS کیبورد را درست ببندد؛
@@ -1849,6 +1884,7 @@ function closeModal(id) {
   var a = document.activeElement;
   if (a && a !== document.body && m.contains(a) && a.blur) a.blur();
   m.classList.remove('open');
+  if (catsShortcut && (id === 'modal-cats-exp' || id === 'modal-cats-inc')) refreshCatChipsFromShortcut();
   resetViewportSoon();
 }
 function closeModalOutside(e, id) { if (e.target.id === id) closeModal(id); }
@@ -3944,12 +3980,16 @@ function submitAccount() {
   var currency = document.getElementById('acc-currency').value;
   var balance = getNumericValue('acc-balance') || 0;
   var seedDate = document.getElementById('acc-seed-date').value || todayGregorian();
-  DB.accounts.push({id:'acc'+Date.now(),name:name,currency:currency,balance:balance,seedBalance:balance,seedDate:seedDate,logo:pendingLogoData||null});
+  var newAcc = {id:'acc'+Date.now(),name:name,currency:currency,balance:balance,seedBalance:balance,seedDate:seedDate,logo:pendingLogoData||null};
+  var accNo = cleanAccNumber(document.getElementById('acc-number').value);   // v1.29.0: فیلد اختیاری
+  if (accNo) newAcc.number = accNo;
+  DB.accounts.push(newAcc);
   pendingLogoData = null;
   var lpw = document.getElementById('logoPreviewWrap'); if (lpw) lpw.innerHTML = '🏦';
   saveDB(); closeModal('modal-account');
   document.getElementById('acc-name').value = '';
   document.getElementById('acc-balance').value = '';
+  document.getElementById('acc-number').value = '';
   document.getElementById('acc-seed-date').value = '';
   renderAll();
 }
@@ -5370,6 +5410,7 @@ function openEditAccount(id) {
   var acc = DB.accounts.find(function(a){ return a.id===id; }); if (!acc) return;
   document.getElementById('edit-acc-id').value = id;
   document.getElementById('edit-acc-name').value = acc.name;
+  document.getElementById('edit-acc-number').value = acc.number || '';
   document.getElementById('edit-acc-balance').value = addCommas((acc.seedBalance !== undefined) ? acc.seedBalance : acc.balance);
   document.getElementById('edit-acc-currency').value = acc.currency;
   document.getElementById('edit-acc-seed-date').value = acc.seedDate || todayGregorian();
@@ -5383,6 +5424,8 @@ function submitEditAccount() {
   var acc = DB.accounts.find(function(a){ return a.id===id; }); if (!acc) return;
   acc.name = name; acc.seedBalance = balance; acc.balance = balance; acc.currency = document.getElementById('edit-acc-currency').value;
   acc.seedDate = document.getElementById('edit-acc-seed-date').value || acc.seedDate || todayGregorian();
+  var accNo = cleanAccNumber(document.getElementById('edit-acc-number').value);   // v1.29.0
+  if (accNo) acc.number = accNo; else delete acc.number;
   saveDB(); closeModal('modal-edit-account'); renderAll();
 }
 function openEditFund(id) {
@@ -5860,27 +5903,48 @@ function looksLikeOTP(text) {
   return /رمز|پویا|کلمه\s*عبور|یکبار\s*مصرف|ورود|کد\s*تایید|OTP|verification/i.test(text);
 }
 
+// v1.29.0: فیلد اختیاری a.number (رشته؛ چند شماره با «،» جدا، خط‌تیره و فاصله داخل هر شماره مهم نیست).
+// تطبیق هم با رقم‌های این فیلد است و هم مثل قبل با رقم‌های نام حساب.
+function cleanAccNumber(v) {
+  return accNumberList(v).join('، ');
+}
+function accNumberList(v) {
+  return normalizeDigits(String(v || '')).split(/[,،;؛\n]+/).map(function(x){ return x.replace(/\D/g, ''); })
+    .filter(function(x){ return x.length >= 4; });
+}
+function accMatchCandidates(a) {
+  var list = accNumberList(a.number);
+  var nameDigits = normalizeDigits(a.name).replace(/\D/g, '');
+  if (nameDigits) list.push(nameDigits);
+  return list;
+}
 function matchAccountByNumber(accNumRaw) {
   var accNum = normalizeDigits(accNumRaw).replace(/\D/g, '');
   if (!accNum) return null;
-  // تطبیق: شماره‌ی حساب باید در نام حساب PFM موجود باشد
+  // تطبیق: شماره‌ی پیامک در «شماره‌ی حساب یا کارت» یا نام حساب PFM باشد (یا دست‌کم ۶ رقم آخرش)
+  function hit(a) {
+    return accMatchCandidates(a).some(function(d){
+      return d.indexOf(accNum) !== -1 || accNum.indexOf(d) !== -1 && d.length >= 6;
+    });
+  }
+  // اول فیلد شماره (دقیق‌تر)، بعد نام
   return DB.accounts.find(function(a){
-    var nameDigits = normalizeDigits(a.name).replace(/\D/g, '');
-    return nameDigits.indexOf(accNum) !== -1 || accNum.indexOf(nameDigits) !== -1 && nameDigits.length >= 6;
-  }) || null;
+    return accNumberList(a.number).some(function(d){ return d.indexOf(accNum) !== -1 || accNum.indexOf(d) !== -1 && d.length >= 6; });
+  }) || DB.accounts.find(hit) || null;
 }
 
-// تطبیق تقریبی (v1.16.0): اگر شماره‌ی پیامک با رقم‌های نام فقط یک حساب، هم‌طول و فقط در یک رقم
+// تطبیق تقریبی (v1.16.0): اگر شماره‌ی پیامک با شماره‌ی فقط یک حساب، هم‌طول و فقط در یک رقم
 // فرق داشته باشد. ردیف با هشدار نمایش داده می‌شود تا کاربر قبل از ثبت ببیند.
 function fuzzyMatchAccountByNumber(accNumRaw) {
   var accNum = normalizeDigits(accNumRaw).replace(/\D/g, '');
   if (accNum.length < 10) return null;
   var cands = DB.accounts.filter(function(a){
-    var nameDigits = normalizeDigits(a.name).replace(/\D/g, '');
-    if (nameDigits.length !== accNum.length) return false;
-    var diff = 0;
-    for (var i = 0; i < accNum.length; i++) if (accNum[i] !== nameDigits[i]) diff++;
-    return diff === 1;
+    return accMatchCandidates(a).some(function(d){
+      if (d.length !== accNum.length) return false;
+      var diff = 0;
+      for (var i = 0; i < accNum.length; i++) if (accNum[i] !== d[i]) diff++;
+      return diff === 1;
+    });
   });
   return cands.length === 1 ? cands[0] : null;
 }
@@ -6741,10 +6805,10 @@ function renderSMSImportReview() {
         return '<option value="' + a.id + '"' + (r.account && r.account.id === a.id ? ' selected' : '') + '>' + escHtml(a.name) + '</option>';
       }).join('');
       var accNote = r.accMatch === 'fuzzy'
-        ? '⚠️ شماره‌ی پیامک (' + toFa(r.accNum) + ') با شماره‌ی نام این حساب یک رقم فرق دارد. اگر حساب درست است، شماره‌ی نام حساب را اصلاح کنید.'
+        ? '⚠️ شماره‌ی پیامک (' + toFa(r.accNum) + ') با شماره‌ی ثبت‌شده‌ی این حساب یک رقم فرق دارد. اگر حساب درست است، در «ویرایش حساب» شماره را اصلاح کنید.'
         : (r.account
-            ? 'برای تطبیق خودکار در دفعه‌های بعد، شماره‌ی ' + toFa(r.accNum) + ' را در نام حساب بنویسید.'
-            : 'شماره‌ی ' + toFa(r.accNum) + ' در نام هیچ حسابی نیست؛ حساب را انتخاب کنید.');
+            ? 'برای تطبیق خودکار در دفعه‌های بعد، شماره‌ی ' + toFa(r.accNum) + ' را در «ویرایش حساب» ← «شماره‌ی حساب یا کارت» بنویسید.'
+            : 'شماره‌ی ' + toFa(r.accNum) + ' برای هیچ حسابی ثبت نشده؛ حساب را انتخاب کنید.');
       accPickHtml = '<select data-sms-acc="' + r.idx + '" class="form-input" style="margin-top:6px;padding:6px 8px;font-size:12px;height:auto;">' + opts + '</select>' +
         '<div style="font-size:10px;color:#9a7d0a;margin-top:3px;line-height:1.6;">' + accNote + '</div>';
     }
@@ -7238,13 +7302,18 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.28.0';
+var CURRENT_VERSION = '1.29.0';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.29.0', items:[
+    'در «افزودن حساب» و «ویرایش حساب» فیلد اختیاری «شماره‌ی حساب یا کارت» اضافه شد. شماره‌ای را که در پیامک بانک می‌آید آنجا بنویسید تا پیامک‌ها خودکار به همان حساب وصل شوند؛ دیگر لازم نیست شماره را در نام حساب بنویسید.',
+    'کنار «دسته‌بندی» در پنجره‌های پرداخت و دریافت دکمه‌ی «+» آمده است: فهرست دسته‌بندی‌ها همان‌جا باز می‌شود، دسته‌ی تازه بسازید یا حذف کنید و با «بستن» به همان پنجره برگردید. دسته‌ی تازه خودکار انتخاب می‌شود.',
+    'یادآوری پشتیبان‌گیری حالا در همان صفحه‌ای که هستید پنجره‌ی پشتیبان را باز می‌کند و شما را به تنظیمات نمی‌برد.'
+  ]},
   { v:'1.28.0', items:[
     'ورود با Face ID یا اثر انگشت اضافه شد. از تنظیمات › 🔒 رمز ورود، گزینه‌ی «ورود با Face ID» را روشن کنید؛ رمز ۴ رقمی همیشه جایگزین است.',
     'برای امنیت بیشتر، بعد از ۵ رمز اشتباه، ورود چند ثانیه تا چند دقیقه متوقف می‌شود. رمز شما هم دیگر به‌صورت خوانا در گوشی ذخیره نمی‌شود.'
@@ -7491,11 +7560,24 @@ setTimeout(function() {
 }, 2500);
 </script>
 <!-- Edit Account Modal -->
+<!-- v1.29.0: یادآوری پشتیبان‌گیری روی همان صفحه‌ای که کاربر هست (قبلاً confirm و رفتن به تنظیمات) -->
+<div class="modal-overlay" id="modal-backup-remind" style="z-index:520;" onclick="closeModalOutside(event,'modal-backup-remind')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">💾 یادآوری پشتیبان‌گیری</div>
+    <p style="font-size:13px;line-height:1.9;color:var(--text-main);margin:0 0 10px;"><span id="br-count"></span> تراکنش ثبت شده است. پیشنهاد می‌شود یک پشتیبان کامل بگیرید و فایل آن را بیرون از اپ (مثلاً در iCloud Drive یا Google Drive) نگه دارید.</p>
+    <div class="hint-box">💡 داده‌های اپ فقط روی همین گوشی است؛ اگر اپ از صفحه‌ی اصلی حذف شود یا گوشی عوض شود، فقط با همین فایل برمی‌گردد.</div>
+    <button class="btn-primary" onclick="backupRemindExport()" style="margin-top:12px;">💾 ذخیره‌ی پشتیبان کامل (JSON)</button>
+    <button class="btn-secondary" onclick="closeModal('modal-backup-remind')">بعداً</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-edit-account" onclick="closeModalOutside(event,'modal-edit-account')">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-title">✏️ ویرایش حساب</div>
     <div class="form-group"><label class="form-label">نام حساب</label><input type="text" class="form-input" id="edit-acc-name"></div>
+    <div class="form-group"><label class="form-label">شماره‌ی حساب یا کارت (اختیاری)</label><input type="text" inputmode="numeric" class="form-input" id="edit-acc-number" placeholder="برای تشخیص خودکار پیامک‌ها" autocomplete="off"><div class="fx-meta" style="margin-top:4px;line-height:1.7;">همان شماره‌ای که در پیامک بانک می‌آید (حساب یا کارت) تا پیامک‌ها خودکار به این حساب وصل شوند؛ ۶ رقم آخر هم کافی است. چند شماره را با «،» جدا کنید.</div></div>
     <div class="form-group"><label class="form-label">موجودی اولیه</label><input type="text" inputmode="numeric" class="form-input" id="edit-acc-balance" placeholder="مانده پایه حساب" oninput="sanitizeNumberInput(this)"></div>
     <div class="form-group"><label class="form-label">تاریخ مبنای موجودی</label><input type="date" class="form-input" id="edit-acc-seed-date"></div>
     <div class="hint-box">💡 تراکنش‌های قدیمی‌تر از تاریخ مبنا فقط در گزارش‌ها لحاظ می‌شوند و موجودی حساب را تغییر نمی‌دهند.</div>
