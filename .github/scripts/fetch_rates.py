@@ -25,18 +25,40 @@ def bonbast():
     d = json.loads(get('https://bonbast.com/json', body, {
         'Referer': 'https://bonbast.com/', 'X-Requested-With': 'XMLHttpRequest',
         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}))
+    print('bonbast keys:', ','.join(sorted(d.keys())))
     # usd2/aed2 = خرید (تومان) → ریال
-    return {'src': 'bonbast', 'kind': 'buy', 'usd': round(num(d['usd2']) * 10), 'aed': round(num(d['aed2']) * 10),
-            'srcTime': d.get('last_modified', '')}
+    r = {'src': 'bonbast', 'kind': 'buy', 'usd': round(num(d['usd2']) * 10), 'aed': round(num(d['aed2']) * 10),
+         'srcTime': d.get('last_modified', '')}
+    # v1.25.0: قیمت هر گرم طلای ۱۸ عیار (تومان) برای محاسبه‌گر طلا — اختیاری
+    try:
+        if d.get('gol18'):
+            r['gold18'] = round(num(d['gol18']) * 10)
+    except Exception as e:
+        print('gol18 parse failed', repr(e)[:100])
+    return r
 
 def tgju():
     d = json.loads(get('https://call1.tgju.org/ajax.json'))['current']
-    return {'src': 'tgju', 'kind': 'market', 'usd': round(num(d['price_dollar_rl']['p'])), 'aed': round(num(d['price_aed']['p'])),
-            'srcTime': d['price_dollar_rl'].get('t', '')}
+    r = {'src': 'tgju', 'kind': 'market', 'usd': round(num(d['price_dollar_rl']['p'])), 'aed': round(num(d['price_aed']['p'])),
+         'srcTime': d['price_dollar_rl'].get('t', '')}
+    try:
+        if 'geram18' in d:
+            r['gold18'] = round(num(d['geram18']['p']))
+    except Exception as e:
+        print('geram18 parse failed', repr(e)[:100])
+    return r
+
+def tgju_gold18():
+    d = json.loads(get('https://call1.tgju.org/ajax.json'))['current']
+    return round(num(d['geram18']['p']))
 
 def sane(r):
     u, a = r['usd'], r['aed']
     return 100000 <= u <= 1000000000 and 10000 <= a <= 500000000 and 2.5 <= u / a <= 5
+
+def sane_gold(g, usd):
+    # گرم ۱۸ عیار ≈ ۲۰ تا ۲۰۰ دلار
+    return isinstance(g, (int, float)) and 20 * usd <= g <= 200 * usd
 
 res = None
 for fn in (bonbast, tgju):
@@ -53,6 +75,16 @@ if not res:
     print('::warning::no rate source answered; rates.json unchanged')
     sys.exit(0)
 
+if 'gold18' in res and not sane_gold(res['gold18'], res['usd']):
+    print('insane gold18', res['gold18']); res.pop('gold18')
+if 'gold18' not in res and res['src'] != 'tgju':
+    try:
+        g = tgju_gold18()
+        if sane_gold(g, res['usd']):
+            res['gold18'] = g; res['goldSrc'] = 'tgju'
+    except Exception as e:
+        print('tgju gold failed', repr(e)[:200])
+
 path = 'rates.json'
 old = {}
 if os.path.exists(path):
@@ -67,7 +99,7 @@ def age_hours(ts):
         return (datetime.datetime.now(datetime.timezone.utc) - t).total_seconds() / 3600
     except Exception:
         return 1e9
-if old.get('usd') == res['usd'] and old.get('aed') == res['aed'] and old.get('src') == res['src'] and age_hours(old.get('updated', '')) < 12:
+if old.get('usd') == res['usd'] and old.get('aed') == res['aed'] and old.get('src') == res['src'] and old.get('gold18') == res.get('gold18') and age_hours(old.get('updated', '')) < 12:
     print('unchanged', res)
     sys.exit(0)
 
