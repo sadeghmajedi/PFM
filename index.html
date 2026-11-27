@@ -230,6 +230,8 @@ html { height:100%; height:-webkit-fill-available; }
 .modal-overlay { display:none; position:fixed; inset:0; background:rgba(30,43,49,0.3); backdrop-filter:blur(4px); z-index:500; align-items:flex-end; }
 .modal-overlay.open { display:flex; }
 /* v1.29.0: میانبر «+» کنار دسته‌بندی در پنجره‌ی دریافت/پرداخت */
+#modal-cats-exp, #modal-cats-inc { z-index:510; }
+#modal-cat-edit { z-index:515; }
 .cat-lbl { display:flex; align-items:center; justify-content:space-between; }
 .cat-add { width:32px; height:32px; border-radius:50%; border:1.5px solid var(--aqua); background:var(--aqua-pale); color:var(--aqua); font-family:inherit; font-size:18px; font-weight:700; line-height:1; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
 .cat-add:active { background:var(--aqua); color:var(--on-primary); }
@@ -1848,7 +1850,8 @@ function openModal(id) {
 // v1.29.0: میانبر «+» کنار دسته‌بندی در پنجره‌ی دریافت/پرداخت: فهرست دسته‌بندی‌های تنظیمات روی همان پنجره باز می‌شود
 // (modal-cats-* در DOM بعد از modal-income/expense است، پس رویش دیده می‌شود)؛ با بستنش چیپ‌ها تازه می‌شوند،
 // انتخاب قبلی می‌ماند و اگر دسته‌ی تازه‌ای ساخته شده، همان انتخاب می‌شود.
-var catsShortcut = null;   // {kind, before: [ids]}
+// v1.29.1: در «ویرایش تراکنش» هم (box = 'edit-cats')؛ z-index پنجره‌های دسته‌بندی بالاتر است چون modal-edit-tx در DOM بعد از آن‌هاست.
+var catsShortcut = null;   // {kind, box, before: [ids]}
 function openBackupRemind(txCount) {
   document.getElementById('br-count').textContent = toFa(txCount);
   openModal('modal-backup-remind');
@@ -1857,20 +1860,25 @@ function backupRemindExport() {
   exportData();
   closeModal('modal-backup-remind');
 }
-function openCatsShortcut(kind) {
+function openCatsShortcut(kind, box) {
   var list = kind === 'inc' ? (DB.incomeCategories || []) : DB.categories;
-  catsShortcut = { kind: kind, before: list.map(function(c){ return c.id; }) };
+  catsShortcut = { kind: kind, box: box || (kind === 'inc' ? 'inc-cats' : 'exp-cats'), before: list.map(function(c){ return c.id; }) };
   renderSettings();
   openModal(kind === 'inc' ? 'modal-cats-inc' : 'modal-cats-exp');
 }
 function refreshCatChipsFromShortcut() {
   var k = catsShortcut; catsShortcut = null;
   if (!k) return;
-  var box = k.kind === 'inc' ? 'inc-cats' : 'exp-cats';
+  var box = k.box;
   var cur = document.querySelector('#' + box + ' .chip.sel');
   var curId = cur ? cur.dataset.id : null;
-  if (k.kind === 'inc') populateIncCats(); else populateExpCats();
   var list = k.kind === 'inc' ? (DB.incomeCategories || []) : DB.categories;
+  if (box === 'edit-cats') {
+    // همان نشانه‌گذاری openEditTx
+    document.getElementById('edit-cats').innerHTML = list.map(function(c){
+      return '<span class="chip" data-id="' + c.id + '" data-gid="edit-cats" onclick="selChip(this,this.dataset.gid)">' + c.icon + ' ' + c.name + '</span>';
+    }).join('');
+  } else if (k.kind === 'inc') populateIncCats(); else populateExpCats();
   var added = list.filter(function(c){ return k.before.indexOf(c.id) === -1; });
   var pick = added.length ? added[added.length - 1].id : curId;
   if (!pick) return;
@@ -7302,13 +7310,16 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.29.0';
+var CURRENT_VERSION = '1.29.1';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.29.1', items:[
+    'دکمه‌ی «+» کنار دسته‌بندی حالا در پنجره‌ی «ویرایش تراکنش» هم هست: دسته‌ی تازه بسازید یا فهرست را مرتب کنید و با «بستن» به ویرایش همان تراکنش برگردید.'
+  ]},
   { v:'1.29.0', items:[
     'در «افزودن حساب» و «ویرایش حساب» فیلد اختیاری «شماره‌ی حساب یا کارت» اضافه شد. شماره‌ای را که در پیامک بانک می‌آید آنجا بنویسید تا پیامک‌ها خودکار به همان حساب وصل شوند؛ دیگر لازم نیست شماره را در نام حساب بنویسید.',
     'کنار «دسته‌بندی» در پنجره‌های پرداخت و دریافت دکمه‌ی «+» آمده است: فهرست دسته‌بندی‌ها همان‌جا باز می‌شود، دسته‌ی تازه بسازید یا حذف کنید و با «بستن» به همان پنجره برگردید. دسته‌ی تازه خودکار انتخاب می‌شود.',
@@ -7619,7 +7630,7 @@ setTimeout(function() {
     <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="edit-desc" placeholder="توضیح تراکنش" autocomplete="off"><datalist id="edit-desc-suggestions"></datalist></div>
     <div class="form-group"><label class="form-label">تاریخ</label><input type="date" class="form-input" id="edit-date"></div>
     <div class="form-group"><label class="form-label">حساب</label><select class="form-select" id="edit-account" onchange="updateLoanLinkUI()"></select></div>
-    <div class="form-group" id="edit-cat-group" style="display:none;"><label class="form-label">دسته‌بندی</label><div class="chips" id="edit-cats"></div></div>
+    <div class="form-group" id="edit-cat-group" style="display:none;"><label class="form-label cat-lbl">دسته‌بندی<button type="button" class="cat-add" onclick="openCatsShortcut(document.getElementById('edit-tx-type').value === 'income' ? 'inc' : 'exp', 'edit-cats')" aria-label="مدیریت دسته‌بندی‌ها">+</button></label><div class="chips" id="edit-cats"></div></div>
     <div class="form-group" id="edit-fund-wrap" style="display:none;"><label class="form-label">کسر از صندوق (اختیاری)</label><select class="form-select" id="edit-tx-fund"></select><div class="hint-box" style="margin-top:6px;">💡 اگر صندوقی انتخاب شود، این مبلغ علاوه بر حساب، از موجودی آن صندوق هم کم می‌شود. دسته‌بندی هزینه دست‌نخورده می‌ماند.</div></div>
     <div class="form-group" id="edit-group-wrap" style="display:none;"><label class="form-label">گروه دریافتی</label><select class="form-select" id="edit-group"><option value="monthly">ماهیانه</option><option value="extra">اضافی</option><option value="other">سایر</option><option value="none">هیچکدام</option></select></div>
     <div class="form-group" id="edit-convert-wrap" style="display:none;">
