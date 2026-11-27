@@ -401,6 +401,46 @@ html { height:100%; height:-webkit-fill-available; }
 .bar-row.tap .bar-val::after { content:' ‹'; color:var(--aqua); font-weight:700; }
 .cb-hint { font-size:11px; color:var(--text-sub); text-align:center; margin-top:10px; line-height:1.8; }
 .cb-hint:empty { display:none; }
+/* v1.30.0: گزارش‌های تازه */
+.rep-save { font-size:12px; color:var(--text-mid); text-align:center; margin:-4px 0 12px; line-height:1.9; }
+.rep-save:empty { display:none; }
+.rep-save b { unicode-bidi:isolate; color:var(--text-main); }
+.rep-save b.pos { color:var(--success); } .rep-save b.neg { color:var(--danger); }
+.cmp-note { font-size:11px; color:var(--text-sub); line-height:1.8; margin:-2px 0 10px; }
+.cmp-note b { color:var(--text-main); unicode-bidi:isolate; }
+.cmp-head { font-size:11.5px; font-weight:700; color:var(--aqua-deep); margin:12px 0 2px; }
+.cmp-row { padding:8px 4px; margin:0 -4px; border-bottom:1px solid var(--border); cursor:pointer; border-radius:6px; -webkit-tap-highlight-color:transparent; }
+.cmp-row:active { background:var(--aqua-pale); }
+.cmp-row.tot .cmp-name { font-weight:700; }
+.cmp-top { display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--text-main); }
+.cmp-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cmp-amt { font-weight:600; unicode-bidi:isolate; white-space:nowrap; }
+.cmp-sub { display:flex; gap:14px; font-size:10.5px; color:var(--text-sub); margin-top:3px; }
+.cmp-good { color:var(--success); font-weight:600; } .cmp-bad { color:var(--danger); font-weight:600; }
+.cmp-new { color:var(--aqua-deep); font-weight:600; } .cmp-na { color:var(--text-sub); }
+.cmp-more { display:none; font-size:10.5px; color:var(--text-mid); margin-top:4px; }
+.cmp-row.open .cmp-more { display:block; }
+.rep-more { display:block; width:100%; margin-top:10px; padding:8px; background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:10px; color:var(--aqua-deep); font-family:inherit; font-size:12px; font-weight:600; cursor:pointer; }
+.top-row { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--border); }
+.top-row:last-child { border-bottom:none; }
+.top-n { width:20px; height:20px; border-radius:50%; background:var(--aqua-pale); color:var(--aqua-deep); font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.top-main { flex:1; min-width:0; }
+.top-desc { font-size:12px; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.top-meta { font-size:10px; color:var(--text-sub); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.top-amt { font-size:12px; font-weight:600; color:var(--text-main); text-align:left; white-space:nowrap; unicode-bidi:isolate; flex-shrink:0; }
+.top-pct { font-size:10px; color:var(--text-sub); font-weight:400; }
+.bar-fill.pos { background:linear-gradient(90deg,#BFE3CC,var(--success)); }
+.bar-fill.neg { background:linear-gradient(90deg,#F2B8B8,var(--danger)); }
+.bar-val.sv-none { width:auto; color:var(--text-sub); }
+.yr-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+.yr-stat { background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:10px; padding:8px 10px; }
+.yr-stat .l { font-size:10.5px; color:var(--text-sub); }
+.yr-stat .v { font-size:14px; font-weight:700; color:var(--text-main); unicode-bidi:isolate; }
+.yr-stat .c { font-size:10.5px; color:var(--text-sub); margin-top:2px; }
+.yr-list { margin-bottom:4px; }
+.yl-row { display:flex; justify-content:space-between; gap:10px; font-size:11.5px; padding:6px 0; border-bottom:1px dashed var(--border); }
+.yl-row span:first-child { color:var(--text-sub); flex-shrink:0; }
+.yl-row span:last-child { color:var(--text-main); text-align:left; }
 .cb-summary { display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:13px; color:var(--text-mid); padding:10px 12px; background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:12px; margin-bottom:10px; }
 .cb-summary b { font-size:16px; color:var(--aqua-deep); unicode-bidi:isolate; }
 .cb-item { border-bottom:1px solid var(--border); }
@@ -623,10 +663,26 @@ html { height:100%; height:-webkit-fill-available; }
 <!-- PAGE: REPORTS -->
 <div class="page" id="page-reports">
   <div style="display:flex;gap:7px;margin-bottom:10px;">
-    <button onclick="exportReportPDF()" style="flex:1;padding:9px;background:var(--aqua-pale);border:1px solid var(--border-aqua);border-radius:10px;color:var(--aqua);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;">🖨️ گزارش ماه — PDF</button>
-    <button onclick="exportReportExcel()" style="flex:1;padding:9px;background:var(--aqua-pale);border:1px solid var(--border-aqua);border-radius:10px;color:var(--aqua);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;">📊 گزارش ماه — Excel</button>
+    <button id="repPdfBtn" onclick="exportReportPDF()" style="flex:1;padding:9px;background:var(--aqua-pale);border:1px solid var(--border-aqua);border-radius:10px;color:var(--aqua);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;">🖨️ گزارش ماه — PDF</button>
+    <button id="repXlsBtn" onclick="exportReportExcel()" style="flex:1;padding:9px;background:var(--aqua-pale);border:1px solid var(--border-aqua);border-radius:10px;color:var(--aqua);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;">📊 گزارش ماه — Excel</button>
   </div>
-  <div class="month-sel">
+  <!-- v1.30.0: دوره‌ی بخش اول — ماه یا بازه‌ی دلخواه -->
+  <div class="chips" id="repMode" style="margin-bottom:10px;">
+    <span class="chip sel" data-m="month" onclick="setRepMode('month')">📅 ماه</span>
+    <span class="chip" data-m="range" onclick="setRepMode('range')">📆 بازه‌ی دلخواه</span>
+  </div>
+  <div id="repRangePanel" class="txd-panel" style="display:none;margin:0 0 12px;">
+    <div class="chips" id="repRangePresets" style="margin-bottom:10px;">
+      <span class="chip" data-p="3m" onclick="setRepRangePreset('3m')">۳ ماه اخیر</span>
+      <span class="chip" data-p="6m" onclick="setRepRangePreset('6m')">۶ ماه اخیر</span>
+      <span class="chip" data-p="12m" onclick="setRepRangePreset('12m')">۱۲ ماه اخیر</span>
+      <span class="chip" data-p="ytd" onclick="setRepRangePreset('ytd')">از اول امسال</span>
+      <span class="chip" data-p="lastyear" onclick="setRepRangePreset('lastyear')">پارسال</span>
+    </div>
+    <div class="txd-row"><span class="txd-lbl">از</span><select class="form-select" id="rpF-d" onchange="onRepRangeSelect('rpF')"></select><select class="form-select" id="rpF-m" onchange="onRepRangeSelect('rpF')"></select><select class="form-select" id="rpF-y" onchange="onRepRangeSelect('rpF')"></select></div>
+    <div class="txd-row"><span class="txd-lbl">تا</span><select class="form-select" id="rpT-d" onchange="onRepRangeSelect('rpT')"></select><select class="form-select" id="rpT-m" onchange="onRepRangeSelect('rpT')"></select><select class="form-select" id="rpT-y" onchange="onRepRangeSelect('rpT')"></select></div>
+  </div>
+  <div class="month-sel" id="repMonthSel">
     <select id="rep-month" class="form-select" onchange="renderReports()" style="font-size:13px;padding:7px;">
       <option value="1">فروردین</option><option value="2">اردیبهشت</option><option value="3">خرداد</option>
       <option value="4">تیر</option><option value="5">مرداد</option><option value="6">شهریور</option>
@@ -641,13 +697,21 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="rep-box inc-box"><div class="rb-label">درآمد</div><div class="rb-val" id="rep-income">۰</div></div>
     <div class="rep-box exp-box"><div class="rb-label">هزینه</div><div class="rb-val" id="rep-expense">۰</div></div>
   </div>
+  <div class="rep-save" id="rep-save"></div>
   <div class="rep-fx" id="rep-fx"></div>
+  <!-- v1.30.0: از کوچک‌ترین بازه به بزرگ‌ترین — دوره، مقایسه با دوره‌ی قبل/پارسال، سال، کارنامه -->
+  <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">مقایسه با دوره‌ی قبل و پارسال <span id="repCompareLabel" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></div><div id="repCompare"></div></div></div>
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">هزینه بر اساس دسته‌بندی</div><div id="catChart"></div><div class="cb-hint" id="catChartHint">برای دیدن ریز هر دسته، روی آن بزنید</div></div></div>
+  <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">بزرگ‌ترین پرداخت‌ها <span id="repTopLabel" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></div><div id="repTop"></div></div></div>
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">خرج‌کرد صندوق‌ها</div><div id="fundSpendChart"></div></div></div>
   <div class="sec-title rep-sec" id="repSecYear">کل سال</div>
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">میانگین‌ها <span id="avgScopeLabel" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></div><div id="avgStats"></div></div></div>
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">روند درآمد و هزینه ماهانه <span id="trendYearLabel" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></div><div id="trendChart"></div></div></div>
+  <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">نرخ پس‌انداز ماهانه <span id="saveTrendLabel" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></div><div id="saveTrend"></div></div></div>
+  <div class="card" id="catTrendCard"><div class="card-bar"></div><div class="card-body"><div class="card-title">روند یک دسته <span id="catTrendLabel" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></div>
+    <select class="form-select" id="catTrendSel" onchange="onCatTrendSelect(this.value)" style="margin-bottom:12px;font-size:13px;padding:7px;"></select><div id="catTrend"></div></div></div>
   <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title">سهم هزینه‌ها از کل سال <span id="pieYearLabel" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></div><div id="expensePie"></div></div></div>
+  <div class="card"><div class="card-bar"></div><div class="card-body"><div class="card-title" id="yearCardTitle">📜 کارنامه‌ی سال</div><div id="yearCard"></div></div></div>
 </div>
 
 <!-- PAGE: SETTINGS -->
@@ -1256,6 +1320,7 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="cb-summary" id="cb-summary"></div>
     <div id="cb-list"></div>
     <div class="cb-hint">آیتم‌ها از روی توضیحات تراکنش‌ها ساخته می‌شوند؛ تفاوت «ی/ک» عربی و فارسی، نیم‌فاصله و فاصله‌ی اضافه نادیده گرفته می‌شود.</div>
+    <button class="btn-secondary" id="cb-trend" onclick="showCatTrend()">📈 روند این دسته در سال</button>
     <button class="btn-secondary" onclick="closeModal('modal-cat-break')">بستن</button>
   </div>
 </div>
@@ -4927,19 +4992,14 @@ function renderReports() {
     repMonthSel.value = String(today.jm);
   }
 
-  var selYear = repYearSel ? parseInt(repYearSel.value) : today.jy;
-  var selMonth = repMonthSel ? parseInt(repMonthSel.value) : today.jm;
-  var curMonth = selYear + '-' + String(selMonth).padStart(2,'0');
-
-  var monthTxs = DB.transactions.filter(function(t) {
-    var d = new Date(t.date);
-    var j = J.toJalali(d.getFullYear(), d.getMonth()+1, d.getDate());
-    return j.jy + '-' + String(j.jm).padStart(2,'0') === curMonth;
-  });
-
-  repSel = { y: selYear, m: selMonth };
-  // v1.15.2: عنوان دو بخش صفحه — ماه انتخاب‌شده و کل همان سال
-  document.getElementById('repSecMonth').textContent = '📅 ' + J.monthName(selMonth) + ' ' + toFa(String(selYear));
+  // v1.30.0: دوره‌ی بخش اول = ماه یا بازه‌ی دلخواه (repPeriod)؛ بخش سال = سالِ ماه، یا سالِ پایان بازه
+  var P = repPeriod();
+  var selYear = P.year;
+  var monthTxs = repTxsIn(P.from, P.to);
+  repSel = { y: selYear, m: P.m, from: P.from, to: P.to, label: P.label, unit: P.unit };
+  repYearShown = selYear;
+  // v1.15.2: عنوان دو بخش صفحه — دوره‌ی انتخاب‌شده و کل همان سال
+  document.getElementById('repSecMonth').textContent = (P.mode === 'month' ? '📅 ' : '📆 ') + P.label;
   document.getElementById('repSecYear').textContent = '🗓️ کل سال ' + toFa(String(selYear));
   // v1.15.0: جمع‌ها و نمودارهای گزارش فقط ریالی‌اند؛ ارزهای دیگر جدا (پایین کادرها و پایین نمودار دسته‌ها)
   var filteredTxs = monthTxs.filter(isRialTx);
@@ -4961,7 +5021,7 @@ function renderReports() {
     var parts = [];
     if (fx[cur].inc) parts.push('درآمد ' + '<b dir="ltr">' + fmtCur(fx[cur].inc, cur) + '</b>');
     if (fx[cur].pay) parts.push('هزینه ' + '<b dir="ltr">' + fmtCur(fx[cur].pay, cur) + '</b>');
-    return '<div>' + curLabel(cur) + 'ی این ماه (جدا از جمع ریالی): ' + parts.join(' · ') + '</div>';
+    return '<div>' + curLabel(cur) + 'ی این ' + P.unit + ' (جدا از جمع ریالی): ' + parts.join(' · ') + '</div>';
   }).join('');
 
   // Category chart — هزینه‌ها و پرداخت‌های صندوق بر اساس دسته‌بندی، هر ارز جدا؛ لمس هر ردیف = ریز همان دسته
@@ -4990,9 +5050,15 @@ function renderReports() {
   }
   document.getElementById('catChartHint').textContent = curs.length ? 'برای دیدن ریز هر دسته، روی آن بزنید' : '';
 
+  document.getElementById('rep-save').innerHTML = savingsLineHtml(income, expense);   // v1.30.0
+  renderRepCompare(P, rialSums(monthTxs));
+  renderRepTop(monthTxs, P);
   renderAvgStats(selYear);
   renderTrendChart(selYear);
+  renderSaveTrend(selYear);
+  renderCatTrend(selYear);
   renderExpensePie(selYear);
+  renderYearCard(selYear);
   renderFundSpend(filteredTxs);
 }
 
@@ -5004,15 +5070,396 @@ function renderReports() {
 // ═══════════════════════════════════════
 // آیتم = تراکنش‌هایی که توضیحشان بعد از normalizeFa یکی است (ی/ک عربی و فارسی، نیم‌فاصله، فاصله‌ی اضافه نادیده).
 // فقط نمایش است؛ داده دست نمی‌خورد. هر ارز جدا (key + cur از ردیف نمودار می‌آید).
+// ═══════════════════════════════════════
+// REPORT PERIOD + NEW REPORTS (v1.30.0)
+// ═══════════════════════════════════════
+// بخش اول گزارش‌ها روی یک «دوره» کار می‌کند: «ماه» (rep-month / rep-year) یا «بازه‌ی دلخواه» (repRange؛ فقط در حافظه).
+// بخش دوم روی کل سال: در حالت ماه = rep-year، در حالت بازه = سالِ روز پایان بازه.
+// همه‌ی جمع‌ها مثل قبل فقط ریالی‌اند (isRialTx)؛ ارزهای دیگر جدا. تاریخ = بخش تاریخ t.date با مقایسه‌ی رشته‌ای (مثل فیلتر تراکنش‌ها).
+// «درآمد» = income، «هزینه» = expense + fund-out (همان کادرهای قبلی)؛ قرض‌ها، انتقال‌ها و اصل اقساط وام بیرون‌اند.
+var repMode = 'month';
+var repRange = null;          // {from, to, preset}
+var repYearShown = null;      // سال بخش دوم که الان نمایش داده می‌شود
+var catTrendKey = null, catTrendLabel = null;   // دسته‌ی انتخاب‌شده در «روند یک دسته»
+var cmpShowAll = false;
+var CMP_LIMIT = 8;
+
+function gAddDays(gStr, k) { var p = gStr.split('-'); var d = new Date(+p[0], +p[1] - 1, +p[2]); d.setDate(d.getDate() + k); return gDateStr(d); }
+function gDayCount(a, b) { var pa = a.split('-'), pb = b.split('-'); return Math.round((new Date(+pb[0], +pb[1] - 1, +pb[2]) - new Date(+pa[0], +pa[1] - 1, +pa[2])) / 86400000) + 1; }
+function jShiftYear(gStr, k) { var j = jPartsOf(gStr), jy = j.jy + k; return jToG(jy, j.jm, Math.min(j.jd, jMonthLen(jy, j.jm))); }
+function jYearBounds(jy) { return { from: jToG(jy, 1, 1), to: jToG(jy, 12, jMonthLen(jy, 12)) }; }
+function txDay(t) { return String(t.date || '').slice(0, 10); }
+function repTxsIn(a, b) { return DB.transactions.filter(function(t){ var d = txDay(t); return d >= a && d <= b; }); }
+function isPayTx(t) { return t.type === 'expense' || t.type === 'fund-out'; }
+function rialSums(txs) {
+  var r = { inc: 0, pay: 0, byKey: {}, labels: {} };
+  txs.forEach(function(t) {
+    if (!isRialTx(t)) return;
+    if (t.type === 'income') r.inc += t.amount;
+    else if (isPayTx(t)) {
+      r.pay += t.amount;
+      var g = expGroupOf(t);
+      r.byKey[g.key] = (r.byKey[g.key] || 0) + t.amount; r.labels[g.key] = g.label;
+    }
+  });
+  return r;
+}
+function rialStr(n) { return (n < 0 ? 'منفی ' : '') + toFa(addCommas(Math.round(Math.abs(n)))); }
+function rateStr(r) { return r >= 0 ? faPct(r) : 'منفی ' + faPct(-r); }
+
+// دوره‌ی بخش اول + دو دوره‌ی مقایسه. ماه جاری (تمام‌نشده) با «روز ۱ تا امروز» همان ماه‌ها مقایسه می‌شود، نه کل ماه.
+function repPeriod() {
+  var today = todayGregorian();
+  if (repMode === 'range' && repRange) {
+    var from = repRange.from, to = repRange.to;
+    var effTo = (today >= from && today < to) ? today : to;
+    var days = gDayCount(from, effTo);
+    return { mode: 'range', from: from, to: to, label: jLabel(from) + ' تا ' + jLabel(to), unit: 'بازه', partial: effTo !== to, effTo: effTo, days: days,
+      prev: { from: gAddDays(from, -days), to: gAddDays(from, -1), short: 'بازه‌ی قبل' },
+      ly: { from: jShiftYear(from, -1), to: jShiftYear(effTo, -1), short: 'پارسال' },
+      year: jPartsOf(to).jy, tag: from + '_' + to };
+  }
+  var t = J.today();
+  var ys = document.getElementById('rep-year'), ms = document.getElementById('rep-month');
+  var y = ys && ys.value ? parseInt(ys.value, 10) : t.jy, m = ms && ms.value ? parseInt(ms.value, 10) : t.jm;
+  var len = jMonthLen(y, m), mFrom = jToG(y, m, 1), mTo = jToG(y, m, len);
+  var partial = today >= mFrom && today < mTo;
+  var upto = partial ? jPartsOf(today).jd : len;
+  var py = m === 1 ? y - 1 : y, pm = m === 1 ? 12 : m - 1;
+  var pLen = jMonthLen(py, pm), lLen = jMonthLen(y - 1, m);
+  return { mode: 'month', y: y, m: m, from: mFrom, to: mTo, label: J.monthName(m) + ' ' + toFa(y), unit: 'ماه', partial: partial, upto: upto,
+    prev: { from: jToG(py, pm, 1), to: jToG(py, pm, partial ? Math.min(upto, pLen) : pLen), short: 'ماه قبل', name: J.monthName(pm) + ' ' + toFa(py) },
+    ly: { from: jToG(y - 1, m, 1), to: jToG(y - 1, m, partial ? Math.min(upto, lLen) : lLen), short: 'پارسال', name: J.monthName(m) + ' ' + toFa(y - 1) },
+    year: y, tag: y + String(m).padStart(2, '0') };
+}
+
+// ── انتخاب دوره ──
+function setRepMode(m) {
+  if (m === 'range' && !repRange) { setRepRangePreset('3m'); return; }
+  repMode = m;
+  updateRepModeUI(); renderReports();
+}
+function updateRepModeUI() {
+  document.querySelectorAll('#repMode .chip').forEach(function(c){ c.classList.toggle('sel', c.dataset.m === repMode); });
+  document.getElementById('repMonthSel').style.display = repMode === 'month' ? '' : 'none';
+  document.getElementById('repRangePanel').style.display = repMode === 'range' ? '' : 'none';
+  document.querySelectorAll('#repRangePresets .chip').forEach(function(c){ c.classList.toggle('sel', !!repRange && c.dataset.p === repRange.preset); });
+  var u = repMode === 'range' ? 'بازه' : 'ماه';
+  document.getElementById('repPdfBtn').textContent = '🖨️ گزارش ' + u + ' — PDF';
+  document.getElementById('repXlsBtn').textContent = '📊 گزارش ' + u + ' — Excel';
+}
+// «N ماه اخیر» = از اول ماه شمسیِ (N−1) ماه پیش تا امروز
+function setRepRangePreset(p) {
+  var t = J.today(), from, to = todayGregorian();
+  if (p === '3m' || p === '6m' || p === '12m') { var s = jAddMonths({ jy: t.jy, jm: t.jm, jd: 1 }, -(parseInt(p, 10) - 1)); from = jToG(s.jy, s.jm, 1); }
+  else if (p === 'ytd') from = jToG(t.jy, 1, 1);
+  else if (p === 'lastyear') { var b = jYearBounds(t.jy - 1); from = b.from; to = b.to; }
+  else return;
+  applyRepRange(from, to, p);
+}
+function applyRepRange(from, to, preset) {
+  repMode = 'range';
+  repRange = { from: from, to: to, preset: preset };
+  fillTxDateSelects('rpF', from); fillTxDateSelects('rpT', to);
+  updateRepModeUI(); renderReports();
+}
+function onRepRangeSelect(px) {
+  var f = readTxDateSelects('rpF'), t = readTxDateSelects('rpT');
+  if (!f || !t) return;
+  if (f > t) { if (px === 'rpF') t = f; else f = t; }
+  applyRepRange(f, t, null);
+}
+
+// ── ۲. نرخ پس‌انداز دوره (زیر کادرهای درآمد و هزینه) ──
+function savingsLineHtml(inc, pay) {
+  if (!inc) return pay ? 'درآمدی ثبت نشده؛ نرخ پس‌انداز قابل محاسبه نیست' : '';
+  var r = (inc - pay) / inc * 100;
+  return 'نرخ پس‌انداز' + (hasForeignAccounts() ? ' (ریالی)' : '') + ': <b class="' + (r >= 0 ? 'pos' : 'neg') + '">' + rateStr(r) + '</b>' +
+    ' · مانده‌ی درآمد پس از هزینه: <b>' + rialStr(inc - pay) + ' ریال</b>';
+}
+
+// ── ۱. مقایسه با دوره‌ی قبل و همان دوره‌ی پارسال ──
+function chgHtml(cur, base, goodWhenUp) {
+  if (!base && !cur) return '<span class="cmp-na">—</span>';
+  if (!base) return '<span class="cmp-new">تازه</span>';
+  var p = (cur - base) / base * 100;
+  if (Math.abs(p) < 0.5) return '<span class="cmp-na">بدون تغییر</span>';
+  var up = p > 0, good = goodWhenUp ? up : !up;
+  return '<span class="' + (good ? 'cmp-good' : 'cmp-bad') + '">' + faPct(Math.abs(p)) + (up ? ' بیشتر' : ' کمتر') + '</span>';
+}
+function renderRepCompare(P, S) {
+  var el = document.getElementById('repCompare'); if (!el) return;
+  document.getElementById('repCompareLabel').textContent = hasForeignAccounts() ? '(ریالی)' : '';
+  var A = rialSums(repTxsIn(P.prev.from, P.prev.to)), B = rialSums(repTxsIn(P.ly.from, P.ly.to));
+  if (!S.inc && !S.pay && !A.inc && !A.pay && !B.inc && !B.pay) { el.innerHTML = '<div class="empty" style="padding:12px;"><p style="font-size:12px;">داده‌ای برای مقایسه نیست</p></div>'; return; }
+  var span = function(x){ return jLabel(x.from) + ' تا ' + jLabel(x.to); };
+  var note;
+  if (P.mode === 'month') {
+    note = '«ماه قبل» = ' + P.prev.name + '، «پارسال» = ' + P.ly.name + '.' +
+      (P.partial ? ' این ماه هنوز تمام نشده؛ هر سه ماه از روز ۱ تا ' + toFa(P.upto) + ' مقایسه می‌شوند.' : '');
+  } else {
+    note = '«بازه‌ی قبل» = ' + toFa(P.days) + ' روزِ پیش از آن (' + span(P.prev) + ')، «پارسال» = ' + span(P.ly) + '.' +
+      (P.partial ? ' بازه هنوز تمام نشده؛ مقایسه تا امروز است.' : '');
+  }
+  function row(cls, name, cur, a, b, goodUp) {
+    return '<div class="cmp-row' + cls + '"><div class="cmp-top"><span class="cmp-name">' + name + '</span><span class="cmp-amt">' + rialStr(cur) + '</span></div>' +
+      '<div class="cmp-sub"><span>' + P.prev.short + ': ' + chgHtml(cur, a, goodUp) + '</span><span>' + P.ly.short + ': ' + chgHtml(cur, b, goodUp) + '</span></div>' +
+      '<div class="cmp-more">' + P.prev.short + ': ' + rialStr(a) + ' ریال · ' + P.ly.short + ': ' + rialStr(b) + ' ریال</div></div>';
+  }
+  var html = '<div class="cmp-note">' + note + '</div>' +
+    row(' tot', '💵 درآمد', S.inc, A.inc, B.inc, true) + row(' tot', '💸 هزینه‌ی کل', S.pay, A.pay, B.pay, false);
+  var keys = {};
+  [S, A, B].forEach(function(x){ Object.keys(x.byKey).forEach(function(k){ keys[k] = x.labels[k]; }); });
+  var list = Object.keys(keys).map(function(k){ return { k: k, label: keys[k], c: S.byKey[k] || 0, a: A.byKey[k] || 0, b: B.byKey[k] || 0 }; })
+    .sort(function(x, y){ return (y.c - x.c) || (y.a - x.a) || (y.b - x.b); });
+  var shown = cmpShowAll ? list : list.slice(0, CMP_LIMIT);
+  if (list.length) html += '<div class="cmp-head">به تفکیک دسته</div>';
+  html += shown.map(function(r){ return row('', r.label, r.c, r.a, r.b, false); }).join('');
+  if (list.length > CMP_LIMIT) html += '<button type="button" class="rep-more" onclick="cmpShowAll=!cmpShowAll;renderReports()">' + (cmpShowAll ? 'نمایش کمتر' : 'نمایش همه‌ی دسته‌ها (' + toFa(list.length) + ')') + '</button>';
+  html += '<div class="cb-hint">برای دیدن مبلغ‌های دوره‌های قبل، روی هر ردیف بزنید.</div>';
+  el.innerHTML = html;
+}
+
+// ── ۴. بزرگ‌ترین پرداخت‌های دوره ──
+function renderRepTop(txs, P) {
+  var el = document.getElementById('repTop'); if (!el) return;
+  document.getElementById('repTopLabel').textContent = '(' + P.label + ')';
+  var pays = txs.filter(isPayTx);
+  var rial = pays.filter(isRialTx).sort(function(a, b){ return b.amount - a.amount; });
+  if (!pays.length) { el.innerHTML = '<div class="empty" style="padding:12px;"><p style="font-size:12px;">پرداختی ثبت نشده</p></div>'; return; }
+  var total = rial.reduce(function(s, t){ return s + t.amount; }, 0);
+  function item(t, i, cur) {
+    var g = expGroupOf(t), acc = DB.accounts.find(function(a){ return a.id === t.accountId; });
+    var desc = String(t.desc || '').trim();
+    return '<div class="top-row"><span class="top-n">' + toFa(i + 1) + '</span><div class="top-main">' +
+      '<div class="top-desc">' + (desc ? escHtml(desc) : g.label) + '</div>' +
+      '<div class="top-meta">' + (desc ? g.label + ' · ' : '') + jLabel(txDay(t)) + (acc && DB.accounts.length > 1 ? ' · ' + escHtml(acc.name) : '') + '</div></div>' +
+      '<div class="top-amt">' + (cur === 'IRR' ? toFa(addCommas(Math.round(t.amount))) : toCurrency(t.amount, cur)) +
+      (cur === 'IRR' && total ? '<div class="top-pct">' + faPct(t.amount / total * 100) + ' از کل</div>' : '') + '</div></div>';
+  }
+  var html = '';
+  if (rial.length) {
+    var top = rial.slice(0, 10), topSum = top.reduce(function(s, t){ return s + t.amount; }, 0);
+    html += '<div class="cmp-note">' + (rial.length > top.length
+      ? 'این ' + toFa(top.length) + ' پرداخت ' + faPct(topSum / total * 100) + ' از کل هزینه‌ی ریالی این ' + P.unit + ' است (' + toFa(rial.length) + ' پرداخت).'
+      : 'همه‌ی ' + toFa(rial.length) + ' پرداخت ریالی این ' + P.unit + '.') + '</div>';
+    html += top.map(function(t, i){ return item(t, i, 'IRR'); }).join('');
+  }
+  var fx = {};
+  pays.forEach(function(t){ var c = txCur(t); if (c !== 'IRR') (fx[c] = fx[c] || []).push(t); });
+  Object.keys(fx).sort(curSort).forEach(function(c) {
+    html += '<div class="cc-cur"' + (html ? '' : ' style="border-top:none;margin-top:0;padding-top:0;"') + '>' + curLabel(c) + 'ی (۳ پرداخت بزرگ)</div>';
+    html += fx[c].sort(function(a, b){ return b.amount - a.amount; }).slice(0, 3).map(function(t, i){ return item(t, i, c); }).join('');
+  });
+  el.innerHTML = html;
+}
+
+// ── ۲. روند نرخ پس‌انداز ماهانه در سال ──
+function renderSaveTrend(jy) {
+  var el = document.getElementById('saveTrend'); if (!el) return;
+  document.getElementById('saveTrendLabel').textContent = '(' + toFa(String(jy)) + (hasForeignAccounts() ? '، ریالی' : '') + ')';
+  var inc = {}, pay = {}, ti = 0, tp = 0;
+  DB.transactions.forEach(function(t) {
+    if (!isRialTx(t) || (t.type !== 'income' && !isPayTx(t))) return;
+    var j = jPartsOf(txDay(t)); if (j.jy !== jy) return;
+    if (t.type === 'income') { inc[j.jm] = (inc[j.jm] || 0) + t.amount; ti += t.amount; }
+    else { pay[j.jm] = (pay[j.jm] || 0) + t.amount; tp += t.amount; }
+  });
+  var html = '';
+  for (var m = 1; m <= 12; m++) {
+    if (!inc[m] && !pay[m]) continue;
+    if (!inc[m]) { html += '<div class="bar-row"><div class="bar-label">' + J.monthName(m) + '</div><div class="bar-wrap"></div><div class="bar-val sv-none">بدون درآمد</div></div>'; continue; }
+    var r = (inc[m] - (pay[m] || 0)) / inc[m] * 100;
+    html += '<div class="bar-row"><div class="bar-label">' + J.monthName(m) + '</div><div class="bar-wrap"><div class="bar-fill ' + (r >= 0 ? 'pos' : 'neg') + '" style="width:' + Math.min(100, Math.abs(r)).toFixed(1) + '%"></div></div><div class="bar-val">' + rateStr(r) + '</div></div>';
+  }
+  if (!html) { el.innerHTML = '<div class="empty" style="padding:12px;"><p style="font-size:12px;">داده‌ای برای این سال نیست</p></div>'; return; }
+  el.innerHTML = html + '<div class="cmp-note" style="margin:8px 0 0;">' +
+    (ti ? 'نرخ پس‌انداز کل سال: <b>' + rateStr((ti - tp) / ti * 100) + '</b>. ' : '') +
+    'نرخ پس‌انداز = (درآمد − هزینه) ÷ درآمد؛ نوار سبز یعنی پس‌انداز و قرمز یعنی هزینه بیشتر از درآمد بوده. قرض‌ها، انتقال‌ها و اصل اقساط وام جزو آن نیستند؛ سود وام هزینه است.</div>';
+}
+
+// ── ۳. روند یک دسته در سال ──
+function renderCatTrend(jy) {
+  var el = document.getElementById('catTrend'), sel = document.getElementById('catTrendSel');
+  if (!el || !sel) return;
+  document.getElementById('catTrendLabel').textContent = '(' + toFa(String(jy)) + (hasForeignAccounts() ? '، ریالی' : '') + ')';
+  var by = {}, tot = {}, labels = {};
+  DB.transactions.forEach(function(t) {
+    if (!isPayTx(t) || !isRialTx(t)) return;
+    var j = jPartsOf(txDay(t)); if (j.jy !== jy) return;
+    var g = expGroupOf(t);
+    labels[g.key] = g.label; tot[g.key] = (tot[g.key] || 0) + t.amount;
+    by[g.key] = by[g.key] || {}; by[g.key][j.jm] = (by[g.key][j.jm] || 0) + t.amount;
+  });
+  if (catTrendKey && !tot[catTrendKey] && catTrendLabel) { labels[catTrendKey] = catTrendLabel; tot[catTrendKey] = 0; by[catTrendKey] = {}; }
+  var keys = Object.keys(tot).sort(function(a, b){ return tot[b] - tot[a]; });
+  if (!keys.length) { sel.style.display = 'none'; el.innerHTML = '<div class="empty" style="padding:12px;"><p style="font-size:12px;">داده‌ای برای این سال نیست</p></div>'; return; }
+  if (!catTrendKey || !(catTrendKey in tot)) catTrendKey = keys[0];
+  sel.style.display = '';
+  sel.innerHTML = keys.map(function(k){ return '<option value="' + escHtml(k) + '"' + (k === catTrendKey ? ' selected' : '') + '>' + labels[k] + '</option>'; }).join('');
+  var t = J.today(), lastM = jy === t.jy ? t.jm : (jy < t.jy ? 12 : 0);
+  var d = by[catTrendKey], max = 1, hi = null;
+  for (var m = 1; m <= lastM; m++) { var v = d[m] || 0; if (v > max) max = v; if (v && (!hi || v > d[hi])) hi = m; }
+  var html = '';
+  for (var mm = 1; mm <= lastM; mm++) {
+    var val = d[mm] || 0;
+    html += '<div class="bar-row"><div class="bar-label">' + J.monthName(mm) + '</div><div class="bar-wrap"><div class="bar-fill" style="width:' + (val / max * 100).toFixed(1) + '%"></div></div><div class="bar-val">' + toFa(addCommas(Math.round(val))) + '</div></div>';
+  }
+  var sum = tot[catTrendKey];
+  el.innerHTML = html + '<div class="cmp-note" style="margin:8px 0 0;">جمع سال: <b>' + rialStr(sum) + ' ریال</b>' +
+    (lastM ? ' · میانگین ماهانه (' + toFa(lastM) + ' ماه): <b>' + rialStr(sum / lastM) + '</b>' : '') +
+    (hi ? ' · بیشترین: ' + J.monthName(hi) : '') + '</div>';
+}
+function onCatTrendSelect(v) { catTrendKey = v; catTrendLabel = null; renderCatTrend(repYearShown); }
+// از پنجره‌ی ریز دسته: همان دسته در کارت «روند یک دسته»
+var cbLast = null;
+function showCatTrend() {
+  if (!cbLast) return;
+  catTrendKey = cbLast.key; catTrendLabel = cbLast.label;
+  closeModal('modal-cat-break');
+  renderCatTrend(repYearShown);
+  var sa = document.getElementById('scrollArea'), card = document.getElementById('catTrendCard');
+  if (sa && card) sa.scrollTop += card.getBoundingClientRect().top - sa.getBoundingClientRect().top - 8;   // scrollIntoView نه (v1.14.1)
+}
+
+// ── ۱۱. کارنامه‌ی سال ──
+function fxPartsStr(f, c) {
+  var p = [];
+  if (f.inc) p.push('درآمد ' + toCurrency(f.inc, c));
+  if (f.pay) p.push('هزینه ' + toCurrency(f.pay, c));
+  return p.join(' · ');
+}
+function yearReportData(jy) {
+  var b = jYearBounds(jy), today = todayGregorian(), tj = J.today();
+  var partial = today >= b.from && today < b.to;
+  var txs = repTxsIn(b.from, b.to);
+  var S = rialSums(txs);
+  var pb = jYearBounds(jy - 1), pTo = partial ? jShiftYear(today, -1) : pb.to;
+  var PS = rialSums(repTxsIn(pb.from, pTo));
+  var lastM = partial ? tj.jm : 12, months = [];
+  for (var m = 1; m <= lastM; m++) months.push({ m: m, inc: 0, pay: 0 });
+  var big = null, loanInt = 0, fx = {};
+  txs.forEach(function(t) {
+    var cur = txCur(t);
+    if (t.type !== 'income' && !isPayTx(t)) return;
+    if (cur !== 'IRR') { fx[cur] = fx[cur] || { inc: 0, pay: 0 }; if (t.type === 'income') fx[cur].inc += t.amount; else fx[cur].pay += t.amount; return; }
+    var row = months[jPartsOf(txDay(t)).jm - 1];
+    if (t.type === 'income') { if (row) row.inc += t.amount; return; }
+    if (row) row.pay += t.amount;
+    if (!big || t.amount > big.amount) big = t;
+    if (t.catId === LOAN_INT_CAT_ID) loanInt += t.amount;
+  });
+  var cats = Object.keys(S.byKey).map(function(k){ return { label: S.labels[k], sum: S.byKey[k] }; }).sort(function(a, c){ return c.sum - a.sum; }).slice(0, 5);
+  var hi = null, lo = null;
+  months.forEach(function(r) {
+    if (!r.pay) return;
+    if (!hi || r.pay > hi.pay) hi = r;
+    if (partial && r.m === lastM) return;   // ماه جاری تمام نشده؛ برای «کم‌خرج‌ترین» حساب نمی‌شود
+    if (!lo || r.pay < lo.pay) lo = r;
+  });
+  return { jy: jy, partial: partial, today: today, S: S, PS: PS, months: months, cats: cats, big: big, loanInt: loanInt, fx: fx, hi: hi, lo: lo,
+    count: txs.length, hasPrev: !!(PS.inc || PS.pay) };
+}
+function renderYearCard(jy) {
+  var el = document.getElementById('yearCard'); if (!el) return;
+  document.getElementById('yearCardTitle').textContent = '📜 کارنامه‌ی سال ' + toFa(String(jy));
+  var D = yearReportData(jy), S = D.S, PS = D.PS;
+  if (!S.inc && !S.pay && !Object.keys(D.fx).length) { el.innerHTML = '<div class="empty" style="padding:12px;"><p style="font-size:12px;">داده‌ای برای این سال نیست</p></div>'; return; }
+  var py = toFa(String(jy - 1));
+  var vs = function(cur, base, goodUp){ return D.hasPrev ? '<div class="c">نسبت به ' + py + ': ' + chgHtml(cur, base, goodUp) + '</div>' : ''; };
+  var rate = S.inc ? (S.inc - S.pay) / S.inc * 100 : null, prate = PS.inc ? (PS.inc - PS.pay) / PS.inc * 100 : null;
+  var stat = function(l, v, extra){ return '<div class="yr-stat"><div class="l">' + l + '</div><div class="v">' + v + '</div>' + (extra || '') + '</div>'; };
+  var html = '';
+  if (D.partial) html += '<div class="cmp-note">سال هنوز تمام نشده؛ ارقام تا امروز (' + jLabel(D.today) + ') است' + (D.hasPrev ? ' و با همین بازه در سال ' + py + ' مقایسه می‌شود' : '') + '.</div>';
+  html += '<div class="yr-grid">' +
+    stat('درآمد' + (hasForeignAccounts() ? ' ریالی' : ''), rialStr(S.inc), vs(S.inc, PS.inc, true)) +
+    stat('هزینه' + (hasForeignAccounts() ? ' ریالی' : ''), rialStr(S.pay), vs(S.pay, PS.pay, false)) +
+    stat('پس‌انداز (درآمد − هزینه)', rialStr(S.inc - S.pay), vs(S.inc - S.pay > 0 ? S.inc - S.pay : 0, PS.inc - PS.pay > 0 ? PS.inc - PS.pay : 0, true)) +
+    stat('نرخ پس‌انداز', rate === null ? '—' : rateStr(rate), D.hasPrev && prate !== null ? '<div class="c">سال ' + py + ': ' + rateStr(prate) + '</div>' : '') +
+    (D.loanInt ? stat('سود و کارمزد وام', rialStr(D.loanInt)) : '') +
+    stat('تعداد تراکنش‌ها', toFa(D.count)) +
+    '</div>';
+  var lines = [];
+  if (D.hi) lines.push(['پرخرج‌ترین ماه', J.monthName(D.hi.m) + ' — ' + rialStr(D.hi.pay)]);
+  if (D.lo && D.lo !== D.hi) lines.push(['کم‌خرج‌ترین ماه', J.monthName(D.lo.m) + ' — ' + rialStr(D.lo.pay)]);
+  if (D.big) lines.push(['بزرگ‌ترین پرداخت', (String(D.big.desc || '').trim() ? escHtml(String(D.big.desc).trim()) : expGroupOf(D.big).label) + ' — ' + rialStr(D.big.amount) + ' (' + jLabel(txDay(D.big)) + ')']);
+  Object.keys(D.fx).sort(curSort).forEach(function(c){ lines.push([curLabel(c) + 'ی', fxPartsStr(D.fx[c], c)]); });
+  if (lines.length) html += '<div class="yr-list">' + lines.map(function(l){ return '<div class="yl-row"><span>' + l[0] + '</span><span>' + l[1] + '</span></div>'; }).join('') + '</div>';
+  if (D.cats.length) {
+    var mx = D.cats[0].sum || 1;
+    html += '<div class="cmp-head">دسته‌های اصلی هزینه</div>' + D.cats.map(function(c){
+      return '<div class="bar-row"><div class="bar-label">' + c.label + '</div><div class="bar-wrap"><div class="bar-fill" style="width:' + (c.sum / mx * 100).toFixed(1) + '%"></div></div><div class="bar-val">' + (S.pay ? faPct(c.sum / S.pay * 100) : '') + '</div></div>';
+    }).join('');
+  }
+  html += '<button type="button" class="rep-more" style="margin-top:12px;" onclick="exportYearPDF()">🖨️ کارنامه‌ی سال — PDF</button>';
+  el.innerHTML = html;
+}
+function exportYearPDF() {
+  var jy = repYearShown || J.today().jy, D = yearReportData(jy), S = D.S, PS = D.PS;
+  var n = function(x){ return (x < 0 ? '-' : '') + addCommas(Math.round(Math.abs(x))); };
+  var pct = function(x){ return x === null ? '—' : (Math.round(x * 10) / 10) + '٪'; };
+  var rate = S.inc ? (S.inc - S.pay) / S.inc * 100 : null, prate = PS.inc ? (PS.inc - PS.pay) / PS.inc * 100 : null;
+  var monthRows = D.months.map(function(r){
+    var rr = r.inc ? (r.inc - r.pay) / r.inc * 100 : null;
+    return '<tr><td>' + J.monthName(r.m) + '</td><td>' + n(r.inc) + '</td><td>' + n(r.pay) + '</td><td>' + n(r.inc - r.pay) + '</td><td>' + pct(rr) + '</td></tr>';
+  }).join('');
+  var catRows = D.cats.map(function(c){ return '<tr><td>' + c.label + '</td><td>' + n(c.sum) + '</td><td>' + (S.pay ? pct(c.sum / S.pay * 100) : '') + '</td></tr>'; }).join('');
+  var fxHtml = Object.keys(D.fx).sort(curSort).map(function(c){ return '<div class="fx">' + curLabel(c) + 'ی (جدا از جمع ریالی): ' + fxPartsStr(D.fx[c], c) + '</div>'; }).join('');
+  var facts = [];
+  if (D.hi) facts.push(['پرخرج‌ترین ماه', J.monthName(D.hi.m) + ' — ' + n(D.hi.pay) + ' ریال']);
+  if (D.lo && D.lo !== D.hi) facts.push(['کم‌خرج‌ترین ماه', J.monthName(D.lo.m) + ' — ' + n(D.lo.pay) + ' ریال']);
+  if (D.big) facts.push(['بزرگ‌ترین پرداخت', escHtml(String(D.big.desc || '').trim() || expGroupOf(D.big).label) + ' — ' + n(D.big.amount) + ' ریال (' + jLabel(txDay(D.big)) + ')']);
+  if (D.loanInt) facts.push(['سود و کارمزد وام', n(D.loanInt) + ' ریال']);
+  facts.push(['تعداد تراکنش‌ها', D.count]);
+  var w = window.open('', '_blank');
+  if (!w) { alert('پنجره‌ی PDF باز نشد.'); return; }
+  w.document.write('<!DOCTYPE html><html dir="rtl" lang="fa"><head><meta charset="UTF-8"><title>کارنامه‌ی سال ' + jy + '</title>' +
+    '<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet">' +
+    '<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Vazirmatn,sans-serif;padding:24px;color:#333;font-size:12px;}' +
+    'h1{color:#FF7F7F;font-size:18px;margin-bottom:2px;}h2{font-size:13px;color:#555;margin:16px 0 8px;border-bottom:1px solid #FFE8E8;padding-bottom:4px;}' +
+    '.sub{color:#999;font-size:11px;margin-bottom:18px;}.note{font-size:11px;color:#777;margin-bottom:10px;}' +
+    '.sum{display:flex;gap:12px;margin-bottom:6px;}.fx{font-size:11px;color:#555;margin:4px 0;}' +
+    '.sbox{flex:1;border-radius:10px;padding:12px 14px;}.sbox h3{font-size:9px;color:#999;margin-bottom:3px;}.sbox p{font-size:18px;font-weight:700;}' +
+    '.inc{background:#E8F8EE;border-right:3px solid #27AE60;}.inc p{color:#27AE60;}' +
+    '.exp{background:#FFF0F0;border-right:3px solid #FF7F7F;}.exp p{color:#FF7F7F;}' +
+    '.bal{background:#FFF8E0;border-right:3px solid #E1B324;}.bal p{color:#B8860B;}' +
+    'table{width:100%;border-collapse:collapse;margin-bottom:14px;}' +
+    'th{background:#FF7F7F;color:white;padding:7px;text-align:right;font-size:10px;}' +
+    'td{padding:6px 7px;border-bottom:1px solid #FFE8E8;font-size:11px;}' +
+    'tr:nth-child(even) td{background:#FFF8F8;}' +
+    '.pbtn{margin-top:16px;background:#FF7F7F;color:white;border:none;padding:9px 20px;border-radius:7px;font-family:Vazirmatn,sans-serif;font-size:13px;cursor:pointer;margin-left:8px;}' +
+    '.cbtn{margin-top:16px;background:#888;color:white;border:none;padding:9px 20px;border-radius:7px;font-family:Vazirmatn,sans-serif;font-size:13px;cursor:pointer;}' +
+    '@media print{.pbtn,.cbtn{display:none}}</style></head><body>' +
+    '<h1>کارنامه‌ی مالی سال ' + toFa(String(jy)) + '</h1>' +
+    '<div class="sub">سید صادق ماجدی · مدیریت مالی شخصی</div>' +
+    (D.partial ? '<div class="note">سال هنوز تمام نشده؛ ارقام تا ' + jLabel(D.today) + ' است.</div>' : '') +
+    '<div class="sum"><div class="sbox inc"><h3>درآمد کل (ریال)</h3><p>' + n(S.inc) + '</p></div>' +
+    '<div class="sbox exp"><h3>هزینه کل (ریال)</h3><p>' + n(S.pay) + '</p></div>' +
+    '<div class="sbox bal"><h3>پس‌انداز · نرخ ' + pct(rate) + '</h3><p>' + n(S.inc - S.pay) + '</p></div></div>' + fxHtml +
+    (D.hasPrev ? '<h2>مقایسه با سال ' + toFa(String(jy - 1)) + (D.partial ? ' (همین بازه)' : '') + '</h2><table><tr><th>سال</th><th>درآمد</th><th>هزینه</th><th>پس‌انداز</th><th>نرخ پس‌انداز</th></tr>' +
+      '<tr><td>' + toFa(String(jy)) + '</td><td>' + n(S.inc) + '</td><td>' + n(S.pay) + '</td><td>' + n(S.inc - S.pay) + '</td><td>' + pct(rate) + '</td></tr>' +
+      '<tr><td>' + toFa(String(jy - 1)) + '</td><td>' + n(PS.inc) + '</td><td>' + n(PS.pay) + '</td><td>' + n(PS.inc - PS.pay) + '</td><td>' + pct(prate) + '</td></tr></table>' : '') +
+    '<h2>نکته‌ها</h2><table>' + facts.map(function(f){ return '<tr><td>' + f[0] + '</td><td>' + f[1] + '</td></tr>'; }).join('') + '</table>' +
+    (catRows ? '<h2>دسته‌های اصلی هزینه</h2><table><tr><th>دسته‌بندی</th><th>مبلغ (ریال)</th><th>سهم</th></tr>' + catRows + '</table>' : '') +
+    '<h2>ماه‌به‌ماه (ریال)</h2><table><tr><th>ماه</th><th>درآمد</th><th>هزینه</th><th>پس‌انداز</th><th>نرخ پس‌انداز</th></tr>' + monthRows + '</table>' +
+    '<div class="note">درآمد = دریافت‌ها؛ هزینه = پرداخت‌ها و برداشت از صندوق‌ها. قرض‌ها، انتقال‌ها و اصل اقساط وام جزو آن نیستند؛ سود وام هزینه است.</div>' +
+    '<button class="pbtn" onclick="window.print()">🖨️ چاپ / PDF</button><button class="cbtn" onclick="window.close()">✕ بستن</button>' +
+    '</body></html>');
+  w.document.close();
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest) return;
+  var r = e.target.closest('#repCompare .cmp-row');
+  if (r) r.classList.toggle('open');
+});
+
 var repSel = null;
 function openCatBreakdown(key, cur) {
   if (!repSel) return;
-  var ym = repSel.y + '-' + String(repSel.m).padStart(2, '0');
-  var txs = DB.transactions.filter(function(t) {
+  // v1.30.0: دوره = ماه یا بازه‌ی دلخواه
+  var txs = repTxsIn(repSel.from, repSel.to).filter(function(t) {
     if (t.type !== 'expense' && t.type !== 'fund-out') return false;
-    if (txCur(t) !== cur || expGroupOf(t).key !== key) return false;
-    var d = new Date(t.date), j = J.toJalali(d.getFullYear(), d.getMonth()+1, d.getDate());
-    return j.jy + '-' + String(j.jm).padStart(2, '0') === ym;
+    return txCur(t) === cur && expGroupOf(t).key === key;
   }).sort(function(a, b){ return new Date(b.date) - new Date(a.date); });
   if (!txs.length) return;
 
@@ -5027,8 +5474,10 @@ function openCatBreakdown(key, cur) {
 
   var fmt = function(n){ return cur === 'IRR' ? toFa(addCommas(Math.round(n))) : toCurrency(n, cur); };
   var multiAcc = txs.some(function(t){ return t.accountId !== txs[0].accountId; });
-  document.getElementById('cb-title').textContent = expGroupOf(txs[0]).label + ' — ' + J.monthName(repSel.m) + ' ' + toFa(String(repSel.y)) + (cur !== 'IRR' ? ' (' + curLabel(cur) + ')' : '');
-  document.getElementById('cb-summary').innerHTML = '<span>جمع ماه · ' + toFa(txs.length) + ' تراکنش</span><b>' + fmtCur(total, cur) + '</b>';
+  document.getElementById('cb-title').textContent = expGroupOf(txs[0]).label + ' — ' + repSel.label + (cur !== 'IRR' ? ' (' + curLabel(cur) + ')' : '');
+  cbLast = { key: key, label: expGroupOf(txs[0]).label };
+  document.getElementById('cb-trend').style.display = cur === 'IRR' ? '' : 'none';
+  document.getElementById('cb-summary').innerHTML = '<span>جمع ' + repSel.unit + ' · ' + toFa(txs.length) + ' تراکنش</span><b>' + fmtCur(total, cur) + '</b>';
   document.getElementById('cb-list').innerHTML = order.map(function(k) {
     var g = groups[k], pct = total ? g.sum / total * 100 : 0;
     var rows = g.txs.map(function(t) {
@@ -5681,19 +6130,10 @@ function submitEditTx() {
 // EXPORT
 // ═══════════════════════════════════════
 function exportReportPDF() {
-  var today = J.today();
-  var repYearSel = document.getElementById('rep-year');
-  var repMonthSel = document.getElementById('rep-month');
-  var selYear = repYearSel ? parseInt(repYearSel.value) : today.jy;
-  var selMonth = repMonthSel ? parseInt(repMonthSel.value) : today.jm;
-  var curMonth = selYear + '-' + String(selMonth).padStart(2,'0');
-  var monthName = J.monthName(selMonth) + ' ' + toFa(selYear);
-
-  var monthTxs = DB.transactions.filter(function(t) {
-    var d = new Date(t.date);
-    var j = J.toJalali(d.getFullYear(), d.getMonth()+1, d.getDate());
-    return j.jy + '-' + String(j.jm).padStart(2,'0') === curMonth;
-  });
+  // v1.30.0: همان دوره‌ی صفحه‌ی گزارش‌ها (ماه یا بازه‌ی دلخواه)
+  var P = repPeriod();
+  var monthName = P.label;
+  var monthTxs = repTxsIn(P.from, P.to);
 
   // v1.15.0: جمع‌ها فقط ریالی، مثل صفحه‌ی گزارش‌ها؛ ارزهای دیگر جدا زیر کادرها
   var rialTxs = monthTxs.filter(isRialTx);
@@ -5728,7 +6168,7 @@ function exportReportPDF() {
 
   var w = window.open('','_blank');
   w.document.write('<!DOCTYPE html><html dir="rtl" lang="fa"><head><meta charset="UTF-8">' +
-    '<title>گزارش ' + J.monthName(selMonth) + ' ' + selYear + '</title>' +
+    '<title>گزارش ' + P.label + '</title>' +
     '<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet">' +
     '<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Vazirmatn,sans-serif;padding:24px;color:#333;font-size:12px;}' +
     'h1{color:#FF7F7F;font-size:18px;margin-bottom:2px;}h2{font-size:13px;color:#555;margin:16px 0 8px;border-bottom:1px solid #FFE8E8;padding-bottom:4px;}' +
@@ -5761,18 +6201,8 @@ function exportReportPDF() {
 }
 
 function exportReportExcel() {
-  var today = J.today();
-  var repYearSel = document.getElementById('rep-year');
-  var repMonthSel = document.getElementById('rep-month');
-  var selYear = repYearSel ? parseInt(repYearSel.value) : today.jy;
-  var selMonth = repMonthSel ? parseInt(repMonthSel.value) : today.jm;
-  var curMonth = selYear + '-' + String(selMonth).padStart(2,'0');
-
-  var monthTxs = DB.transactions.filter(function(t) {
-    var d = new Date(t.date);
-    var j = J.toJalali(d.getFullYear(), d.getMonth()+1, d.getDate());
-    return j.jy + '-' + String(j.jm).padStart(2,'0') === curMonth;
-  });
+  var P = repPeriod();   // v1.30.0: ماه یا بازه‌ی دلخواه
+  var monthTxs = repTxsIn(P.from, P.to);
 
   // v1.15.1: ستون «ارز» (ارز حساب تراکنش)، برچسب فارسی قرض‌ها، و حساب مبدأ ← مقصد برای انتقال
   var rows = [['تاریخ','نوع','مبلغ','ارز','توضیحات','دسته‌بندی','حساب']];
@@ -5786,7 +6216,7 @@ function exportReportExcel() {
   var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'report-' + selYear + String(selMonth).padStart(2,'0') + '.csv';
+  a.download = 'report-' + P.tag + '.csv';
   a.click();
 }
 
@@ -7310,13 +7740,21 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.29.1';
+var CURRENT_VERSION = '1.30.0';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.30.0', items:[
+    'گزارش‌ها حالا علاوه بر ماه، «بازه‌ی دلخواه» هم دارند: مثلاً ۳ یا ۶ ماه اخیر، از اول امسال، پارسال یا هر دو تاریخی که بخواهید. خروجی PDF و Excel هم همان بازه را می‌گیرد.',
+    'زیر کادرهای درآمد و هزینه «نرخ پس‌انداز» آمده است، و در بخش سال روند ماه‌به‌ماه آن.',
+    'کارت «مقایسه با دوره‌ی قبل و پارسال» برای کل درآمد، کل هزینه و هر دسته نشان می‌دهد چقدر بیشتر یا کمتر شده است. اگر ماه هنوز تمام نشده، با همان روزهای ماه‌های دیگر مقایسه می‌شود.',
+    'کارت «بزرگ‌ترین پرداخت‌ها» ۱۰ پرداخت درشت دوره را با سهم هر کدام از کل هزینه نشان می‌دهد.',
+    'کارت «روند یک دسته» خرج یک دسته را ماه‌به‌ماه در طول سال نشان می‌دهد؛ از پنجره‌ی ریز هر دسته هم با «روند این دسته در سال» به آن می‌رسید.',
+    'در پایین صفحه «کارنامه‌ی سال» آمده است: درآمد، هزینه، پس‌انداز و مقایسه با سال قبل، پرخرج‌ترین ماه، دسته‌های اصلی و خروجی PDF.'
+  ]},
   { v:'1.29.1', items:[
     'دکمه‌ی «+» کنار دسته‌بندی حالا در پنجره‌ی «ویرایش تراکنش» هم هست: دسته‌ی تازه بسازید یا فهرست را مرتب کنید و با «بستن» به ویرایش همان تراکنش برگردید.'
   ]},
