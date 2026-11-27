@@ -248,6 +248,11 @@ html { height:100%; height:-webkit-fill-available; }
 .lc-note { font-size:10px; color:var(--text-sub); margin-top:4px; line-height:1.7; }
 /* v1.25.0: محاسبه‌گر طلا */
 .gc-sep { border-top:1px dashed var(--border); margin:6px 0; }
+.gc-box { font-size:13.5px !important; line-height:1.85 !important; }
+.gc-box .lc-sum { font-size:13.5px; padding:4px 0; }
+.gc-box .lc-sum > :last-child { white-space:nowrap; }
+.gc-box .lc-big { font-size:25px; }
+.gc-box .gc-big-lbl { font-size:12.5px; color:var(--text-sub); }
 .gc-check { border-radius:12px; padding:10px 12px; font-size:12px; line-height:1.9; margin-bottom:12px; }
 .gc-check.ok { background:#EAF7EF; border:1px solid #BFE5CC; color:#1E5B35; }
 .gc-check.bad { background:#FDF0EE; border:1px solid #F2C9C2; color:#7A2B20; }
@@ -952,6 +957,21 @@ html { height:100%; height:-webkit-fill-available; }
       <div class="form-group" style="flex:1.4;"><label class="form-label">قیمت هر گرم ۱۸ عیار (تومان)</label><input type="text" inputmode="numeric" class="form-input" id="gc-p" placeholder="قیمت روز" oninput="sanitizeNumberInput(this);GC.pDirty=true;updateGoldCalc()"></div>
     </div>
     <div class="lc-note" id="gc-p-meta" style="margin:-6px 0 10px;"></div>
+    <div class="form-group"><label class="form-label">عیار</label>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <select class="form-select" id="gc-k" onchange="onGoldKarat()" style="flex:1;min-width:0;">
+          <option value="750">۱۸ عیار (۷۵۰)</option>
+          <option value="740">۷۴۰ (مبنای رایج بازخرید)</option>
+          <option value="705">۱۷ عیار (۷۰۵)</option>
+          <option value="875">۲۱ عیار (۸۷۵)</option>
+          <option value="916">۲۲ عیار (۹۱۶)</option>
+          <option value="995">۲۴ عیار (۹۹۵)</option>
+          <option value="custom">عیار دیگر…</option>
+        </select>
+        <input type="text" inputmode="decimal" class="form-input" id="gc-k-custom" placeholder="مثلاً 585" oninput="updateGoldCalc()" style="display:none;width:110px;flex-shrink:0;">
+      </div>
+      <div class="lc-note">قیمت در بازار برای طلای ۱۸ عیار (۷۵۰) اعلام می‌شود؛ ارزش عیار دیگر به نسبت خلوص حساب می‌شود (عیار ÷ ۷۵۰). عیار معمولاً روی قطعه حک شده است، مثلاً 750 یا 875.</div>
+    </div>
     <div id="gc-buy">
       <div class="lc-note" style="margin:-4px 0 10px;">وزن بدون سنگ و نگین؛ قیمت هر گرم را همان‌طور که در فاکتور نوشته شده وارد کنید.</div>
       <div class="form-group"><label class="form-label">اجرت ساخت</label>
@@ -2744,8 +2764,21 @@ function gcPriceMeta(P) {
   } else h = 'قیمت روز در دسترس نیست؛ قیمت را از فاکتور یا تابلوی مغازه وارد کنید.';
   return h;
 }
-function goldBuyCalc(W, P, wage, wageType, s, t, F) {
-  var G = W * P;
+// v1.25.2: عیار — ارزش = وزن × قیمت گرم ۱۸ × (عیار ÷ ۷۵۰)؛ اجرت «تومان هر گرم» روی وزن واقعی
+function gcKarat() {
+  var v = document.getElementById('gc-k').value;
+  var k = v === 'custom' ? faDecimal(document.getElementById('gc-k-custom').value) : parseFloat(v);
+  return k > 0 && k <= 1000 ? k : 750;
+}
+function onGoldKarat() {
+  var c = document.getElementById('gc-k').value === 'custom', el = document.getElementById('gc-k-custom');
+  el.style.display = c ? '' : 'none';
+  if (c) el.focus();
+  updateGoldCalc();
+}
+function gcKLabel(k) { return toFa(String(k).replace('.', '٫')); }
+function goldBuyCalc(W, P, wage, wageType, s, t, F, K) {
+  var G = W * P * (K || 750) / 750;
   var A = wageType === 'pct' ? G * wage / 100 : wageType === 'gram' ? W * wage : wage;
   var S = (G + A) * s / 100;
   var T = (A + S + F) * t / 100;
@@ -2761,11 +2794,13 @@ function updateGoldCalc() {
   if (GC.mode === 'buy') {
     var wt = document.getElementById('gc-wage-type').value, wage = gcPctOrAmt('gc-wage', wt === 'pct');
     var s = lcFloat('gc-profit'), t = lcFloat('gc-vat'), F = gcNum('gc-fee'), inv = gcNum('gc-inv');
-    var r = goldBuyCalc(W, P, wage, wt, s, t, F);
+    var K = gcKarat(), kf = K / 750;
+    var r = goldBuyCalc(W, P, wage, wt, s, t, F, K);
     var wageLbl = wt === 'pct' ? lcPct(wage) + ' ارزش طلا' : wt === 'gram' ? gcFa(wage) + ' تومان × ' + gcFa(W, 3) + ' گرم' : 'کل قطعه';
-    h += '<div class="hint-box" style="font-size:12px;line-height:1.8;color:var(--text-main);">';
-    h += '<div style="text-align:center;margin-bottom:6px;"><div style="font-size:11px;color:var(--text-sub);">مبلغ نهایی فاکتور (محاسبه)</div><div class="lc-big" style="unicode-bidi:isolate;">' + gcFa(r.total) + ' <span style="font-size:11px;font-weight:500;">تومان</span></div></div>';
-    h += row('ارزش طلا (' + gcFa(W, 3) + ' گرم × ' + gcFa(P) + ')', gcFa(r.G));
+    h += '<div class="hint-box gc-box" style="color:var(--text-main);">';
+    h += '<div style="text-align:center;margin-bottom:8px;"><div class="gc-big-lbl">مبلغ نهایی فاکتور (محاسبه)</div><div class="lc-big" style="unicode-bidi:isolate;">' + gcFa(r.total) + ' <span style="font-size:13px;font-weight:500;">تومان</span></div></div>';
+    h += row('ارزش طلا (' + gcFa(W, 3) + ' گرم × ' + gcFa(P) + (K !== 750 ? ' × ' + gcKLabel(K) + '÷۷۵۰' : '') + ')', gcFa(r.G));
+    if (K !== 750) h += '<div class="lc-note" style="margin:-2px 0 4px;">یعنی معادل ' + gcFa(W * kf, 3) + ' گرم طلای ۱۸ عیار.</div>';
     h += row('اجرت ساخت (' + wageLbl + ')', gcFa(r.A));
     h += row('سود فروشنده (' + lcPct(s) + ' طلا + اجرت)', gcFa(r.S));
     if (F) h += row('حق‌العمل', gcFa(F));
@@ -2775,8 +2810,10 @@ function updateGoldCalc() {
     h += row('قیمت تمام‌شده‌ی هر گرم', gcFa(r.total / W) + ' تومان');
     var extra = r.A + r.S + r.F + r.T;
     h += row('هزینه‌ی برنگشتنی (اجرت + سود + مالیات)', gcFa(extra) + ' تومان', true);
-    h += '<div class="lc-note">اگر همین امروز بفروشید، معمولاً فقط ارزش طلا (' + gcFa(r.G) + ' تومان) برمی‌گردد؛ یعنی ' + lcPct(extra / r.total * 100) +
-         ' مبلغ فاکتور. برای جبران آن، قیمت طلا باید حدود ' + lcPct(extra / r.G * 100) + ' بالا برود.</div>';
+    h += row('اگر همین امروز بفروشید (حدوداً)', gcFa(r.G) + ' تومان', true);
+    if (K === 750) h += row('اگر طلافروش با مبنای ۷۴۰ بخرد', gcFa(r.G * 740 / 750) + ' تومان');
+    h += '<div class="lc-note">هنگام فروش معمولاً فقط ارزش طلا برمی‌گردد؛ هزینه‌ی برنگشتنی ' + lcPct(extra / r.total * 100) +
+         ' مبلغ فاکتور است و برای جبران آن، قیمت طلا باید حدود ' + lcPct(extra / r.G * 100) + ' بالا برود.</div>';
     h += '</div>';
     if (inv > 0) {
       var diff = inv - r.total, tol = Math.max(10000, r.total * 0.0002);
@@ -2796,7 +2833,7 @@ function updateGoldCalc() {
         var Gimp = wt === 'pct'
           ? (inv - F * (1 + tF)) / ((1 + wage / 100) * (1 + sF) + tF * (wage / 100 + (1 + wage / 100) * sF))
           : (inv - r.A * (1 + sF) * (1 + tF) - F * (1 + tF)) / (1 + sF + sF * tF);
-        if (Gimp > 0) hints.push('یا قیمت هر گرم ' + gcFa(Gimp / W) + ' تومان، یا وزن ' + gcFa(Gimp / P, 3) + ' گرم در نظر گرفته شده است.');
+        if (Gimp > 0) hints.push('یا قیمت هر گرم ' + gcFa(Gimp / (W * kf)) + ' تومان، یا وزن ' + gcFa(Gimp / (P * kf), 3) + ' گرم' + (K !== 750 ? '، یا عیار ' + gcKLabel(Math.round(Gimp / (W * P) * 750)) : '') + ' در نظر گرفته شده است.');
         }
         h += '<div class="gc-check bad">⚠️ مبلغ فاکتور فروشنده ' + gcFa(Math.abs(diff)) + ' تومان ' + (diff > 0 ? 'بیشتر' : 'کمتر') + ' از محاسبه است (' + lcPct(Math.abs(diff) / r.total * 100) + ').' +
              (hints.length ? '<div style="margin-top:4px;">احتمالاً:</div><ul><li>' + hints.join('</li><li>') + '</li></ul>' : '') +
@@ -2806,10 +2843,12 @@ function updateGoldCalc() {
   } else {
     var dt = document.getElementById('gc-ded-type').value, d = gcPctOrAmt('gc-ded', dt === 'pct');
     var offer = gcNum('gc-offer'), paid = gcNum('gc-paid');
-    var G2 = W * P, ded = dt === 'pct' ? G2 * d / 100 : W * d, rec = G2 - ded;
-    h += '<div class="hint-box" style="font-size:12px;line-height:1.8;color:var(--text-main);">';
-    h += '<div style="text-align:center;margin-bottom:6px;"><div style="font-size:11px;color:var(--text-sub);">مبلغی که باید دریافت کنید</div><div class="lc-big" style="unicode-bidi:isolate;">' + gcFa(rec) + ' <span style="font-size:11px;font-weight:500;">تومان</span></div></div>';
-    h += row('ارزش طلا (' + gcFa(W, 3) + ' گرم × ' + gcFa(P) + ')', gcFa(G2));
+    var K2 = gcKarat();
+    var G2 = W * P * K2 / 750, ded = dt === 'pct' ? G2 * d / 100 : W * d, rec = G2 - ded;
+    h += '<div class="hint-box gc-box" style="color:var(--text-main);">';
+    h += '<div style="text-align:center;margin-bottom:8px;"><div class="gc-big-lbl">مبلغی که باید دریافت کنید</div><div class="lc-big" style="unicode-bidi:isolate;">' + gcFa(rec) + ' <span style="font-size:13px;font-weight:500;">تومان</span></div></div>';
+    h += row('ارزش طلا (' + gcFa(W, 3) + ' گرم × ' + gcFa(P) + (K2 !== 750 ? ' × ' + gcKLabel(K2) + '÷۷۵۰' : '') + ')', gcFa(G2));
+    if (K2 === 750) h += row('اگر با مبنای ۷۴۰ حساب کند', gcFa(G2 * 740 / 750) + ' تومان');
     if (ded) h += row('کسری طلافروش (' + (dt === 'pct' ? lcPct(d) : gcFa(d) + ' تومان هر گرم') + ')', '− ' + gcFa(ded));
     h += row('هر گرم', gcFa(rec / W) + ' تومان');
     if (paid > 0) {
@@ -2822,7 +2861,8 @@ function updateGoldCalc() {
       var od = G2 - offer, tol2 = Math.max(10000, G2 * 0.0002);
       if (od <= tol2 && Math.abs(offer - rec) <= tol2) h += '<div class="gc-check ok">✅ پیشنهاد طلافروش با محاسبه می‌خواند.</div>';
       else if (od <= tol2) h += '<div class="gc-check ok">✅ پیشنهاد طلافروش برابر یا بیشتر از ارزش طلاست' + (od < -tol2 ? ' (' + gcFa(-od) + ' تومان بیشتر)' : '') + '.</div>';
-      else h += '<div class="gc-check bad">پیشنهاد طلافروش ' + gcFa(od) + ' تومان کمتر از ارزش طلاست؛ یعنی برای هر گرم ' + gcFa(od / W) + ' تومان (' + lcPct(od / G2 * 100) + ') کم کرده است.' +
+      else h += '<div class="gc-check bad">پیشنهاد طلافروش ' + gcFa(od) + ' تومان کمتر از ارزش طلاست؛ یعنی برای هر گرم ' + gcFa(od / W) + ' تومان (' + lcPct(od / G2 * 100) + ') کم کرده است' +
+                ' — انگار عیار را ' + gcKLabel(Math.round(offer / (W * P) * 7500) / 10) + ' حساب کرده.' +
                 (ded ? ' این کسری ' + (od > ded + tol2 ? gcFa(od - ded) + ' تومان بیشتر از کسری‌ای است که وارد کرده‌اید.' : 'با کسری‌ای که وارد کرده‌اید می‌خواند.') : '') +
                 '<div style="margin-top:4px;font-size:11px;">قیمت هر گرمی را که طلافروش مبنا گرفته بپرسید و با قیمت روز مقایسه کنید.</div></div>';
     }
@@ -6812,13 +6852,17 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.25.1';
+var CURRENT_VERSION = '1.25.2';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.25.2', items:[
+    'در محاسبه‌گر طلا می‌توانید عیار را انتخاب کنید (۱۸، ۲۱، ۲۲، ۲۴، ۷۴۰ یا عیار دلخواه)؛ ارزش طلا به نسبت خلوص حساب می‌شود.',
+    'مبلغ نهایی و ریز فاکتور با اندازه‌ی بزرگ‌تر نمایش داده می‌شود و «اگر همین امروز بفروشید» زیر «هزینه‌ی برنگشتنی» آمده است.'
+  ]},
   { v:'1.25.1', items:[
     'نرخ دلار، درهم و طلا حالا هر بار که اپ را باز می‌کنید تازه می‌شود، اگر از آخرین به‌روزرسانی بیش از ۳ ساعت گذشته باشد؛ قبلاً روزی یک بار بود.'
   ]},
