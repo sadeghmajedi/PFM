@@ -1,5 +1,5 @@
 // PFM Service Worker — پشتیبانی آفلاین
-var CACHE_NAME = 'pfm-cache-v1.22.0';
+var CACHE_NAME = 'pfm-cache-v1.23.0';
 var SHARE_CACHE = 'pfm-share';   // v1.20.0: متن اشتراک‌گذاری‌شده (اندروید) تا صفحه آن را بخواند
 var CACHE_FILES = [
   './',
@@ -53,6 +53,12 @@ self.addEventListener('fetch', function(event) {
         return Response.redirect(new URL('./?shared=1', self.registration.scope).href, 303);
       })
     );
+    return;
+  }
+
+  // v1.23.0 — نرخ ارز: همیشه از شبکه و بدون کش (هر درخواست ?t= دارد و نباید کش را پر کند)
+  if (url.indexOf('rates.json') !== -1) {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }));
     return;
   }
 

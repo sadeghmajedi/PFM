@@ -129,6 +129,11 @@ html { height:100%; height:-webkit-fill-available; }
 .nw-currencies { display:flex; gap:8px; margin-top:10px; }
 .nw-cur { background:rgba(255,255,255,0.25); border:1px solid rgba(255,255,255,0.35); border-radius:10px; padding:6px 10px; }
 .nw-cur-val { color:#fff; font-size:13px; font-weight:600; direction:ltr; }
+/* v1.23.0: کل دارایی با نرخ روز */
+.nw-fx { margin-top:8px; background:rgba(255,255,255,0.14); border:1px solid rgba(255,255,255,0.28); border-radius:10px; padding:6px 10px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.nw-fx-val { color:#fff; font-size:15px; font-weight:700; unicode-bidi:isolate; }
+.nw-fx-sub { color:rgba(255,255,255,0.85); font-size:10px; margin-top:2px; line-height:1.6; }
+.fx-meta { font-size:10px; color:var(--text-sub); margin-top:4px; line-height:1.7; }
 
 /* ── ACCOUNTS GRID ── */
 .desc-sug { display:none; flex-wrap:wrap; gap:6px; max-height:92px; overflow-y:auto; margin-bottom:7px; -webkit-overflow-scrolling:touch; }
@@ -460,6 +465,7 @@ html { height:100%; height:-webkit-fill-available; }
           <div class="nw-cur"><div class="nw-label">دلار</div><div class="nw-cur-val" id="totalUSD">$۰</div></div>
           <div class="nw-cur"><div class="nw-label">درهم</div><div class="nw-cur-val" id="totalAED">AED ۰</div></div>
         </div>
+        <div class="nw-fx" id="nwFx" style="display:none;" onclick="openFxModal()"></div>
         <div id="sadaqahBox" style="margin-top:10px;">
           <div class="nw-label">💚 صدقه روزانه</div>
           <div class="nw-amount" id="sadaqahAmount" style="font-size:20px;">۰</div>
@@ -615,6 +621,11 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="settings-item" onclick="openModal('modal-cats-inc')"><span class="si-label">💵 دسته‌بندی دریافت</span><span class="si-val" id="catCountInc">←</span></div>
   </div></div>
   <!-- v1.13.0: صدقه روزانه -->
+  <!-- v1.23.0: نرخ ارز -->
+  <div class="card" id="fxSettingsCard"><div class="card-bar"></div><div class="card-body">
+    <div class="card-title">نرخ ارز</div>
+    <div class="settings-item" onclick="openFxModal()"><span class="si-label">💱 نرخ خرید دلار و درهم</span><span class="si-val" id="fxSetStatus">←</span></div>
+  </div></div>
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">صدقه روزانه</div>
     <label class="settings-item" for="sadaqahOn"><span class="si-label">💚 محاسبه و نمایش در داشبورد</span><input type="checkbox" class="tgl" id="sadaqahOn" onchange="setSadaqahEnabled(this.checked)"></label>
@@ -822,6 +833,22 @@ html { height:100%; height:-webkit-fill-available; }
 </div>
 
 <!-- v1.20.0: SMS automation guide -->
+<!-- v1.23.0: نرخ ارز -->
+<div class="modal-overlay" id="modal-fx" onclick="closeModalOutside(event,'modal-fx')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">💱 نرخ ارز</div>
+    <div class="hint-box" style="line-height:1.8;">نرخ خرید بازار آزاد برای نشان دادن «کل دارایی با نرخ روز» در داشبورد. گزارش‌ها و جمع‌های ماهانه مثل قبل هر ارز را جدا نگه می‌دارند.</div>
+    <div class="form-group"><label class="form-label">نرخ خرید دلار (تومان)</label><input type="text" inputmode="numeric" class="form-input" id="fx-usd" placeholder="مثلاً 95,000" oninput="sanitizeNumberInput(this)"><div class="fx-meta" id="fx-usd-meta"></div></div>
+    <div class="form-group"><label class="form-label">نرخ خرید درهم (تومان)</label><input type="text" inputmode="numeric" class="form-input" id="fx-aed" placeholder="مثلاً 26,000" oninput="sanitizeNumberInput(this)"><div class="fx-meta" id="fx-aed-meta"></div></div>
+    <label class="settings-item" for="fx-auto" style="margin-bottom:4px;"><span class="si-label">🔄 به‌روزرسانی خودکار، روزی یک بار وقتی آنلاین هستید</span><input type="checkbox" class="tgl" id="fx-auto" onchange="setFxAuto(this.checked)"></label>
+    <div class="fx-meta" id="fx-status" style="margin-bottom:12px;"></div>
+    <button class="btn-primary" onclick="saveFxManual()">ذخیره‌ی نرخ دستی</button>
+    <button class="btn-secondary" id="fx-now" onclick="fxUpdateNow()">🔄 به‌روزرسانی الان</button>
+    <button class="btn-secondary" onclick="closeModal('modal-fx')">بستن</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-sms-guide" onclick="closeModalOutside(event,'modal-sms-guide')">
   <div class="modal-sheet" style="max-height:90vh;">
     <div class="modal-handle"></div>
@@ -1417,6 +1444,7 @@ function hideLock() {
   document.getElementById('appShell').style.display = 'flex';
   renderAll();
   requestPersistentStorage(false);   // v1.20.0
+  setTimeout(function(){ fxMaybeAutoUpdate(false); }, 1500);   // v1.23.0
   // v1.20.0: پیامکی که در اندروید به PFM اشتراک‌گذاری شده؛ «تازه‌ها» به بار بعد می‌ماند
   if (pendingSharedSMS) setTimeout(handleSharedSMS, 300);
   else setTimeout(maybeShowWhatsNew, 400);   // v1.14.0
@@ -3688,6 +3716,156 @@ function clearTxSearch() {
 }
 
 // ═══════════════════════════════════════
+// FX — نرخ ارز (v1.23.0)
+// ═══════════════════════════════════════
+// کلید جدا pfm_fx (مثل pfm_sadaqah؛ در پشتیبان JSON نیست، شکل pfm_db_v3 دست نمی‌خورد):
+//   { auto: bool (پیش‌فرض روشن), USD: {rate (ریال), at (ms), src: 'manual'|'bonbast'|'tgju', kind: 'buy'|'market'}, AED: {...},
+//     lastOk (ms آخرین خواندن موفق خودکار), lastTry (ms), lastErr }
+// منبع خودکار = ./rates.json کنار همین صفحه (همان دامنه؛ GitHub Actions هر ۳ ساعت از bonbast/tgju پرش می‌کند).
+// فقط برای «کل دارایی با نرخ روز» در داشبورد؛ هیچ گزارش یا جمع دیگری تبدیل نمی‌شود.
+var FX_KEY = 'pfm_fx';
+var FX_CURS = ['USD', 'AED'];
+var FX_STALE_DAYS = 3;
+var FX_SRC_LABEL = { manual: 'دستی', bonbast: 'بن‌بست (bonbast.com)', tgju: 'tgju.org' };
+function getFx() {
+  var o = null;
+  try { o = JSON.parse(localStorage.getItem(FX_KEY) || 'null'); } catch (e) {}
+  o = o && typeof o === 'object' ? o : {};
+  if (o.auto === undefined) o.auto = true;
+  return o;
+}
+function saveFx(o) { try { localStorage.setItem(FX_KEY, JSON.stringify(o)); } catch (e) {} }
+function fxRateOf(o, cur) { var r = o[cur]; return r && r.rate > 0 ? r : null; }
+function fxAgeLabel(ms) {
+  var m = Math.max(0, Math.floor((Date.now() - ms) / 60000));
+  if (m < 60) return 'کمتر از یک ساعت پیش';
+  var h = Math.floor(m / 60);
+  if (h < 24) return toFa(h) + ' ساعت پیش';
+  return toFa(Math.floor(h / 24)) + ' روز پیش';
+}
+function fxIsStale(r) { return !r || (Date.now() - r.at) > FX_STALE_DAYS * 864e5; }
+function fxToman(rial) { return toFa(addCommas(Math.round(rial / 10))); }
+function fxSameDay(a, b) { var x = new Date(a), y = new Date(b); return x.toDateString() === y.toDateString(); }
+
+// totals = { USD: خالص دلاری, AED: خالص درهمی } — همان اعداد کارت خالص دارایی
+function renderFxNetWorth(totalRial, totals) {
+  var box = document.getElementById('nwFx'); if (!box) return;
+  var need = FX_CURS.filter(function(c){ return Math.abs(totals[c] || 0) >= 0.005; });
+  if (!need.length) { box.style.display = 'none'; return; }
+  var o = getFx(), sum = totalRial, missing = [], stale = false, oldest = Infinity, parts = [];
+  need.forEach(function(c){
+    var r = fxRateOf(o, c);
+    if (!r) { missing.push(c); return; }
+    sum += totals[c] * r.rate;
+    if (fxIsStale(r)) stale = true;
+    oldest = Math.min(oldest, r.at);
+    parts.push((c === 'USD' ? 'دلار ' : 'درهم ') + fxToman(r.rate));
+  });
+  box.style.display = '';
+  if (missing.length) {
+    box.innerHTML = '<div class="nw-label" style="margin:0;">کل دارایی با نرخ روز</div><div class="nw-fx-sub">💱 برای دیدن معادل ریالی، نرخ ' +
+      missing.map(function(c){ return c === 'USD' ? 'دلار' : 'درهم'; }).join(' و ') + ' را وارد کنید ←</div>';
+    return;
+  }
+  box.innerHTML = '<div class="nw-label" style="margin:0;">کل دارایی با نرخ روز (ریال + معادل ارزها)</div>' +
+    '<div class="nw-fx-val">' + toFa(addCommas(Math.round(sum))) + ' ریال</div>' +
+    '<div class="nw-fx-sub">' + (stale ? '⚠️ ' : '') + 'نرخ خرید: ' + parts.join(' • ') + ' تومان • ' + fxAgeLabel(oldest) + '</div>';
+}
+function renderFxSettingsRow() {
+  var el = document.getElementById('fxSetStatus'); if (!el) return;
+  var o = getFx(), r = fxRateOf(o, 'USD') || fxRateOf(o, 'AED');
+  el.textContent = r ? (o.auto ? 'خودکار' : 'دستی') + ' • ' + fxAgeLabel(r.at) : 'تعیین نشده';
+}
+function openFxModal() {
+  renderFxModal(true);
+  openModal('modal-fx');
+}
+function renderFxModal(fillInputs) {
+  var o = getFx();
+  FX_CURS.forEach(function(c){
+    var k = c.toLowerCase(), r = fxRateOf(o, c);
+    if (fillInputs) document.getElementById('fx-' + k).value = r ? addCommas(Math.round(r.rate / 10)) : '';
+    document.getElementById('fx-' + k + '-meta').textContent = r
+      ? (r.src === 'manual' ? 'دستی' : 'خودکار از ' + (FX_SRC_LABEL[r.src] || r.src) + (r.kind === 'market' ? ' (قیمت بازار، نه نرخ خرید)' : '')) +
+        ' • ' + fxAgeLabel(r.at) + (fxIsStale(r) ? ' ⚠️ کهنه' : '')
+      : 'هنوز نرخی ثبت نشده';
+  });
+  document.getElementById('fx-auto').checked = !!o.auto;
+  var st = '';
+  if (o.lastOk) st = 'آخرین به‌روزرسانی خودکار: ' + fxAgeLabel(o.lastOk) + '.';
+  if (o.lastErr && (!o.lastOk || o.lastTry > o.lastOk)) st += (st ? ' ' : '') + 'آخرین تلاش ناموفق بود: ' + o.lastErr;
+  if (!st) st = o.auto ? 'هنوز به‌روزرسانی خودکاری انجام نشده است.' : 'به‌روزرسانی خودکار خاموش است؛ نرخ را خودتان وارد کنید.';
+  document.getElementById('fx-status').textContent = st;
+}
+function setFxAuto(on) {
+  var o = getFx(); o.auto = !!on; saveFx(o);
+  renderFxModal(false); renderFxSettingsRow();
+  if (on) fxMaybeAutoUpdate(false);
+}
+function saveFxManual() {
+  var o = getFx(), changed = 0, now = Date.now();
+  for (var i = 0; i < FX_CURS.length; i++) {
+    var c = FX_CURS[i], k = c.toLowerCase(), r = fxRateOf(o, c);
+    var raw = document.getElementById('fx-' + k).value.trim();
+    var t = getNumericValue('fx-' + k);
+    if (!raw) continue;
+    if (!(t > 0)) { alert('نرخ ' + (c === 'USD' ? 'دلار' : 'درهم') + ' را درست وارد کنید'); return; }
+    if (r && Math.round(r.rate / 10) === t) continue;   // دست نخورده
+    o[c] = { rate: t * 10, at: now, src: 'manual', kind: 'buy' }; changed++;
+  }
+  saveFx(o);
+  closeModal('modal-fx');
+  renderDashboard(); renderFxSettingsRow();
+}
+// بار اول هر روز (وقتی آنلاین و خودکار روشن و حساب ارزی هست)؛ force = دکمه‌ی «به‌روزرسانی الان»
+function fxMaybeAutoUpdate(force) {
+  var o = getFx(), now = Date.now();
+  if (!force) {
+    if (!o.auto || !hasForeignAccounts()) return Promise.resolve(null);
+    if (o.lastOk && fxSameDay(o.lastOk, now)) return Promise.resolve(null);
+    if (o.lastTry && now - o.lastTry < 10 * 60000) return Promise.resolve(null);
+  }
+  if (navigator.onLine === false) {
+    if (force) { o.lastTry = now; o.lastErr = 'اینترنت وصل نیست'; saveFx(o); }
+    return Promise.resolve(false);
+  }
+  o.lastTry = now; saveFx(o);
+  return fetch('./rates.json?t=' + now, { cache: 'no-store' }).then(function(res){
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  }).then(function(j){
+    var at = Date.parse(j.updated);
+    if (!(at > 0)) throw new Error('فایل نرخ نامعتبر است');
+    var o2 = getFx();
+    FX_CURS.forEach(function(c){
+      var v = j[c.toLowerCase()];
+      if (!(v > 0)) return;
+      var cur = o2[c];
+      // نرخ دستی‌ای که بعد از زمان فایل وارد شده، می‌ماند
+      if (cur && cur.src === 'manual' && cur.at > at) return;
+      o2[c] = { rate: v, at: at, src: j.src || 'auto', kind: j.kind || 'buy' };
+    });
+    o2.lastOk = Date.now(); o2.lastErr = ''; saveFx(o2);
+    renderDashboard(); renderFxSettingsRow();
+    if (document.getElementById('modal-fx').classList.contains('open')) renderFxModal(true);
+    return true;
+  }).catch(function(e){
+    var o3 = getFx(); o3.lastErr = 'نرخ دریافت نشد (' + (e && e.message ? e.message : 'خطای شبکه') + ')'; saveFx(o3);
+    if (document.getElementById('modal-fx').classList.contains('open')) renderFxModal(false);
+    return false;
+  });
+}
+function fxUpdateNow() {
+  var b = document.getElementById('fx-now'); b.disabled = true; b.textContent = '⏳ در حال دریافت…';
+  fxMaybeAutoUpdate(true).then(function(ok){
+    b.disabled = false; b.textContent = '🔄 به‌روزرسانی الان';
+    renderFxModal(!!ok);
+    if (ok === false) alert(getFx().lastErr || 'نرخ دریافت نشد');
+  });
+}
+window.addEventListener('online', function(){ if (document.getElementById('mainApp').style.display === 'block') fxMaybeAutoUpdate(false); });
+
+// ═══════════════════════════════════════
 // RENDER
 // ═══════════════════════════════════════
 function renderAll() { renderDashboard(); renderLoans(); renderAccounts(); renderTransactions(); renderReports(); renderSettings(); }
@@ -3780,6 +3958,7 @@ function renderDashboard() {
   var totalAED = accountsAED + getTotalReceivable('AED') - getTotalDebt('AED');
   document.getElementById('totalUSD').textContent = '$' + addCommas(totalUSD.toFixed(2));
   document.getElementById('totalAED').textContent = 'AED ' + addCommas(totalAED.toFixed(2));
+  renderFxNetWorth(totalRial, { USD: totalUSD, AED: totalAED });   // v1.23.0
   // v1.13.0: صدقه روزانه قابل خاموش کردن و با درصد قابل تنظیم (پیش‌فرض ۰٫۰۲٪ = همان ضریب قبلی ۰٫۰۰۰۲)
   var sq = getSadaqahSettings();
   document.getElementById('sadaqahBox').style.display = sq.enabled ? '' : 'none';
@@ -4491,6 +4670,7 @@ function renderExpensePie(selYear) {
 }
 
 function renderSettings() {
+  renderFxSettingsRow();   // v1.23.0
   var ps = document.getElementById('pinStatus'); if (ps) ps.textContent = getStoredPin() ? '✓ فعال' : 'فعال نیست';
   var cl = document.getElementById('catList');
   var cHtml = '';
@@ -6401,7 +6581,11 @@ function restoreAutoBackup(rec) {
   });
 }
 setInterval(autoBackupTick, 60 * 1000);
-document.addEventListener('visibilitychange', function() { if (document.visibilityState === 'visible') autoBackupTick(); });
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState !== 'visible') return;
+  autoBackupTick();
+  if (document.getElementById('mainApp').style.display === 'block') fxMaybeAutoUpdate(false);   // v1.23.0
+});
 
 // ═══════════════════════════════════════
 // DATE HEADER
@@ -6417,13 +6601,18 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.22.0';
+var CURRENT_VERSION = '1.23.0';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.23.0', items:[
+    'زیر خالص دارایی در داشبورد، «کل دارایی با نرخ روز» اضافه شد: موجودی ریالی به‌اضافه‌ی معادل ریالی دلار و درهم با نرخ خرید بازار آزاد.',
+    'وقتی به اینترنت وصل هستید، نرخ روزی یک بار خودکار به‌روز می‌شود. اگر دریافت نشد، همان آخرین نرخ می‌ماند و تاریخ آن نمایش داده می‌شود.',
+    'برای دیدن یا وارد کردن دستی نرخ، روی همین کادر بزنید یا از تنظیمات «💱 نرخ خرید دلار و درهم» را باز کنید. گزارش‌ها مثل قبل هر ارز را جدا نشان می‌دهند.'
+  ]},
   { v:'1.22.0', items:[
     'صفحه‌ی تازه‌ی «✨ دستیار سین» اضافه شد؛ با دکمه‌ی ✨ بالای صفحه از هر جای اپ باز می‌شود. ابزارهای کمکی کم‌کم در این صفحه اضافه می‌شوند.',
     'اولین ابزار «محاسبه‌گر وام بانکی» است: مبلغ، نرخ سود و تعداد اقساط را وارد کنید تا قسط ماهانه، سود کل و جمع بازپرداخت را ببینید.',

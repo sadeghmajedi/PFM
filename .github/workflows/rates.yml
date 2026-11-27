@@ -1,0 +1,33 @@
+# v1.23.0 — به‌روزرسانی rates.json (نرخ خرید دلار و درهم بازار آزاد) برای PFM
+name: update-rates
+on:
+  schedule:
+    - cron: '17 */3 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/rates.yml', '.github/scripts/fetch_rates.py']
+permissions:
+  contents: write
+concurrency:
+  group: update-rates
+  cancel-in-progress: false
+jobs:
+  rates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: fetch
+        run: python3 .github/scripts/fetch_rates.py
+      - name: commit
+        run: |
+          if git diff --quiet -- rates.json && git ls-files --error-unmatch rates.json >/dev/null 2>&1; then
+            echo "no change"; exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898732+github-actions[bot]@users.noreply.github.com"
+          git add rates.json
+          git commit -m "rates: به‌روزرسانی خودکار نرخ ارز"
+          for i in 1 2 3; do git pull --rebase -q origin main && git push -q origin HEAD:main && exit 0; sleep 5; done
+          exit 1
