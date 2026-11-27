@@ -951,10 +951,11 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="chips" id="gc-modes" style="margin-bottom:10px;">
       <span class="chip" data-m="buy" onclick="setGoldMode('buy')">🛍️ خرید</span>
       <span class="chip" data-m="sell" onclick="setGoldMode('sell')">💵 فروش</span>
+      <span class="chip" data-m="eval" onclick="setGoldMode('eval')">📈 ارزش امروز طلای قبلی</span>
     </div>
     <div style="display:flex;gap:8px;">
       <div class="form-group" style="flex:1;"><label class="form-label">وزن (گرم)</label><input type="text" inputmode="decimal" class="form-input" id="gc-w" placeholder="مثلاً 4.35" oninput="updateGoldCalc()"></div>
-      <div class="form-group" style="flex:1.4;"><label class="form-label">قیمت هر گرم ۱۸ عیار (تومان)</label><input type="text" inputmode="numeric" class="form-input" id="gc-p" placeholder="قیمت روز" oninput="sanitizeNumberInput(this);GC.pDirty=true;updateGoldCalc()"></div>
+      <div class="form-group" style="flex:1.4;"><label class="form-label" id="gc-p-lbl">قیمت هر گرم ۱۸ عیار (تومان)</label><input type="text" inputmode="numeric" class="form-input" id="gc-p" placeholder="قیمت روز" oninput="sanitizeNumberInput(this);GC.pDirty=true;updateGoldCalc()"></div>
     </div>
     <div class="lc-note" id="gc-p-meta" style="margin:-6px 0 10px;"></div>
     <div class="form-group"><label class="form-label">عیار</label>
@@ -972,9 +973,22 @@ html { height:100%; height:-webkit-fill-available; }
       </div>
       <div class="lc-note">قیمت در بازار برای طلای ۱۸ عیار (۷۵۰) اعلام می‌شود؛ ارزش عیار دیگر به نسبت خلوص حساب می‌شود (عیار ÷ ۷۵۰). عیار معمولاً روی قطعه حک شده است، مثلاً 750 یا 875.</div>
     </div>
+    <div id="gc-eval" style="display:none;">
+      <div class="lc-note" style="margin:-4px 0 10px;">اطلاعات را از فاکتور خرید وارد کنید. قیمت روز خرید را اپ نمی‌داند؛ از فاکتور بخوانید.</div>
+      <div class="form-group"><label class="form-label">قیمت هر گرم ۱۸ عیار در روز خرید (تومان)</label><input type="text" inputmode="numeric" class="form-input" id="gc-p0" placeholder="از فاکتور خرید" oninput="sanitizeNumberInput(this);updateGoldCalc()"></div>
+      <div class="form-group"><label class="form-label">تاریخ خرید (اختیاری)</label>
+        <div style="display:flex;gap:6px;">
+          <select class="form-select" id="gc-d0-d" onchange="updateGoldCalc()" style="flex:0.8;min-width:0;"></select>
+          <select class="form-select" id="gc-d0-m" onchange="updateGoldCalc()" style="flex:1.3;min-width:0;"></select>
+          <select class="form-select" id="gc-d0-y" onchange="updateGoldCalc()" style="flex:1;min-width:0;"></select>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">مبلغ کلی که پرداخت کردید (تومان، اختیاری)</label><input type="text" inputmode="numeric" class="form-input" id="gc-paid0" placeholder="مبلغ نهایی فاکتور خرید" oninput="sanitizeNumberInput(this);updateGoldCalc()"></div>
+      <div class="lc-note" style="margin:-6px 0 10px;">اگر مبلغ کل را ندارید، اجرت فاکتور را پایین بزنید تا برآورد شود.</div>
+    </div>
     <div id="gc-buy">
-      <div class="lc-note" style="margin:-4px 0 10px;">وزن بدون سنگ و نگین؛ قیمت هر گرم را همان‌طور که در فاکتور نوشته شده وارد کنید.</div>
-      <div class="form-group"><label class="form-label">اجرت ساخت</label>
+      <div class="lc-note" id="gc-buy-note" style="margin:-4px 0 10px;">وزن بدون سنگ و نگین؛ قیمت هر گرم را همان‌طور که در فاکتور نوشته شده وارد کنید.</div>
+      <div class="form-group"><label class="form-label" id="gc-wage-lbl">اجرت ساخت</label>
         <div style="display:flex;gap:6px;align-items:center;"><input type="text" inputmode="decimal" class="form-input" id="gc-wage" placeholder="مثلاً 12" oninput="updateGoldCalc()" style="flex:1;min-width:0;">
           <select class="form-select" id="gc-wage-type" onchange="updateGoldCalc()" style="width:auto;flex-shrink:0;"><option value="pct">٪ از ارزش طلا</option><option value="gram">تومان برای هر گرم</option><option value="total">تومان برای کل قطعه</option></select></div>
       </div>
@@ -982,8 +996,8 @@ html { height:100%; height:-webkit-fill-available; }
         <div class="form-group" style="flex:1;"><label class="form-label">سود فروشنده (٪)</label><input type="text" inputmode="decimal" class="form-input" id="gc-profit" value="7" oninput="updateGoldCalc()"></div>
         <div class="form-group" style="flex:1;"><label class="form-label">مالیات ارزش افزوده (٪)</label><input type="text" inputmode="decimal" class="form-input" id="gc-vat" value="10" oninput="updateGoldCalc()"></div>
       </div>
-      <div class="form-group"><label class="form-label">حق‌العمل جداگانه (تومان، اختیاری)</label><input type="text" inputmode="numeric" class="form-input" id="gc-fee" placeholder="ندارد" oninput="sanitizeNumberInput(this);updateGoldCalc()"></div>
-      <div class="form-group"><label class="form-label">مبلغ نهایی فاکتور فروشنده (تومان، اختیاری)</label><input type="text" inputmode="numeric" class="form-input" id="gc-inv" placeholder="برای چک کردن فاکتور" oninput="sanitizeNumberInput(this);updateGoldCalc()"></div>
+      <div class="form-group" id="gc-fee-wrap"><label class="form-label">حق‌العمل جداگانه (تومان، اختیاری)</label><input type="text" inputmode="numeric" class="form-input" id="gc-fee" placeholder="ندارد" oninput="sanitizeNumberInput(this);updateGoldCalc()"></div>
+      <div class="form-group" id="gc-inv-wrap"><label class="form-label">مبلغ نهایی فاکتور فروشنده (تومان، اختیاری)</label><input type="text" inputmode="numeric" class="form-input" id="gc-inv" placeholder="برای چک کردن فاکتور" oninput="sanitizeNumberInput(this);updateGoldCalc()"></div>
     </div>
     <div id="gc-sell" style="display:none;">
       <div class="form-group"><label class="form-label">کسری طلافروش (اختیاری)</label>
@@ -2740,10 +2754,17 @@ function openGoldCalc() {
   if (!g || Date.now() - g.at > 3600e3) fxMaybeAutoUpdate(true).then(function(){ gcFillPrice(); updateGoldCalc(); });
 }
 function setGoldMode(m, quiet) {
-  GC.mode = m === 'sell' ? 'sell' : 'buy';
+  GC.mode = (m === 'sell' || m === 'eval') ? m : 'buy';
+  var ev = GC.mode === 'eval';
   document.querySelectorAll('#gc-modes .chip').forEach(function(c){ c.classList.toggle('sel', c.dataset.m === GC.mode); });
-  document.getElementById('gc-buy').style.display = GC.mode === 'buy' ? '' : 'none';
+  // v1.26.0: حالت «ارزش امروز» = بخش gc-eval + اجرت/سود/مالیات بخش خرید (برای برآورد)، بدون حق‌العمل و چک فاکتور
+  document.getElementById('gc-buy').style.display = GC.mode === 'sell' ? 'none' : '';
+  document.getElementById('gc-eval').style.display = ev ? '' : 'none';
   document.getElementById('gc-sell').style.display = GC.mode === 'sell' ? '' : 'none';
+  ['gc-buy-note', 'gc-fee-wrap', 'gc-inv-wrap'].forEach(function(id){ document.getElementById(id).style.display = ev ? 'none' : ''; });
+  document.getElementById('gc-p-lbl').textContent = ev ? 'قیمت امروز هر گرم ۱۸ عیار (تومان)' : 'قیمت هر گرم ۱۸ عیار (تومان)';
+  document.getElementById('gc-wage-lbl').textContent = ev ? 'اجرت ساخت فاکتور خرید (اختیاری)' : 'اجرت ساخت';
+  if (ev) gcFillDateSelects();
   if (!quiet) updateGoldCalc();
 }
 function gcMarketToman() { var g = getFx().GOLD18; return g && g.rate > 0 ? Math.round(g.rate / 10) : 0; }
@@ -2777,6 +2798,30 @@ function onGoldKarat() {
   updateGoldCalc();
 }
 function gcKLabel(k) { return toFa(String(k).replace('.', '٫')); }
+// v1.26.0: انتخاب تاریخ خرید (شمسی) — پیش‌فرض «بدون تاریخ»
+function gcFillDateSelects() {
+  var y = document.getElementById('gc-d0-y'); if (y.options.length) return;
+  var cy = jPartsOf(todayGregorian()).jy, h = '<option value="">سال</option>';
+  for (var i = cy; i >= cy - 40; i--) h += '<option value="' + i + '">' + toFa(i) + '</option>';
+  y.innerHTML = h;
+  document.getElementById('gc-d0-m').innerHTML = '<option value="">ماه</option>' + [1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){ return '<option value="' + m + '">' + J.monthName(m) + '</option>'; }).join('');
+  var dh = '<option value="">روز</option>'; for (var d = 1; d <= 31; d++) dh += '<option value="' + d + '">' + toFa(d) + '</option>';
+  document.getElementById('gc-d0-d').innerHTML = dh;
+}
+// روزهای گذشته از تاریخ خرید؛ بدون سال = null. بدون ماه/روز = اول سال/ماه
+function gcHeldDays() {
+  var jy = parseInt(document.getElementById('gc-d0-y').value, 10); if (!jy) return null;
+  var jm = parseInt(document.getElementById('gc-d0-m').value, 10) || 1, jd = parseInt(document.getElementById('gc-d0-d').value, 10) || 1;
+  jd = Math.min(jd, jMonthLen(jy, jm));
+  var g = jToG(jy, jm, jd); if (!g) return null;
+  var p = g.split('-'), t = new Date(), d0 = new Date(+p[0], +p[1] - 1, +p[2]), d1 = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  return Math.round((d1 - d0) / 864e5);
+}
+function gcDurLabel(days) {
+  if (days < 31) return toFa(days) + ' روز';
+  var m = Math.round(days / 30.44), y = Math.floor(m / 12), r = m % 12;
+  return (y ? toFa(y) + ' سال' : '') + (y && r ? ' و ' : '') + (r ? toFa(r) + ' ماه' : '');
+}
 function goldBuyCalc(W, P, wage, wageType, s, t, F, K) {
   var G = W * P * (K || 750) / 750;
   var A = wageType === 'pct' ? G * wage / 100 : wageType === 'gram' ? W * wage : wage;
@@ -2840,6 +2885,41 @@ function updateGoldCalc() {
              '<div style="margin-top:4px;font-size:11px;">از فروشنده فاکتور تفکیک‌شده (وزن، عیار، اجرت، سود، مالیات) بخواهید.</div></div>';
       }
     }
+  } else if (GC.mode === 'eval') {
+    // v1.26.0 (درخواست صادق): ارزش امروز طلایی که قبلاً خریده شده و سود نسبت به خرید
+    var Ke = gcKarat(), kfe = Ke / 750, P0 = gcNum('gc-p0'), paid0 = gcNum('gc-paid0'), days = gcHeldDays();
+    var wte = document.getElementById('gc-wage-type').value, wagee = gcPctOrAmt('gc-wage', wte === 'pct');
+    var se = lcFloat('gc-profit'), te = lcFloat('gc-vat');
+    if (!(P0 > 0)) { out.innerHTML = '<div class="hint-box" style="font-size:12px;">قیمت هر گرم در روز خرید را از فاکتور وارد کنید.</div>'; return; }
+    var G1 = W * P * kfe, G0 = W * P0 * kfe;
+    var est = !paid0 && wagee > 0 ? goldBuyCalc(W, P0, wagee, wte, se, te, 0, Ke).total : 0;
+    var cost = paid0 || est || G0, costLbl = paid0 ? 'مبلغی که پرداخت کردید' : est ? 'مبلغ خرید (برآورد از اجرت)' : 'ارزش طلا در روز خرید';
+    var pl = G1 - cost, plPct = pl / cost * 100, pchg = (P - P0) / P0 * 100;
+    h += '<div class="hint-box gc-box" style="color:var(--text-main);">';
+    h += '<div style="text-align:center;margin-bottom:8px;"><div class="gc-big-lbl">ارزش امروز (اگر امروز بفروشید)</div><div class="lc-big" style="unicode-bidi:isolate;">' + gcFa(G1) + ' <span style="font-size:13px;font-weight:500;">تومان</span></div>' +
+         '<div style="font-size:13px;font-weight:700;color:' + (pl >= 0 ? 'var(--success)' : 'var(--danger)') + ';unicode-bidi:isolate;">' + (pl >= 0 ? 'سود ' : 'زیان ') + gcFa(Math.abs(pl)) + ' تومان (' + lcPct(Math.abs(plPct)) + ')</div></div>';
+    h += row('ارزش امروز (' + gcFa(W, 3) + ' گرم × ' + gcFa(P) + (Ke !== 750 ? ' × ' + gcKLabel(Ke) + '÷۷۵۰' : '') + ')', gcFa(G1));
+    if (Ke === 750) h += row('اگر طلافروش با مبنای ۷۴۰ بخرد', gcFa(G1 * 740 / 750) + ' تومان');
+    h += row('ارزش طلا در روز خرید (× ' + gcFa(P0) + ')', gcFa(G0));
+    h += row('تغییر قیمت هر گرم', (pchg >= 0 ? 'افزایش ' : 'کاهش ') + lcPct(Math.abs(pchg)));
+    h += '<div class="gc-sep"></div>';
+    h += row(costLbl, gcFa(cost) + ' تومان');
+    h += row(pl >= 0 ? 'سود نسبت به خرید' : 'زیان نسبت به خرید', gcFa(Math.abs(pl)) + ' تومان (' + lcPct(Math.abs(plPct)) + ')', true);
+    if (days != null && days > 0) {
+      h += row('مدت نگه‌داری', gcDurLabel(days));
+      if (days >= 30 && G1 > 0) {
+        var ann = (Math.pow(G1 / cost, 365 / days) - 1) * 100, annG = (Math.pow(P / P0, 365 / days) - 1) * 100;
+        h += row('بازده سالانه‌ی این خرید', (ann < 0 ? 'منفی ' : '') + lcPct(Math.abs(ann)), true);
+        h += row('رشد سالانه‌ی قیمت طلا در همین مدت', (annG < 0 ? 'منفی ' : '') + lcPct(Math.abs(annG)));
+      }
+    } else if (days != null && days < 0) h += '<div class="lc-note">تاریخ خرید بعد از امروز است.</div>';
+    if (wagee > 0) {
+      var rep = goldBuyCalc(W, P, wagee, wte, se, te, 0, Ke).total;
+      h += '<div class="gc-sep"></div>' + row('اگر همین قطعه را امروز نو بخرید (با همان اجرت)', gcFa(rep) + ' تومان');
+    }
+    if (!paid0 && !est) h += '<div class="lc-note">مبلغ پرداختی یا اجرت فاکتور را وارد نکرده‌اید؛ سود فقط نسبت به ارزش طلا در روز خرید است و اجرت، سود فروشنده و مالیاتِ خرید در آن نیامده.</div>';
+    else h += '<div class="lc-note">سود و زیان با همه‌ی هزینه‌های خرید (اجرت، سود فروشنده، مالیات) و بدون کسری فروش حساب شده است.</div>';
+    h += '</div>';
   } else {
     var dt = document.getElementById('gc-ded-type').value, d = gcPctOrAmt('gc-ded', dt === 'pct');
     var offer = gcNum('gc-offer'), paid = gcNum('gc-paid');
@@ -6852,13 +6932,17 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.25.2';
+var CURRENT_VERSION = '1.26.0';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.26.0', items:[
+    'در محاسبه‌گر طلا حالت «📈 ارزش امروز طلای قبلی» اضافه شد: وزن، عیار، قیمت هر گرم در روز خرید و مبلغ پرداختی را از فاکتور وارد کنید تا ارزش امروز و سود یا زیان را ببینید.',
+    'اگر تاریخ خرید را هم وارد کنید، مدت نگه‌داری، بازده سالانه‌ی خریدتان و رشد سالانه‌ی قیمت طلا در همان مدت نمایش داده می‌شود.'
+  ]},
   { v:'1.25.2', items:[
     'در محاسبه‌گر طلا می‌توانید عیار را انتخاب کنید (۱۸، ۲۱، ۲۲، ۲۴، ۷۴۰ یا عیار دلخواه)؛ ارزش طلا به نسبت خلوص حساب می‌شود.',
     'مبلغ نهایی و ریز فاکتور با اندازه‌ی بزرگ‌تر نمایش داده می‌شود و «اگر همین امروز بفروشید» زیر «هزینه‌ی برنگشتنی» آمده است.'
