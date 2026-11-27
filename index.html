@@ -101,6 +101,7 @@ html { height:100%; height:-webkit-fill-available; }
 .top-logo { width:38px; height:auto; flex-shrink:0; display:block; fill:var(--aqua); } /* v1.11.0: «س» به‌جای عکس گرد */
 .top-bar h1 { font-size:14px; font-weight:700; color:var(--text-main); }
 .top-date { font-size:12px; font-weight:700; color:var(--aqua-dark); }
+.top-actions { display:flex; gap:8px; align-items:center; } /* v1.22.0 */
 .export-fab { background:var(--aqua); border:none; border-radius:10px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:16px; box-shadow:var(--shadow-sm); }
 
 /* ── PAGES ── */
@@ -219,6 +220,25 @@ html { height:100%; height:-webkit-fill-available; }
 
 /* ── CHIPS ── */
 .bs-row { padding:7px 2px; border-bottom:1px solid rgba(0,0,0,0.06); }
+/* v1.22.0: دستیار سین */
+.as-item { display:flex; align-items:center; gap:12px; padding:14px 2px; border-bottom:1px solid var(--border); cursor:pointer; }
+.as-item:last-child { border-bottom:none; }
+.as-item.off { cursor:default; opacity:0.55; }
+.as-ico { width:42px; height:42px; border-radius:12px; background:var(--aqua-pale); border:1px solid var(--border-aqua); display:flex; align-items:center; justify-content:center; font-size:21px; flex-shrink:0; }
+.as-txt { flex:1; min-width:0; }
+.as-name { font-size:13px; font-weight:700; color:var(--text-main); }
+.as-desc { font-size:11px; color:var(--text-sub); margin-top:3px; line-height:1.7; }
+.as-soon { font-size:10px; font-weight:700; color:var(--aqua-deep); background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:99px; padding:2px 8px; flex-shrink:0; }
+.lc-sum { display:flex; justify-content:space-between; gap:8px; font-size:12px; padding:3px 0; }
+.lc-sum b { unicode-bidi:isolate; }
+.lc-big { font-size:18px; font-weight:800; color:var(--aqua-deep); }
+.lc-cmp { width:100%; border-collapse:collapse; font-size:10.5px; table-layout:fixed; }
+.lc-cmp th, .lc-cmp td { padding:6px 3px; text-align:center; border-bottom:1px solid var(--border); unicode-bidi:isolate; }
+.lc-cmp th { font-size:10.5px; font-weight:700; color:var(--text-mid); cursor:pointer; }
+.lc-cmp td:first-child, .lc-cmp th:first-child { text-align:right; color:var(--text-sub); font-weight:500; width:24%; }
+.lc-cmp .sel { background:var(--aqua-pale); color:var(--aqua-deep); font-weight:700; }
+.lc-cmp th.sel { color:var(--aqua-deep); }
+.lc-note { font-size:10px; color:var(--text-sub); margin-top:4px; line-height:1.7; }
 .chips { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:12px; }
 .chip { padding:6px 12px; border-radius:99px; font-size:11px; font-weight:500; background:var(--aqua-pale); color:var(--text-main); border:1px solid var(--border-aqua); cursor:pointer; transition:all 0.15s; }
 .chip.sel { background:var(--aqua); color:var(--on-primary); border-color:var(--aqua); font-weight:700; }
@@ -422,7 +442,10 @@ html { height:100%; height:-webkit-fill-available; }
       <h1>مدیریت مالی شخصی</h1>
     </div>
   </div>
-  <button class="export-fab" onclick="openModal('modal-export')" title="خروجی">📤</button>
+  <div class="top-actions">
+    <button class="export-fab" onclick="openAssistant()" title="دستیار سین" aria-label="دستیار سین">✨</button>
+    <button class="export-fab" onclick="openModal('modal-export')" title="خروجی">📤</button>
+  </div>
 </div>
 
 <!-- PAGE: DASHBOARD -->
@@ -618,6 +641,24 @@ html { height:100%; height:-webkit-fill-available; }
     <p class="about-text">خالص دارایی را لحظه‌به‌لحظه محاسبه و نمایش می‌دهد. با قابلیت تعریف صندوق‌های تخصیصی، ثبت تراکنش بانکی بر اساس پیامک بانکی، ارائه گزارش‌های ماهانه و هشدار بودجه، به شما کمک می‌کند بدانید پولتان کجا می‌رود.</p>
     <p class="about-text">تمام اطلاعات فقط روی گوشی خود شما می‌ماند و به هیچ سروری فرستاده نمی‌شود.</p>
     <p class="about-text">«<span class="kufi">سین</span>» در زبان پهلوی به معنای پرندهٔ شکاری بزرگ است.</p>
+  </div></div>
+</div>
+
+<!-- v1.22.0: PAGE: دستیار سین (از دکمه‌ی ✨ هدر؛ در نوار پایین نیست) -->
+<div class="page" id="page-assistant">
+  <div class="card"><div class="card-bar"></div><div class="card-body">
+    <div class="card-title">✨ دستیار <span class="kufi">سین</span></div>
+    <div style="font-size:11px;color:var(--text-sub);line-height:1.8;margin:-2px 0 6px;">ابزارهای کمکی برای تصمیم‌های مالی. این ابزارها چیزی در حساب‌های شما ثبت نمی‌کنند، مگر خودتان بخواهید.</div>
+    <div class="as-item" onclick="openLoanCalc()">
+      <div class="as-ico">🏦</div>
+      <div class="as-txt"><div class="as-name">محاسبه‌گر وام بانکی</div><div class="as-desc">پیش از گرفتن وام، قسط ماهانه، سود کل و هزینه‌ی واقعی را با روش‌های مختلف ببینید.</div></div>
+      <span class="si-val">←</span>
+    </div>
+    <div class="as-item off">
+      <div class="as-ico">💰</div>
+      <div class="as-txt"><div class="as-name">دستیار خرید طلا</div><div class="as-desc">به‌زودی</div></div>
+      <span class="as-soon">به‌زودی</span>
+    </div>
   </div></div>
 </div>
 
@@ -842,7 +883,7 @@ html { height:100%; height:-webkit-fill-available; }
       <div class="form-group" style="flex:1;"><label class="form-label">نرخ سود سالانه (٪)</label><input type="text" inputmode="decimal" class="form-input" id="bl-rate" placeholder="مثلاً 23" oninput="updateBankLoanPreview()"></div>
       <div class="form-group" style="flex:1;"><label class="form-label">تعداد اقساط (ماه)</label><input type="text" inputmode="numeric" class="form-input" id="bl-months" placeholder="مثلاً 36" oninput="updateBankLoanPreview()"></div>
     </div>
-    <div class="form-group"><label class="form-label">روش محاسبه</label><select class="form-select" id="bl-method" onchange="onBankMethodChange()"><option value="annuity">اقساط مساوی (مانده‌ی کاهنده) — رایج</option><option value="simple">روش ساده‌شده‌ی قدیمی</option></select><div style="font-size:10px;color:var(--text-sub);margin-top:4px;line-height:1.7;">اگر نمی‌دانید، «اقساط مساوی» بماند. اگر قسط بانک با عدد پایین جور نبود، روش دیگر را امتحان کنید.</div></div>
+    <div class="form-group"><label class="form-label">روش محاسبه</label><select class="form-select" id="bl-method" onchange="onBankMethodChange()"><option value="annuity">اقساط مساوی (مانده‌ی کاهنده) — رایج</option><option value="declining">اقساط کاهنده (اصل مساوی)</option><option value="simple">روش ساده‌شده‌ی قدیمی</option></select><div style="font-size:10px;color:var(--text-sub);margin-top:4px;line-height:1.7;">اگر نمی‌دانید، «اقساط مساوی» بماند. اگر قسط بانک با عدد پایین جور نبود، روش دیگر را امتحان کنید.</div></div>
     <div class="form-group"><label class="form-label">مبلغ قسط ماهانه (ریال)</label><input type="text" inputmode="numeric" class="form-input" id="bl-inst" placeholder="محاسبه می‌شود" oninput="onBankInstInput(this)"><div id="bl-inst-note" style="font-size:10px;color:var(--text-sub);margin-top:4px;"></div></div>
     <div class="hint-box" id="bl-preview" style="display:none;line-height:1.9;font-size:12px;margin-bottom:12px;"></div>
     <div style="display:flex;gap:8px;">
@@ -851,9 +892,49 @@ html { height:100%; height:-webkit-fill-available; }
     </div>
     <div class="form-group"><label class="form-label">اقساط پرداخت‌شده تا امروز</label><input type="text" inputmode="numeric" class="form-input" id="bl-paid" placeholder="برای وام تازه خالی بگذارید" oninput="updateBankLoanPreview()"><div style="font-size:10px;color:var(--text-sub);margin-top:4px;">برای وامی که از قبل گرفته‌اید؛ این اقساط تراکنشی نمی‌سازند و موجودی حساب‌ها تغییر نمی‌کند.</div></div>
     <div class="form-group"><label class="form-label" id="bl-acc-label">حساب واریز وام</label><select class="form-select" id="bl-account"></select></div>
-    <div class="form-group" id="bl-deposit-wrap"><label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;"><input type="checkbox" id="bl-deposit" onchange="document.getElementById('bl-deposit-wrap').dataset.touched='1'"> واریز وام به این حساب هم ثبت شود</label><div style="font-size:10px;color:var(--text-sub);margin-top:4px;">اگر وام قبلاً به حساب آمده و موجودی حساب آن را دارد، تیک را بردارید.</div></div>
+    <div class="form-group" id="bl-deposit-wrap"><label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;"><input type="checkbox" id="bl-deposit" onchange="document.getElementById('bl-deposit-wrap').dataset.touched='1';updateBankLoanPreview()"> واریز وام به این حساب هم ثبت شود</label><div style="font-size:10px;color:var(--text-sub);margin-top:4px;">اگر وام قبلاً به حساب آمده و موجودی حساب آن را دارد، تیک را بردارید.</div></div>
+    <div class="form-group" id="bl-upfront-wrap"><label class="form-label">کارمزد / هزینه‌ی ابتدای وام (ریال، اختیاری)</label><input type="text" inputmode="numeric" class="form-input" id="bl-upfront" placeholder="ندارد" oninput="sanitizeNumberInput(this)"><div style="font-size:10px;color:var(--text-sub);margin-top:4px;line-height:1.7;">کارمزد، یا سود دوره‌ی تنفس که به مبلغ وام اضافه شده. وام با مبلغ کامل ثبت می‌شود و این مبلغ به‌صورت پرداخت در دسته‌ی «سود وام» از همان حساب کم می‌شود.</div></div>
+    <div class="hint-box" id="bl-calc-note" style="display:none;line-height:1.8;"></div>
     <button class="btn-primary" onclick="submitBankLoan()">ثبت وام</button>
     <button class="btn-secondary" onclick="closeModal('modal-bank-loan')">انصراف</button>
+  </div>
+</div>
+
+<!-- v1.22.0: دستیار سین — محاسبه‌گر وام -->
+<div class="modal-overlay" id="modal-loan-calc" onclick="closeModalOutside(event,'modal-loan-calc')">
+  <div class="modal-sheet" style="max-height:92vh;">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🏦 محاسبه‌گر وام بانکی</div>
+    <div class="form-group"><label class="form-label">مبلغ وام (ریال)</label><input type="text" inputmode="numeric" class="form-input" id="lc-amount" placeholder="مثال: 1,000,000,000" oninput="sanitizeNumberInput(this);updateLoanCalc()"><div class="lc-note" id="lc-amount-words"></div></div>
+    <div style="display:flex;gap:8px;">
+      <div class="form-group" style="flex:1;"><label class="form-label">نرخ سود سالانه (٪)</label><input type="text" inputmode="decimal" class="form-input" id="lc-rate" placeholder="مثلاً 23" oninput="updateLoanCalc()"></div>
+      <div class="form-group" style="flex:1;"><label class="form-label">تعداد اقساط (ماه)</label><input type="text" inputmode="numeric" class="form-input" id="lc-months" placeholder="مثلاً 36" oninput="updateLoanCalc()"></div>
+    </div>
+    <div class="form-group"><label class="form-label">روش محاسبه</label>
+      <div class="chips" id="lc-methods" style="margin-bottom:4px;">
+        <span class="chip" data-m="annuity" onclick="setLoanCalcMethod('annuity')">اقساط مساوی</span>
+        <span class="chip" data-m="declining" onclick="setLoanCalcMethod('declining')">اقساط کاهنده</span>
+        <span class="chip" data-m="simple" onclick="setLoanCalcMethod('simple')">روش ساده‌شده</span>
+      </div>
+      <div class="lc-note" id="lc-method-note"></div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <div class="form-group" style="flex:1;"><label class="form-label">دوره‌ی تنفس (ماه)</label><input type="text" inputmode="numeric" class="form-input" id="lc-grace" placeholder="ندارد" oninput="updateLoanCalc()"></div>
+      <div class="form-group" style="flex:1;"><label class="form-label">کارمزد اولیه</label>
+        <div style="display:flex;gap:6px;align-items:center;"><input type="text" inputmode="decimal" class="form-input" id="lc-fee" placeholder="ندارد" oninput="onLoanCalcFeeInput(this)" style="flex:1;min-width:0;">
+          <select class="form-select" id="lc-fee-type" onchange="document.getElementById('lc-fee').value='';updateLoanCalc()" style="width:auto;flex-shrink:0;"><option value="pct">٪</option><option value="amt">ریال</option></select></div>
+      </div>
+    </div>
+    <div class="form-group" id="lc-grace-mode-wrap" style="display:none;"><label class="form-label">سود ماه‌های تنفس</label>
+      <div class="chips" id="lc-grace-modes" style="margin-bottom:4px;">
+        <span class="chip" data-g="pay" onclick="setLoanCalcGraceMode('pay')">هر ماه پرداخت شود</span>
+        <span class="chip" data-g="cap" onclick="setLoanCalcGraceMode('cap')">به اصل وام اضافه شود</span>
+      </div>
+      <div class="lc-note">در ماه‌های تنفس قسطی نیست، ولی سود مبلغ وام (ساده، بدون سودِ سود) حساب می‌شود. روش بانک خود را از قرارداد بپرسید.</div>
+    </div>
+    <div id="lc-result"></div>
+    <button class="btn-primary" id="lc-register" onclick="loanCalcRegister()" style="display:none;">🏦 ثبت این وام</button>
+    <button class="btn-secondary" onclick="closeModal('modal-loan-calc')">بستن</button>
   </div>
 </div>
 
@@ -2289,12 +2370,15 @@ function daysFromToday(gStr) {
 // 'annuity' اقساط مساوی با مانده‌ی کاهنده: A = P·r·(1+r)^n / ((1+r)^n − 1)، r = نرخ سالانه ÷ ۱۲۰۰ (= PMT اکسل)
 // 'simple'  روش ساده‌شده‌ی قدیمی (v1.17.1): سود کل I = P·R·(n+1) ÷ ۲۴۰۰، قسط = (P + I) ÷ n؛
 //           سود قسط k متناسب با (n−k+1) — یعنی سود روی اصلی که هر ماه P/n کم می‌شود — و جمعشان دقیقاً I
-var BANK_METHODS = { annuity: 'اقساط مساوی', simple: 'روش ساده‌شده' };
+// 'declining' اقساط کاهنده / اصل مساوی (v1.22.0): هر ماه P/n از اصل + سود مانده؛ installment = قسط اول (فقط برای نمایش)
+var BANK_METHODS = { annuity: 'اقساط مساوی', declining: 'اقساط کاهنده', simple: 'روش ساده‌شده' };
+function bankMethodOf(m) { return BANK_METHODS[m] ? m : 'annuity'; }
 function bankSimpleInterest(P, ratePct, n) { return Math.round(P * (ratePct || 0) * (n + 1) / 2400); }
 function bankCalcInstallment(P, ratePct, n, method) {
   if (!(P > 0) || !(n > 0)) return 0;
   var r = (ratePct || 0) / 1200;
   if (!r) return Math.ceil(P / n);
+  if (method === 'declining') return Math.round(P / n) + Math.round(P * r);
   if (method === 'simple') return Math.round((P + bankSimpleInterest(P, ratePct, n)) / n);
   var f = Math.pow(1 + r, n);
   return Math.round(P * r * f / (f - 1));
@@ -2305,6 +2389,7 @@ function bankScheduleRaw(P, ratePct, n, inst, firstDue, method) {
   var r = (ratePct || 0) / 1200, bal = P, rows = [];
   var fj = firstDue ? gToJ(firstDue) : null;
   var simple = method === 'simple', I = simple ? bankSimpleInterest(P, ratePct, n) : 0;
+  var decl = method === 'declining', step = Math.round(P / n);
   var T = n * (n + 1) / 2, cumW = 0, cumI = 0;
   for (var k = 1; k <= n; k++) {
     var interest;
@@ -2313,7 +2398,7 @@ function bankScheduleRaw(P, ratePct, n, inst, firstDue, method) {
       var c = Math.round(I * cumW / T);
       interest = c - cumI; cumI = c;
     } else interest = Math.round(bal * r);
-    var princ = (k === n) ? bal : Math.min(bal, Math.max(0, inst - interest));
+    var princ = (k === n) ? bal : Math.min(bal, decl ? step : Math.max(0, inst - interest));
     bal -= princ;
     var dj = fj ? jAddMonths(fj, k - 1) : null;
     rows.push({ n: k, due: dj ? jToG(dj.jy, dj.jm, dj.jd) : null, payment: princ + interest,
@@ -2406,15 +2491,18 @@ function openBankLoanModal(prefill) {
   document.getElementById('bl-bank').value = '';
   document.getElementById('bl-title').value = prefill.desc || '';
   document.getElementById('bl-amount').value = prefill.amount ? addCommas(prefill.amount) : '';
-  document.getElementById('bl-rate').value = '';
-  document.getElementById('bl-months').value = '';
+  document.getElementById('bl-rate').value = prefill.rate != null ? String(prefill.rate) : '';
+  document.getElementById('bl-months').value = prefill.months ? String(prefill.months) : '';
   document.getElementById('bl-inst').value = '';
   document.getElementById('bl-paid').value = '';
-  document.getElementById('bl-method').value = 'annuity';
+  document.getElementById('bl-method').value = bankMethodOf(prefill.method);
+  document.getElementById('bl-upfront').value = prefill.upfront ? addCommas(prefill.upfront) : '';
+  var cn = document.getElementById('bl-calc-note');
+  cn.innerHTML = prefill.calcNote || ''; cn.style.display = prefill.calcNote ? '' : 'none';
   var d = prefill.date || todayGregorian();
   document.getElementById('bl-date').value = d;
   var fj = jAddMonths(gToJ(d), 1);
-  document.getElementById('bl-first').value = jToG(fj.jy, fj.jm, fj.jd) || d;
+  document.getElementById('bl-first').value = prefill.first || jToG(fj.jy, fj.jm, fj.jd) || d;
   document.getElementById('bl-account').innerHTML = loanAccountOptions(prefill.accountId);
   document.getElementById('bl-deposit').checked = true;
   document.getElementById('bl-deposit-wrap').dataset.touched = '';
@@ -2438,7 +2526,8 @@ function readBankLoanForm() {
     first: document.getElementById('bl-first').value,
     accountId: document.getElementById('bl-account').value,
     deposit: document.getElementById('bl-deposit').checked,
-    method: document.getElementById('bl-method').value === 'simple' ? 'simple' : 'annuity'
+    method: bankMethodOf(document.getElementById('bl-method').value),
+    upfront: getNumericValue('bl-upfront')
   };
 }
 function onBankMethodChange() { instDirty = false; updateBankLoanPreview(); }
@@ -2448,23 +2537,28 @@ function updateBankLoanPreview() {
   var box = document.getElementById('bl-preview');
   var calc = bankCalcInstallment(f.principal, f.rate, f.months, f.method);
   var instEl = document.getElementById('bl-inst');
+  var decl = f.method === 'declining';
+  if (decl) instDirty = false;   // در اقساط کاهنده قسط از روی اصل مساوی ساخته می‌شود و دستی نیست
+  instEl.readOnly = decl;
   if (!instDirty) { instEl.value = calc ? addCommas(calc) : ''; f.inst = calc; }
-  document.getElementById('bl-inst-note').textContent = calc
-    ? (instDirty && f.inst !== calc ? 'مبلغ محاسبه‌شده: ' + toFa(addCommas(calc)) + ' ریال' : 'محاسبه‌شده؛ اگر عدد بانک فرق دارد، اصلاح کنید')
-    : '';
+  document.getElementById('bl-inst-note').textContent = !calc ? '' : decl ? 'قسط اول؛ قسط‌های بعدی کم‌کم کمتر می‌شوند'
+    : (instDirty && f.inst !== calc ? 'مبلغ محاسبه‌شده: ' + toFa(addCommas(calc)) + ' ریال' : 'محاسبه‌شده؛ اگر عدد بانک فرق دارد، اصلاح کنید');
   // اگر کسی سراغ اقساط پرداخت‌شده رفته، پیش‌فرض واریز را خاموش کن (وام قبلاً واریز شده)
   var depWrap = document.getElementById('bl-deposit-wrap');
   if (!bankNewCtx && f.paid > 0 && !depWrap.dataset.touched) document.getElementById('bl-deposit').checked = false;
   if (!bankNewCtx && f.paid === 0 && !depWrap.dataset.touched) document.getElementById('bl-deposit').checked = true;
+  // v1.22.0: هزینه‌ی ابتدای وام فقط وقتی واریز وام هم ثبت می‌شود
+  document.getElementById('bl-upfront-wrap').style.display = (!bankNewCtx && document.getElementById('bl-deposit').checked) ? '' : 'none';
   var inst = f.inst || calc;
   if (!(f.principal > 0) || !(f.months > 0) || !inst) { box.style.display = 'none'; return; }
   var sched = bankScheduleRaw(f.principal, f.rate, f.months, inst, f.first || null, f.method);
   var totInt = sched.reduce(function(s, r){ return s + r.interest; }, 0);
-  var h = '<div style="display:flex;justify-content:space-between;"><span>قسط ماهانه</span><b>' + toFa(addCommas(inst)) + ' ریال</b></div>' +
+  var h = (decl ? '<div style="display:flex;justify-content:space-between;"><span>قسط اول ← قسط آخر</span><b>' + toFa(addCommas(sched[0].payment)) + ' ← ' + toFa(addCommas(sched[sched.length - 1].payment)) + '</b></div>'
+            : '<div style="display:flex;justify-content:space-between;"><span>قسط ماهانه</span><b>' + toFa(addCommas(inst)) + ' ریال</b></div>') +
     '<div style="display:flex;justify-content:space-between;"><span>سود کل</span><b>' + toFa(addCommas(totInt)) + ' ریال</b></div>' +
     '<div style="display:flex;justify-content:space-between;"><span>جمع بازپرداخت</span><b>' + toFa(addCommas(f.principal + totInt)) + ' ریال</b></div>';
   var last = sched[sched.length - 1];
-  if (last && Math.abs(last.payment - inst) > Math.max(1000, inst * 0.02)) {
+  if (!decl && last && Math.abs(last.payment - inst) > Math.max(1000, inst * 0.02)) {
     h += '<div style="color:#9a7d0a;margin-top:4px;">⚠️ قسط آخر ' + toFa(addCommas(last.payment)) + ' ریال می‌شود؛ مبلغ قسط را با قرارداد بانک چک کنید.</div>';
   }
   if (f.paid > 0 && f.paid < f.months) {
@@ -2482,7 +2576,10 @@ function submitBankLoan() {
   if (!f.first) { alert('تاریخ اولین قسط را وارد کنید'); return; }
   if (f.paid >= f.months) { alert('تعداد اقساط پرداخت‌شده باید کمتر از کل اقساط باشد'); return; }
   if (!f.accountId) { alert('حساب را انتخاب کنید'); return; }
-  var inst = f.inst || bankCalcInstallment(f.principal, f.rate, f.months, f.method);
+  var upfront = (!bankNewCtx && f.deposit) ? (f.upfront || 0) : 0;
+  if (upfront >= f.principal) { alert('هزینه‌ی ابتدای وام باید از مبلغ وام کمتر باشد'); return; }
+  var inst = f.method === 'declining' ? bankCalcInstallment(f.principal, f.rate, f.months, f.method)
+           : (f.inst || bankCalcInstallment(f.principal, f.rate, f.months, f.method));
   var acc = DB.accounts.find(function(a){ return a.id === f.accountId; });
   var cur = acc ? acc.currency : 'IRR';
   var baseTx = bankNewCtx ? DB.transactions.find(function(t){ return t.id === bankNewCtx.baseTxId; }) : null;
@@ -2503,9 +2600,177 @@ function submitBankLoan() {
   } else if (f.deposit) {
     DB.transactions.push({ id: 'tx' + Date.now(), type: 'loan-taken', amount: f.principal, accountId: f.accountId,
                            loanId: loanId, desc: desc, date: dateISO });
+    // v1.22.0: کارمزد / سود تنفسِ افزوده — وام کامل بدهی است، این مبلغ هزینه‌ی «سود وام» از همان حساب
+    if (upfront > 0) {
+      l.upfront = upfront;
+      DB.transactions.push({ id: 'tx' + Date.now() + '_uf', type: 'expense', amount: upfront, accountId: f.accountId,
+                             catId: ensureLoanInterestCat(), loanId: loanId,
+                             desc: 'کارمزد و هزینه‌ی ابتدای ' + loanLabel(l) + ' (' + f.bank + ')', date: dateISO });
+    }
   }
   bankNewCtx = null;
   saveDB(); closeModal('modal-bank-loan'); renderAll();
+}
+
+// ═══════════════════════════════════════
+// SIN ASSISTANT — دستیار سین (v1.22.0)
+// ═══════════════════════════════════════
+// صفحه‌ی جدا (#page-assistant) از دکمه‌ی ✨ هدر؛ در نوار پایین آیتمی ندارد. ابزار تازه = یک .as-item در همان صفحه.
+function openAssistant() {
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('page-assistant').classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+  var sa = document.getElementById('scrollArea'); if (sa) sa.scrollTop = 0;
+}
+
+// ─── محاسبه‌گر وام: فقط محاسبه، چیزی ذخیره نمی‌کند (جز با «ثبت این وام» ← openBankLoanModal) ───
+// از همان موتور وام بانکی (bankCalcInstallment / bankScheduleRaw) استفاده می‌کند تا عدد ثبت‌شده همان عدد محاسبه باشد.
+// تنفس: سود ساده‌ی ماهانه روی مبلغ وام (round(P·r)) — یا هر ماه پرداخت ('pay') یا به اصل اضافه ('cap').
+// نرخ واقعی = IRR ماهانه‌ی (دریافتی خالص، پرداخت‌ها) × ۱۲ — هم‌سنجِ نرخ اعلامی بانک.
+var LC = { method: 'annuity', grace: 'pay', showSched: false, last: null };
+var LC_METHOD_NOTES = {
+  annuity: 'رایج‌ترین روش بانک‌ها: همه‌ی قسط‌ها یکسان‌اند و سود هر ماه روی مانده‌ی وام حساب می‌شود.',
+  declining: 'هر ماه سهم ثابتی از اصل وام به‌اضافه‌ی سودِ مانده پرداخت می‌شود؛ قسط اول از همه بیشتر است و قسط‌ها کم‌کم کم می‌شوند. سود کل از اقساط مساوی کمتر است.',
+  simple: 'روش قدیمی برخی بانک‌ها: سود کل با فرمول «مبلغ × نرخ × (تعداد اقساط + ۱) ÷ ۲۴۰۰» حساب و مساوی بین قسط‌ها پخش می‌شود. فقط اگر قرارداد بانک همین روش را گفته باشد به آن تکیه کنید.'
+};
+var LC_ORDER = ['annuity', 'declining', 'simple'];
+function faMoneyWords(rial) {
+  var t = rial / 10, u = '';
+  if (t >= 1e9) { t /= 1e9; u = ' میلیارد'; } else if (t >= 1e6) { t /= 1e6; u = ' میلیون'; } else if (t >= 1e3) { t /= 1e3; u = ' هزار'; }
+  var v = Math.round(t * 100) / 100;
+  return toFa(String(v).replace('.', '٫')) + u + ' تومان';
+}
+function openLoanCalc() {
+  setLoanCalcMethod(LC.method, true); setLoanCalcGraceMode(LC.grace, true);
+  updateLoanCalc();
+  openModal('modal-loan-calc');
+}
+function setLoanCalcMethod(m, quiet) {
+  LC.method = bankMethodOf(m);
+  document.querySelectorAll('#lc-methods .chip').forEach(function(c){ c.classList.toggle('sel', c.dataset.m === LC.method); });
+  document.getElementById('lc-method-note').textContent = LC_METHOD_NOTES[LC.method];
+  if (!quiet) updateLoanCalc();
+}
+function setLoanCalcGraceMode(g, quiet) {
+  LC.grace = g === 'cap' ? 'cap' : 'pay';
+  document.querySelectorAll('#lc-grace-modes .chip').forEach(function(c){ c.classList.toggle('sel', c.dataset.g === LC.grace); });
+  if (!quiet) updateLoanCalc();
+}
+function lcInt(id) { return parseInt(normalizeDigits(document.getElementById(id).value).replace(/\D/g, ''), 10) || 0; }
+function lcFloat(id) { return parseFloat(normalizeDigits(document.getElementById(id).value).replace(/[^0-9.]/g, '')) || 0; }
+function readLoanCalc() {
+  var P = getNumericValue('lc-amount');
+  var feeType = document.getElementById('lc-fee-type').value;
+  var feeEl = document.getElementById('lc-fee');
+  var fee = feeType === 'pct' ? Math.round(P * lcFloat('lc-fee') / 100) : (parseInt(normalizeDigits(feeEl.value).replace(/\D/g, ''), 10) || 0);
+  return { P: P, rate: lcFloat('lc-rate'), n: lcInt('lc-months'), g: lcInt('lc-grace'), fee: fee, feeType: feeType };
+}
+// IRR ماهانه با دوبخشی: net امروز دریافت، flows[k] در پایان ماه k+1 پرداخت
+function loanIrr(net, flows) {
+  if (!(net > 0)) return NaN;
+  var sum = flows.reduce(function(s, x){ return s + x; }, 0);
+  if (sum <= net) return 0;
+  function npv(i) { var v = 0, d = 1; for (var k = 0; k < flows.length; k++) { d /= (1 + i); v += flows[k] * d; } return v - net; }
+  var lo = 0, hi = 1;
+  while (npv(hi) > 0 && hi < 64) hi *= 2;
+  for (var it = 0; it < 80; it++) { var mid = (lo + hi) / 2; if (npv(mid) > 0) lo = mid; else hi = mid; }
+  return (lo + hi) / 2;
+}
+function loanCalcRun(P, rate, n, method, g, gmode, fee) {
+  var gInt = g ? Math.round(P * rate / 1200) : 0;
+  var cap = g > 0 && gmode === 'cap';
+  var base = cap ? P + gInt * g : P;
+  var inst = bankCalcInstallment(base, rate, n, method);
+  var sched = bankScheduleRaw(base, rate, n, inst, null, method);
+  var gracePay = (g > 0 && !cap) ? gInt : 0;
+  var flows = [];
+  for (var i = 0; i < g; i++) flows.push(gracePay);
+  sched.forEach(function(r){ flows.push(r.payment); });
+  var totalPaid = flows.reduce(function(s, x){ return s + x; }, 0);
+  var irr = loanIrr(P - fee, flows);
+  return { method: method, P: P, base: base, inst: inst, sched: sched, g: g, cap: cap, gInt: gInt, gracePay: gracePay,
+           first: sched[0].payment, last: sched[sched.length - 1].payment,
+           totalPaid: totalPaid, interest: totalPaid - P, fee: fee, cost: totalPaid - P + fee, net: P - fee,
+           apr: isNaN(irr) ? NaN : irr * 1200 };
+}
+function lcRial(v) { return toFa(addCommas(Math.round(v))); }
+function lcPct(v) { return isNaN(v) ? '—' : toFa((Math.round(v * 100) / 100).toFixed(2).replace(/\.?0+$/, '').replace('.', '٫')) + '٪'; }
+function onLoanCalcFeeInput(el) { if (document.getElementById('lc-fee-type').value === 'amt') sanitizeNumberInput(el); updateLoanCalc(); }
+function updateLoanCalc() {
+  var f = readLoanCalc();
+  var out = document.getElementById('lc-result'), btn = document.getElementById('lc-register');
+  document.getElementById('lc-amount-words').textContent = f.P > 0 ? '= ' + faMoneyWords(f.P) : '';
+  document.getElementById('lc-grace-mode-wrap').style.display = f.g > 0 ? '' : 'none';
+  var err = '';
+  if (!(f.P > 0) || !(f.n > 0)) err = 'مبلغ وام و تعداد اقساط را وارد کنید تا نتیجه نمایش داده شود.';
+  else if (f.n > 600) err = 'تعداد اقساط حداکثر ۶۰۰ ماه است.';
+  else if (f.rate > 100) err = 'نرخ سود را درست وارد کنید.';
+  else if (f.g > 60) err = 'دوره‌ی تنفس حداکثر ۶۰ ماه است.';
+  else if (f.fee >= f.P) err = 'کارمزد باید از مبلغ وام کمتر باشد.';
+  if (err) { out.innerHTML = '<div class="hint-box" style="font-size:12px;">' + err + '</div>'; btn.style.display = 'none'; LC.last = null; return; }
+  var res = {};
+  LC_ORDER.forEach(function(m){ res[m] = loanCalcRun(f.P, f.rate, f.n, m, f.g, LC.grace, f.fee); });
+  var s = res[LC.method];
+  LC.last = { f: f, res: s };
+  function row(label, val, strong) { return '<div class="lc-sum"><span>' + label + '</span>' + (strong ? '<b>' : '<span style="unicode-bidi:isolate;">') + val + (strong ? '</b>' : '</span>') + '</div>'; }
+  var h = '<div class="hint-box" style="font-size:12px;line-height:1.8;color:var(--text-main);">';
+  h += '<div style="text-align:center;margin-bottom:6px;"><div style="font-size:11px;color:var(--text-sub);">' +
+       (LC.method === 'declining' ? 'قسط اول ← قسط آخر' : 'قسط ماهانه') + ' • ' + BANK_METHODS[LC.method] + '</div>' +
+       '<div class="lc-big" style="unicode-bidi:isolate;">' + (LC.method === 'declining' ? lcRial(s.first) + ' ← ' + lcRial(s.last) : lcRial(s.first)) + ' <span style="font-size:11px;font-weight:500;">ریال</span></div>' +
+       '<div style="font-size:10px;color:var(--text-sub);">' + toFa(f.n) + ' قسط' + (f.g ? ' بعد از ' + toFa(f.g) + ' ماه تنفس' : '') + '</div></div>';
+  if (f.g) h += row(s.cap ? 'سود ماه‌های تنفس (افزوده به مبلغ وام)' : 'سود هر ماهِ تنفس (فقط سود)', lcRial(s.cap ? s.gInt * f.g : s.gInt) + ' ریال');
+  h += row('سود کل (اضافه بر مبلغ وام)', lcRial(s.interest) + ' ریال', true);
+  h += row('نسبت سود به مبلغ وام', lcPct(s.interest / f.P * 100));
+  h += row('جمع بازپرداخت', lcRial(s.totalPaid) + ' ریال', true);
+  if (f.fee) {
+    h += row('کارمزد اولیه', lcRial(f.fee) + ' ریال');
+    h += row('هزینه‌ی واقعی وام (سود + کارمزد)', lcRial(s.cost) + ' ریال', true);
+    h += row('دریافتی خالص، اگر کارمزد کسر شود', lcRial(s.net) + ' ریال');
+  }
+  h += row('نرخ واقعی سالانه', lcPct(s.apr), true);
+  if (f.fee || f.g || LC.method === 'simple') h += '<div class="lc-note">نرخ واقعی هزینه‌ی پول را با زمان پرداخت‌ها می‌سنجد و با نرخ اعلامی بانک (' + lcPct(f.rate) + ') قابل مقایسه است' + (f.fee ? '؛ کارمزد آن را بالا می‌برد' : '') + '.</div>';
+  h += '</div>';
+  // مقایسه
+  h += '<div style="font-size:12px;font-weight:700;color:var(--text-mid);margin:4px 0 4px;">مقایسه‌ی روش‌ها</div>';
+  h += '<table class="lc-cmp"><tr><th></th>' + LC_ORDER.map(function(m){ return '<th data-lcm="' + m + '"' + (m === LC.method ? ' class="sel"' : '') + '>' + BANK_METHODS[m] + '</th>'; }).join('') + '</tr>';
+  [['قسط اول', 'first'], ['قسط آخر', 'last'], ['سود کل', 'interest'], ['جمع بازپرداخت', 'totalPaid'], ['نرخ واقعی', 'apr']].forEach(function(rw){
+    h += '<tr><td>' + rw[0] + '</td>' + LC_ORDER.map(function(m){
+      var v = res[m][rw[1]];
+      return '<td data-lcm="' + m + '"' + (m === LC.method ? ' class="sel"' : '') + '>' + (rw[1] === 'apr' ? lcPct(v) : lcRial(v)) + '</td>';
+    }).join('') + '</tr>';
+  });
+  h += '</table><div class="lc-note" style="margin-bottom:10px;">ارقام به ریال. برای دیدن جزئیات هر روش، روی ستون آن بزنید.</div>';
+  // جدول اقساط
+  h += '<button class="btn-secondary" id="lc-sched-btn" style="margin:0 0 8px;">' + (LC.showSched ? '▲ بستن جدول اقساط' : '📅 نمایش جدول اقساط (' + toFa(f.g + f.n) + ' ماه)') + '</button>';
+  if (LC.showSched) {
+    var rows = '';
+    if (s.g && !s.cap) for (var i = 1; i <= s.g; i++) rows += '<div class="bs-row"><div style="display:flex;justify-content:space-between;font-size:12px;"><span><b>ماه ' + toFa(i) + '</b> <span style="color:var(--text-sub);">تنفس</span></span><b style="unicode-bidi:isolate;">' + lcRial(s.gracePay) + '</b></div><div style="font-size:10px;color:var(--text-sub);margin-top:2px;">فقط سود • مانده ' + lcRial(s.P) + '</div></div>';
+    if (s.g && s.cap) rows += '<div class="bs-row" style="font-size:11px;color:var(--text-sub);">' + toFa(s.g) + ' ماه تنفس بدون پرداخت؛ مانده‌ی وام به ' + lcRial(s.base) + ' ریال می‌رسد.</div>';
+    s.sched.forEach(function(r){
+      rows += '<div class="bs-row"><div style="display:flex;justify-content:space-between;font-size:12px;"><span><b>قسط ' + toFa(r.n) + '</b>' + (s.g ? ' <span style="color:var(--text-sub);">ماه ' + toFa(s.g + r.n) + '</span>' : '') + '</span><b style="unicode-bidi:isolate;">' + lcRial(r.payment) + '</b></div>' +
+              '<div style="font-size:10px;color:var(--text-sub);margin-top:2px;">اصل ' + lcRial(r.principal) + ' • سود ' + lcRial(r.interest) + ' • مانده ' + lcRial(r.balance) + '</div></div>';
+    });
+    h += '<div style="max-height:280px;overflow-y:auto;margin-bottom:10px;border:1px solid var(--border);border-radius:10px;padding:0 8px;">' + rows + '</div>';
+  }
+  h += '<div class="lc-note" style="margin-bottom:12px;">این محاسبه تقریبی است و ممکن است با عدد بانک چند ریال فرق کند. سپرده‌ی مسدود، بیمه و جریمه‌ی دیرکرد در آن نیست؛ عدد نهایی را از قرارداد بانک بگیرید.</div>';
+  out.innerHTML = h;
+  out.querySelectorAll('[data-lcm]').forEach(function(el){ el.onclick = function(){ setLoanCalcMethod(el.dataset.lcm); }; });
+  document.getElementById('lc-sched-btn').onclick = function(){ LC.showSched = !LC.showSched; updateLoanCalc(); };
+  btn.style.display = '';
+}
+function loanCalcRegister() {
+  if (!LC.last) return;
+  if (!DB.accounts.length) { alert('ابتدا یک حساب ثبت کنید'); return; }
+  var f = LC.last.f, s = LC.last.res;
+  var fj = jAddMonths(gToJ(todayGregorian()), f.g + 1);
+  var notes = ['اعداد از محاسبه‌گر آمده‌اند؛ نام بانک را بنویسید و تاریخ‌ها و مبلغ قسط را با قرارداد بانک چک کنید.'];
+  if (f.g && !s.cap) notes.push('سود ماه‌های تنفس (هر ماه ' + lcRial(s.gracePay) + ' ریال) جزو جدول اقساط نیست؛ آن را هر ماه با دکمه‌ی «پرداخت» در دسته‌ی «سود وام» ثبت کنید.');
+  if (s.cap) notes.push('مبلغ وام شامل سود دوره‌ی تنفس (' + lcRial(s.base - s.P) + ' ریال) است؛ همین مبلغ در «هزینه‌ی ابتدای وام» هم آمده تا موجودی حساب برابر مبلغی شود که واقعاً واریز می‌شود.');
+  if (f.fee) notes.push('کارمزد (' + lcRial(f.fee) + ' ریال) در «هزینه‌ی ابتدای وام» آمده است.');
+  closeModal('modal-loan-calc');
+  openBankLoanModal({ amount: s.base, rate: f.rate, months: f.n, method: s.method,
+                      first: jToG(fj.jy, fj.jm, fj.jd) || null,
+                      upfront: (s.base - s.P) + f.fee, calcNote: notes.join('<br>') });
 }
 
 // ─── پنجره‌ی پرداخت قسط ───
@@ -2581,8 +2846,8 @@ function openBankSchedule(loanId) {
   document.getElementById('bs-title').textContent = '📅 جدول اقساط ' + loanLabel(l);
   var head = '<div class="hint-box" style="margin-bottom:10px;line-height:1.9;">' +
     '<b>' + escHtml(l.counterparty) + '</b>' + (l.note ? ' — ' + escHtml(l.note) : '') + '<br>' +
-    'مبلغ وام: ' + toCurrency(l.principal, cur) + ' • نرخ ' + toFa(String(l.rate)) + '٪ • ' + toFa(l.months) + ' قسط ' + toFa(addCommas(l.installment)) + '<br>' +
-    'روش محاسبه: ' + BANK_METHODS[l.method === 'simple' ? 'simple' : 'annuity'] + '<br>' +
+    'مبلغ وام: ' + toCurrency(l.principal, cur) + ' • نرخ ' + toFa(String(l.rate)) + '٪ • ' + toFa(l.months) + (l.method === 'declining' ? ' قسط (قسط اول ' : ' قسط ') + toFa(addCommas(l.installment)) + (l.method === 'declining' ? ')' : '') + '<br>' +
+    'روش محاسبه: ' + BANK_METHODS[bankMethodOf(l.method)] + (l.upfront ? ' • هزینه‌ی ابتدای وام: ' + toCurrency(l.upfront, cur) : '') + '<br>' +
     'سود کل: ' + toCurrency(st.totalInt, cur) + ' • پرداخت‌شده: ' + toCurrency(st.paidInt, cur) + ' • باقی: ' + toCurrency(st.leftInt, cur) +
     ((l.paidBefore || 0) ? '<br>اقساط ۱ تا ' + toFa(l.paidBefore) + ' پیش از ثبت در اپ پرداخت شده‌اند.' : '') + '</div>';
   var rows = st.sched.map(function(r){
@@ -6152,13 +6417,19 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.21.0';
+var CURRENT_VERSION = '1.22.0';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.22.0', items:[
+    'صفحه‌ی تازه‌ی «✨ دستیار سین» اضافه شد؛ با دکمه‌ی ✨ بالای صفحه از هر جای اپ باز می‌شود. ابزارهای کمکی کم‌کم در این صفحه اضافه می‌شوند.',
+    'اولین ابزار «محاسبه‌گر وام بانکی» است: مبلغ، نرخ سود و تعداد اقساط را وارد کنید تا قسط ماهانه، سود کل و جمع بازپرداخت را ببینید.',
+    'سه روش «اقساط مساوی»، «اقساط کاهنده» و «روش ساده‌شده» کنار هم مقایسه می‌شوند. کارمزد اولیه و دوره‌ی تنفس هم در محاسبه و «نرخ واقعی سالانه» لحاظ می‌شوند.',
+    'با دکمه‌ی «ثبت این وام»، همین اعداد به پنجره‌ی ثبت وام بانکی منتقل می‌شوند. روش «اقساط کاهنده» و «کارمزد / هزینه‌ی ابتدای وام» حالا در ثبت وام هم هست.'
+  ]},
   { v:'1.21.0', items:[
     'در صفحه‌ی «تراکنش‌ها» فیلتر بازه‌ی تاریخ اضافه شد: روی «📅 همه‌ی تاریخ‌ها» بزنید و یکی از گزینه‌های آماده (امروز، ۷ روز اخیر، ۳۰ روز اخیر، این ماه، ماه قبل، امسال) را انتخاب کنید یا روز، ماه و سال شروع و پایان را به تاریخ شمسی تعیین کنید.',
     'خط «مجموع» بالای فهرست، جمع دریافت و پرداخت همان بازه را نشان می‌دهد. برای برداشتن فیلتر، ✕ کنار آن را بزنید.'

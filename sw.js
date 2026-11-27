@@ -1,5 +1,5 @@
 // PFM Service Worker — پشتیبانی آفلاین
-var CACHE_NAME = 'pfm-cache-v1.21.0';
+var CACHE_NAME = 'pfm-cache-v1.22.0';
 var SHARE_CACHE = 'pfm-share';   // v1.20.0: متن اشتراک‌گذاری‌شده (اندروید) تا صفحه آن را بخواند
 var CACHE_FILES = [
   './',
