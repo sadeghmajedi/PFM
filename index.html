@@ -246,6 +246,12 @@ html { height:100%; height:-webkit-fill-available; }
 .lc-cmp .sel { background:var(--aqua-pale); color:var(--aqua-deep); font-weight:700; }
 .lc-cmp th.sel { color:var(--aqua-deep); }
 .lc-note { font-size:10px; color:var(--text-sub); margin-top:4px; line-height:1.7; }
+/* v1.25.0: محاسبه‌گر طلا */
+.gc-sep { border-top:1px dashed var(--border); margin:6px 0; }
+.gc-check { border-radius:12px; padding:10px 12px; font-size:12px; line-height:1.9; margin-bottom:12px; }
+.gc-check.ok { background:#EAF7EF; border:1px solid #BFE5CC; color:#1E5B35; }
+.gc-check.bad { background:#FDF0EE; border:1px solid #F2C9C2; color:#7A2B20; }
+.gc-check ul { margin:4px 0 0; padding-right:18px; }
 .chips { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:12px; }
 .chip { padding:6px 12px; border-radius:99px; font-size:11px; font-weight:500; background:var(--aqua-pale); color:var(--text-main); border:1px solid var(--border-aqua); cursor:pointer; transition:all 0.15s; }
 .chip.sel { background:var(--aqua); color:var(--on-primary); border-color:var(--aqua); font-weight:700; }
@@ -670,10 +676,10 @@ html { height:100%; height:-webkit-fill-available; }
       <div class="as-txt"><div class="as-name">محاسبه‌گر وام بانکی</div><div class="as-desc">پیش از گرفتن وام، قسط ماهانه، سود کل و هزینه‌ی واقعی را با روش‌های مختلف ببینید.</div></div>
       <span class="si-val">←</span>
     </div>
-    <div class="as-item off">
+    <div class="as-item" onclick="openGoldCalc()">
       <div class="as-ico">💰</div>
-      <div class="as-txt"><div class="as-name">دستیار خرید طلا</div><div class="as-desc">به‌زودی</div></div>
-      <span class="as-soon">به‌زودی</span>
+      <div class="as-txt"><div class="as-name">محاسبه‌گر خرید و فروش طلا</div><div class="as-desc">پیش از خرید یا فروش زیورآلات، فاکتور طلافروش را چک کنید: ارزش طلا، اجرت، سود، مالیات و مبلغ دریافتی.</div></div>
+      <span class="si-val">←</span>
     </div>
   </div></div>
 </div>
@@ -929,6 +935,46 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="hint-box" id="bl-calc-note" style="display:none;line-height:1.8;"></div>
     <button class="btn-primary" onclick="submitBankLoan()">ثبت وام</button>
     <button class="btn-secondary" onclick="closeModal('modal-bank-loan')">انصراف</button>
+  </div>
+</div>
+
+<!-- v1.25.0: دستیار سین — محاسبه‌گر خرید و فروش طلا -->
+<div class="modal-overlay" id="modal-gold-calc" onclick="closeModalOutside(event,'modal-gold-calc')">
+  <div class="modal-sheet" style="max-height:92vh;">
+    <div class="modal-handle"></div>
+    <div class="modal-title">💰 محاسبه‌گر طلا</div>
+    <div class="chips" id="gc-modes" style="margin-bottom:10px;">
+      <span class="chip" data-m="buy" onclick="setGoldMode('buy')">🛍️ خرید</span>
+      <span class="chip" data-m="sell" onclick="setGoldMode('sell')">💵 فروش</span>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <div class="form-group" style="flex:1;"><label class="form-label">وزن (گرم)</label><input type="text" inputmode="decimal" class="form-input" id="gc-w" placeholder="مثلاً 4.35" oninput="updateGoldCalc()"></div>
+      <div class="form-group" style="flex:1.4;"><label class="form-label">قیمت هر گرم ۱۸ عیار (تومان)</label><input type="text" inputmode="numeric" class="form-input" id="gc-p" placeholder="قیمت روز" oninput="sanitizeNumberInput(this);GC.pDirty=true;updateGoldCalc()"></div>
+    </div>
+    <div class="lc-note" id="gc-p-meta" style="margin:-6px 0 10px;"></div>
+    <div id="gc-buy">
+      <div class="lc-note" style="margin:-4px 0 10px;">وزن بدون سنگ و نگین؛ قیمت هر گرم را همان‌طور که در فاکتور نوشته شده وارد کنید.</div>
+      <div class="form-group"><label class="form-label">اجرت ساخت</label>
+        <div style="display:flex;gap:6px;align-items:center;"><input type="text" inputmode="decimal" class="form-input" id="gc-wage" placeholder="مثلاً 12" oninput="updateGoldCalc()" style="flex:1;min-width:0;">
+          <select class="form-select" id="gc-wage-type" onchange="updateGoldCalc()" style="width:auto;flex-shrink:0;"><option value="pct">٪ از ارزش طلا</option><option value="gram">تومان برای هر گرم</option><option value="total">تومان برای کل قطعه</option></select></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <div class="form-group" style="flex:1;"><label class="form-label">سود فروشنده (٪)</label><input type="text" inputmode="decimal" class="form-input" id="gc-profit" value="7" oninput="updateGoldCalc()"></div>
+        <div class="form-group" style="flex:1;"><label class="form-label">مالیات ارزش افزوده (٪)</label><input type="text" inputmode="decimal" class="form-input" id="gc-vat" value="10" oninput="updateGoldCalc()"></div>
+      </div>
+      <div class="form-group"><label class="form-label">حق‌العمل جداگانه (تومان، اختیاری)</label><input type="text" inputmode="numeric" class="form-input" id="gc-fee" placeholder="ندارد" oninput="sanitizeNumberInput(this);updateGoldCalc()"></div>
+      <div class="form-group"><label class="form-label">مبلغ نهایی فاکتور فروشنده (تومان، اختیاری)</label><input type="text" inputmode="numeric" class="form-input" id="gc-inv" placeholder="برای چک کردن فاکتور" oninput="sanitizeNumberInput(this);updateGoldCalc()"></div>
+    </div>
+    <div id="gc-sell" style="display:none;">
+      <div class="form-group"><label class="form-label">کسری طلافروش (اختیاری)</label>
+        <div style="display:flex;gap:6px;align-items:center;"><input type="text" inputmode="decimal" class="form-input" id="gc-ded" placeholder="ندارد" oninput="updateGoldCalc()" style="flex:1;min-width:0;">
+          <select class="form-select" id="gc-ded-type" onchange="updateGoldCalc()" style="width:auto;flex-shrink:0;"><option value="pct">٪ از ارزش طلا</option><option value="gram">تومان برای هر گرم</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">مبلغ پیشنهادی طلافروش (تومان، اختیاری)</label><input type="text" inputmode="numeric" class="form-input" id="gc-offer" placeholder="برای چک کردن پیشنهاد" oninput="sanitizeNumberInput(this);updateGoldCalc()"></div>
+      <div class="form-group"><label class="form-label">مبلغی که هنگام خرید پرداخت کردید (تومان، اختیاری)</label><input type="text" inputmode="numeric" class="form-input" id="gc-paid" placeholder="برای دیدن سود یا زیان" oninput="sanitizeNumberInput(this);updateGoldCalc()"></div>
+    </div>
+    <div id="gc-result"></div>
+    <button class="btn-secondary" onclick="closeModal('modal-gold-calc')">بستن</button>
   </div>
 </div>
 
@@ -2656,6 +2702,135 @@ function openAssistant() {
   var sa = document.getElementById('scrollArea'); if (sa) sa.scrollTop = 0;
 }
 
+// ─── محاسبه‌گر خرید و فروش طلا (v1.25.0) — فقط محاسبه، چیزی ذخیره نمی‌کند ───
+// عرف بازار ایران ۱۴۰۵ (فرمول صادق، با منابع خبری چک شد): G = W×P ، A = اجرت (٪ از G یا تومان هر گرم یا کل)،
+// S = (G+A)×s٪ ، F = حق‌العمل جدا ، T = (A+S+F)×t٪ (اصل طلا معاف) ، مبلغ نهایی = G+A+S+F+T. همه به تومان.
+// فروش: G − کسری. قیمت روز گرم ۱۸ از rates.json (gold18، ریال) که در pfm_fx.GOLD18 نگه داشته می‌شود.
+var GC = { mode: 'buy', pDirty: false };
+function gcNum(id) { return getNumericValue(id) || 0; }
+// درصد → اعشار مجاز؛ مبلغ تومانی → «,» جداکننده‌ی هزارگان است، نه اعشار
+function gcPctOrAmt(id, isPct) { var v = document.getElementById(id).value; return isPct ? faDecimal(v) : (parseInt(normalizeDigits(v).replace(/\D/g, ''), 10) || 0); }
+function gcFa(v, dec) { var m = Math.pow(10, dec || 0); return toFa(addCommas(String(Math.round(v * m) / m))).replace('.', '٫'); }
+function openGoldCalc() {
+  setGoldMode(GC.mode, true);
+  gcFillPrice();
+  updateGoldCalc();
+  openModal('modal-gold-calc');
+  var g = getFx().GOLD18;
+  if (!g || Date.now() - g.at > 3600e3) fxMaybeAutoUpdate(true).then(function(){ gcFillPrice(); updateGoldCalc(); });
+}
+function setGoldMode(m, quiet) {
+  GC.mode = m === 'sell' ? 'sell' : 'buy';
+  document.querySelectorAll('#gc-modes .chip').forEach(function(c){ c.classList.toggle('sel', c.dataset.m === GC.mode); });
+  document.getElementById('gc-buy').style.display = GC.mode === 'buy' ? '' : 'none';
+  document.getElementById('gc-sell').style.display = GC.mode === 'sell' ? '' : 'none';
+  if (!quiet) updateGoldCalc();
+}
+function gcMarketToman() { var g = getFx().GOLD18; return g && g.rate > 0 ? Math.round(g.rate / 10) : 0; }
+function gcFillPrice() {
+  var mk = gcMarketToman(), el = document.getElementById('gc-p');
+  if (mk && (!GC.pDirty || !el.value.trim())) { el.value = addCommas(mk); GC.pDirty = false; }
+}
+function gcUseMarket() { GC.pDirty = false; document.getElementById('gc-p').value = ''; gcFillPrice(); updateGoldCalc(); }
+function gcPriceMeta(P) {
+  var g = getFx().GOLD18, mk = gcMarketToman(), h = '';
+  if (g && mk) {
+    h = 'قیمت روز گرم ۱۸ عیار: ' + gcFa(mk) + ' تومان (' + (FX_SRC_LABEL[g.src] || g.src) + '، ' + fxAgeLabel(g.at) + ')';
+    if (P > 0 && Math.abs(P - mk) / mk > 0.005) {
+      var d = (P - mk) / mk * 100;
+      h += ' • قیمت واردشده ' + lcPct(Math.abs(d)) + (d > 0 ? ' بالاتر' : ' پایین‌تر') + ' از قیمت روز است' +
+           ' <a href="#" onclick="gcUseMarket();return false;" style="color:var(--aqua-deep);font-weight:700;">استفاده از قیمت روز</a>';
+    }
+  } else h = 'قیمت روز در دسترس نیست؛ قیمت را از فاکتور یا تابلوی مغازه وارد کنید.';
+  return h;
+}
+function goldBuyCalc(W, P, wage, wageType, s, t, F) {
+  var G = W * P;
+  var A = wageType === 'pct' ? G * wage / 100 : wageType === 'gram' ? W * wage : wage;
+  var S = (G + A) * s / 100;
+  var T = (A + S + F) * t / 100;
+  return { G: G, A: A, S: S, F: F, T: T, total: G + A + S + F + T };
+}
+function updateGoldCalc() {
+  var out = document.getElementById('gc-result');
+  var W = faDecimal(document.getElementById('gc-w').value), P = gcNum('gc-p');
+  document.getElementById('gc-p-meta').innerHTML = gcPriceMeta(P);
+  if (!(W > 0) || !(P > 0)) { out.innerHTML = '<div class="hint-box" style="font-size:12px;">وزن و قیمت هر گرم را وارد کنید تا نتیجه نمایش داده شود.</div>'; return; }
+  function row(label, val, strong) { return '<div class="lc-sum"><span>' + label + '</span>' + (strong ? '<b>' : '<span style="unicode-bidi:isolate;">') + val + (strong ? '</b>' : '</span>') + '</div>'; }
+  var h = '';
+  if (GC.mode === 'buy') {
+    var wt = document.getElementById('gc-wage-type').value, wage = gcPctOrAmt('gc-wage', wt === 'pct');
+    var s = lcFloat('gc-profit'), t = lcFloat('gc-vat'), F = gcNum('gc-fee'), inv = gcNum('gc-inv');
+    var r = goldBuyCalc(W, P, wage, wt, s, t, F);
+    var wageLbl = wt === 'pct' ? lcPct(wage) + ' ارزش طلا' : wt === 'gram' ? gcFa(wage) + ' تومان × ' + gcFa(W, 3) + ' گرم' : 'کل قطعه';
+    h += '<div class="hint-box" style="font-size:12px;line-height:1.8;color:var(--text-main);">';
+    h += '<div style="text-align:center;margin-bottom:6px;"><div style="font-size:11px;color:var(--text-sub);">مبلغ نهایی فاکتور (محاسبه)</div><div class="lc-big" style="unicode-bidi:isolate;">' + gcFa(r.total) + ' <span style="font-size:11px;font-weight:500;">تومان</span></div></div>';
+    h += row('ارزش طلا (' + gcFa(W, 3) + ' گرم × ' + gcFa(P) + ')', gcFa(r.G));
+    h += row('اجرت ساخت (' + wageLbl + ')', gcFa(r.A));
+    h += row('سود فروشنده (' + lcPct(s) + ' طلا + اجرت)', gcFa(r.S));
+    if (F) h += row('حق‌العمل', gcFa(F));
+    h += row('مالیات (' + lcPct(t) + ' اجرت + سود' + (F ? ' + حق‌العمل' : '') + ')', gcFa(r.T));
+    h += '<div class="gc-sep"></div>';
+    h += row('مبلغ نهایی', gcFa(r.total) + ' تومان', true);
+    h += row('قیمت تمام‌شده‌ی هر گرم', gcFa(r.total / W) + ' تومان');
+    var extra = r.A + r.S + r.F + r.T;
+    h += row('هزینه‌ی برنگشتنی (اجرت + سود + مالیات)', gcFa(extra) + ' تومان', true);
+    h += '<div class="lc-note">اگر همین امروز بفروشید، معمولاً فقط ارزش طلا (' + gcFa(r.G) + ' تومان) برمی‌گردد؛ یعنی ' + lcPct(extra / r.total * 100) +
+         ' مبلغ فاکتور. برای جبران آن، قیمت طلا باید حدود ' + lcPct(extra / r.G * 100) + ' بالا برود.</div>';
+    h += '</div>';
+    if (inv > 0) {
+      var diff = inv - r.total, tol = Math.max(10000, r.total * 0.0002);
+      if (Math.abs(diff) <= tol) {
+        h += '<div class="gc-check ok">✅ فاکتور فروشنده با محاسبه می‌خواند' + (Math.round(diff) ? ' (اختلاف ' + gcFa(Math.abs(diff)) + ' تومان، در حد گرد کردن)' : '') + '.</div>';
+      } else {
+        var hints = [];
+        // مالیات روی کل فاکتور (تخلف)
+        var altAll = r.G + r.A + r.S + F + (r.G + r.A + r.S + F) * t / 100;
+        if (Math.abs(inv - altAll) <= tol) hints.push('<b>مالیات روی کل فاکتور (از جمله ارزش طلا) حساب شده است.</b> این تخلف است؛ مالیات فقط به اجرت، سود و حق‌العمل تعلق می‌گیرد. مالیات اضافه: ' + gcFa(altAll - r.total) + ' تومان.');
+        var sF = s / 100, tF = t / 100;
+        if (!hints.length) {   // اگر «مالیات روی کل» توضیح داد، حدس‌های دیگر فقط شلوغ می‌کنند
+        var Aimp = (inv - r.G * (1 + sF + sF * tF) - F * (1 + tF)) / ((1 + sF) * (1 + tF));
+        if (Aimp >= 0) hints.push('اگر سود ' + lcPct(s) + ' و قیمت درست باشد، فروشنده اجرت را ' + gcFa(Aimp) + ' تومان (' + lcPct(Aimp / r.G * 100) + ' ارزش طلا) حساب کرده، نه ' + gcFa(r.A) + ' تومان.');
+        var Simp = (inv - r.G - r.A - F - (r.A + F) * tF) / (1 + tF);
+        if (Simp >= 0) hints.push('اگر اجرت درست باشد، سود فروشنده ' + lcPct(Simp / (r.G + r.A) * 100) + ' حساب شده است، نه ' + lcPct(s) + '.');
+        var Gimp = wt === 'pct'
+          ? (inv - F * (1 + tF)) / ((1 + wage / 100) * (1 + sF) + tF * (wage / 100 + (1 + wage / 100) * sF))
+          : (inv - r.A * (1 + sF) * (1 + tF) - F * (1 + tF)) / (1 + sF + sF * tF);
+        if (Gimp > 0) hints.push('یا قیمت هر گرم ' + gcFa(Gimp / W) + ' تومان، یا وزن ' + gcFa(Gimp / P, 3) + ' گرم در نظر گرفته شده است.');
+        }
+        h += '<div class="gc-check bad">⚠️ مبلغ فاکتور فروشنده ' + gcFa(Math.abs(diff)) + ' تومان ' + (diff > 0 ? 'بیشتر' : 'کمتر') + ' از محاسبه است (' + lcPct(Math.abs(diff) / r.total * 100) + ').' +
+             (hints.length ? '<div style="margin-top:4px;">احتمالاً:</div><ul><li>' + hints.join('</li><li>') + '</li></ul>' : '') +
+             '<div style="margin-top:4px;font-size:11px;">از فروشنده فاکتور تفکیک‌شده (وزن، عیار، اجرت، سود، مالیات) بخواهید.</div></div>';
+      }
+    }
+  } else {
+    var dt = document.getElementById('gc-ded-type').value, d = gcPctOrAmt('gc-ded', dt === 'pct');
+    var offer = gcNum('gc-offer'), paid = gcNum('gc-paid');
+    var G2 = W * P, ded = dt === 'pct' ? G2 * d / 100 : W * d, rec = G2 - ded;
+    h += '<div class="hint-box" style="font-size:12px;line-height:1.8;color:var(--text-main);">';
+    h += '<div style="text-align:center;margin-bottom:6px;"><div style="font-size:11px;color:var(--text-sub);">مبلغی که باید دریافت کنید</div><div class="lc-big" style="unicode-bidi:isolate;">' + gcFa(rec) + ' <span style="font-size:11px;font-weight:500;">تومان</span></div></div>';
+    h += row('ارزش طلا (' + gcFa(W, 3) + ' گرم × ' + gcFa(P) + ')', gcFa(G2));
+    if (ded) h += row('کسری طلافروش (' + (dt === 'pct' ? lcPct(d) : gcFa(d) + ' تومان هر گرم') + ')', '− ' + gcFa(ded));
+    h += row('هر گرم', gcFa(rec / W) + ' تومان');
+    if (paid > 0) {
+      var pl = rec - paid;
+      h += '<div class="gc-sep"></div>' + row(pl >= 0 ? 'سود نسبت به مبلغ خرید' : 'زیان نسبت به مبلغ خرید', gcFa(Math.abs(pl)) + ' تومان (' + lcPct(Math.abs(pl) / paid * 100) + ')', true);
+    }
+    h += '<div class="lc-note">هنگام فروش، اجرت، سود فروشنده و مالیاتی که موقع خرید داده‌اید برنمی‌گردد و معمولاً فقط ارزش طلا (گاهی با کسر مبلغی) پرداخت می‌شود.</div>';
+    h += '</div>';
+    if (offer > 0) {
+      var od = G2 - offer, tol2 = Math.max(10000, G2 * 0.0002);
+      if (od <= tol2 && Math.abs(offer - rec) <= tol2) h += '<div class="gc-check ok">✅ پیشنهاد طلافروش با محاسبه می‌خواند.</div>';
+      else if (od <= tol2) h += '<div class="gc-check ok">✅ پیشنهاد طلافروش برابر یا بیشتر از ارزش طلاست' + (od < -tol2 ? ' (' + gcFa(-od) + ' تومان بیشتر)' : '') + '.</div>';
+      else h += '<div class="gc-check bad">پیشنهاد طلافروش ' + gcFa(od) + ' تومان کمتر از ارزش طلاست؛ یعنی برای هر گرم ' + gcFa(od / W) + ' تومان (' + lcPct(od / G2 * 100) + ') کم کرده است.' +
+                (ded ? ' این کسری ' + (od > ded + tol2 ? gcFa(od - ded) + ' تومان بیشتر از کسری‌ای است که وارد کرده‌اید.' : 'با کسری‌ای که وارد کرده‌اید می‌خواند.') : '') +
+                '<div style="margin-top:4px;font-size:11px;">قیمت هر گرمی را که طلافروش مبنا گرفته بپرسید و با قیمت روز مقایسه کنید.</div></div>';
+    }
+  }
+  h += '<div class="lc-note" style="margin-bottom:12px;">بر اساس عرف بازار ۱۴۰۵: سود فروشنده روی طلا + اجرت، و مالیات ارزش افزوده فقط روی اجرت، سود و حق‌العمل (اصل طلا معاف است). درصدها قابل تغییرند؛ اگر مقررات عوض شد، عدد تازه را وارد کنید.</div>';
+  out.innerHTML = h;
+}
+
 // ─── محاسبه‌گر وام: فقط محاسبه، چیزی ذخیره نمی‌کند (جز با «ثبت این وام» ← openBankLoanModal) ───
 // از همان موتور وام بانکی (bankCalcInstallment / bankScheduleRaw) استفاده می‌کند تا عدد ثبت‌شده همان عدد محاسبه باشد.
 // تنفس: سود ساده‌ی ماهانه روی مبلغ وام (round(P·r)) — یا هر ماه پرداخت ('pay') یا به اصل اضافه ('cap').
@@ -2690,7 +2865,13 @@ function setLoanCalcGraceMode(g, quiet) {
   if (!quiet) updateLoanCalc();
 }
 function lcInt(id) { return parseInt(normalizeDigits(document.getElementById(id).value).replace(/\D/g, ''), 10) || 0; }
-function lcFloat(id) { return parseFloat(normalizeDigits(document.getElementById(id).value).replace(/[^0-9.]/g, '')) || 0; }
+// v1.25.0: جداکننده‌ی اعشار فارسی «٫» (کیبورد فارسی iOS) و «/» هم نقطه حساب می‌شوند — قبلاً «۲۳٫۵» عدد ۲۳۵ می‌شد
+function faDecimal(v) {
+  var t = normalizeDigits(v).replace(/[٫\/،,]/g, '.').replace(/[^0-9.]/g, '');
+  var i = t.indexOf('.'); if (i !== -1) t = t.slice(0, i + 1) + t.slice(i + 1).replace(/\./g, '');
+  return parseFloat(t) || 0;
+}
+function lcFloat(id) { return faDecimal(document.getElementById(id).value); }
 function readLoanCalc() {
   var P = getNumericValue('lc-amount');
   var feeType = document.getElementById('lc-fee-type').value;
@@ -3851,6 +4032,7 @@ function fxMaybeAutoUpdate(force) {
       if (cur && cur.src === 'manual' && cur.at > at) return;
       o2[c] = { rate: v, at: at, src: j.src || 'auto', kind: j.kind || 'buy' };
     });
+    if (j.gold18 > 0) o2.GOLD18 = { rate: j.gold18, at: at, src: j.goldSrc || j.src || 'auto' };   // v1.25.0 (ریال)
     o2.lastOk = Date.now(); o2.lastErr = ''; saveFx(o2);
     renderDashboard(); renderFxSettingsRow();
     if (document.getElementById('modal-fx').classList.contains('open')) renderFxModal(true);
@@ -6628,13 +6810,19 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.24.0';
+var CURRENT_VERSION = '1.25.0';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.25.0', items:[
+    'در «✨ دستیار سین»، «محاسبه‌گر خرید و فروش طلا» اضافه شد.',
+    'هنگام خرید: وزن، قیمت هر گرم، اجرت، سود فروشنده و مالیات را وارد کنید تا ریز فاکتور و مبلغ نهایی را ببینید. اگر مبلغ فاکتور طلافروش را هم وارد کنید، اپ می‌گوید با محاسبه می‌خواند یا نه و اختلاف احتمالاً از کجاست؛ مثلاً مالیات روی کل فاکتور یا اجرت بیشتر.',
+    'هنگام فروش: مبلغی را که باید دریافت کنید ببینید، پیشنهاد طلافروش را چک کنید و سود یا زیان نسبت به خرید را بدانید.',
+    'قیمت روز هر گرم طلای ۱۸ عیار، وقتی به اینترنت وصل هستید، خودکار پیشنهاد می‌شود.'
+  ]},
   { v:'1.24.0', items:[
     'در تنظیمات «صدقه روزانه»، گزینه‌ی «مبنای محاسبه» اضافه شد: می‌توانید صدقه را از کل دارایی، همراه با معادل ریالی دلار و درهم، حساب کنید.',
     'نوار پایین صفحه بزرگ‌تر شد و صفحه‌ای که در آن هستید با یک قاب رنگی دور آیکونش مشخص‌تر دیده می‌شود.'
