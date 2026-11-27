@@ -1,0 +1,46 @@
+name: probe-rates
+on:
+  push:
+    branches: [probe-rates]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: probe
+        shell: python
+        run: |
+          import urllib.request, urllib.parse, json, re, http.cookiejar
+          UA = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'}
+          cj = http.cookiejar.CookieJar(); op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+          def get(u, data=None, h=None):
+              hh = dict(UA); hh.update(h or {})
+              r = op.open(urllib.request.Request(u, data=data, headers=hh), timeout=25)
+              return r.status, r.read().decode('utf-8', 'replace')
+          def tryit(name, fn):
+              try: print('==', name, fn())
+              except Exception as e: print('==', name, 'ERR', repr(e)[:300])
+          def bonbast():
+              s, h = get('https://bonbast.com/')
+              m = re.search(r'param["\']?\s*[:=]\s*["\']([^"\']+)', h)
+              if not m: return ('no param', s, h[:300])
+              s2, j = get('https://bonbast.com/json', urllib.parse.urlencode({'param': m.group(1)}).encode(), {'Referer':'https://bonbast.com/','X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded; charset=UTF-8'})
+              d = json.loads(j); return {k: d.get(k) for k in ['usd1','usd2','aed1','aed2','last_modified','created']}
+          def tgju():
+              s, h = get('https://call1.tgju.org/ajax.json')
+              d = json.loads(h); cur = d.get('current', {})
+              ks = [k for k in cur if re.search(r'dollar|aed|dirham|emarat', k)]
+              return {k: (cur[k].get('p'), cur[k].get('t')) for k in ks[:30]}
+          def tgju2():
+              s, h = get('https://api.tgju.org/v1/market/indicator/summary-table-data/price_dollar_rl')
+              return (s, h[:400])
+          def alanchand():
+              s, h = get('https://alanchand.com/currencies-price/usd')
+              return (s, len(h), re.findall(r'(?:خرید|فروش)[^0-9]{0,80}([0-9,٬۰-۹]{5,})', h)[:6])
+          def navasan():
+              s, h = get('https://www.navasan.net/')
+              return (s, len(h), h[:200])
+          def bonbast_archive():
+              s, h = get('https://bonbast.com/archive')
+              return (s, len(h))
+          for n, f in [('bonbast', bonbast), ('tgju ajax', tgju), ('tgju api', tgju2), ('alanchand', alanchand), ('navasan', navasan)]:
+              tryit(n, f)
