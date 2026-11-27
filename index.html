@@ -275,6 +275,23 @@ html { height:100%; height:-webkit-fill-available; }
 .gi-val span { font-size:10.5px; unicode-bidi:isolate; }
 .gi-sum { background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:12px; padding:10px 12px; margin-bottom:8px; }
 .gc-box { font-size:13.5px !important; line-height:1.85 !important; }
+/* v1.33.0: راهنمای اپ */
+#tour { position:fixed; inset:0; z-index:600; }
+.tour-block { position:absolute; inset:0; }
+.tour-hole { position:fixed; border-radius:14px; box-shadow:0 0 0 2px #fff, 0 0 0 9999px rgba(30,43,49,0.66); pointer-events:none; transition:top .25s, left .25s, width .25s, height .25s; }
+.tour-hole.none { box-shadow:0 0 0 9999px rgba(30,43,49,0.66); }
+.tour-card { position:fixed; left:14px; right:14px; max-width:420px; margin:0 auto; background:#fff; border-radius:16px; padding:14px 16px 12px; box-shadow:0 10px 30px rgba(0,0,0,0.25); border-top:4px solid var(--aqua); }
+.tour-step { font-size:10.5px; color:var(--text-sub); margin-bottom:2px; }
+.tour-title { font-size:15px; font-weight:700; color:var(--aqua-deep); margin-bottom:6px; }
+.tour-text { font-size:12.5px; line-height:1.95; color:var(--text-main); }
+.tour-btns { display:flex; align-items:center; gap:8px; margin-top:12px; }
+.tour-btns button { font-family:inherit; font-size:13px; border-radius:10px; padding:8px 14px; cursor:pointer; }
+.tour-skip { background:none; border:none; color:var(--text-sub); padding:8px 4px !important; }
+.tour-prev { background:#fff; border:1.5px solid var(--border); color:var(--text-mid); }
+.tour-next { background:var(--aqua); border:none; color:var(--on-primary); font-weight:700; min-width:84px; }
+.tour-card.nudge { animation:tour-nudge .35s; }
+@keyframes tour-nudge { 0%,100% { transform:translateX(0); } 30% { transform:translateX(-6px); } 70% { transform:translateX(6px); } }
+@media (prefers-reduced-motion: reduce) { .tour-hole { transition:none; } .tour-card.nudge { animation:none; } }
 /* v1.32.0: زکات */
 .zk-sec { font-size:12px; font-weight:700; color:var(--aqua-deep); margin:10px 0 4px; }
 .zk-row { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; padding:6px 0; border-bottom:1px dashed var(--border); font-size:12.5px; color:var(--text-main); }
@@ -613,7 +630,7 @@ html { height:100%; height:-webkit-fill-available; }
       <!-- Divider -->
       <div style="width:1px;background:rgba(255,255,255,0.3);margin:0 12px;flex-shrink:0;"></div>
       <!-- Right: action buttons vertical -->
-      <div style="display:flex;flex-direction:column;gap:11px;justify-content:center;flex-shrink:0;width:80px;padding-bottom:3px;">
+      <div id="nwActions" style="display:flex;flex-direction:column;gap:11px;justify-content:center;flex-shrink:0;width:80px;padding-bottom:3px;">
         <button class="nw-action-btn income" onclick="openModal('modal-income')">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="M12 5v14M5 12l7-7 7 7"/></svg>
           <span>دریافت</span>
@@ -646,7 +663,7 @@ html { height:100%; height:-webkit-fill-available; }
     </div>
   </div>
   <!-- v1.13.0: چسباندن پیامک بانک از تنظیمات به پایین داشبورد منتقل شد -->
-  <div class="card">
+  <div class="card" id="smsCard">
     <div class="card-bar"></div>
     <div class="card-body">
       <div class="card-title">📋 چسباندن پیامک بانک</div>
@@ -815,6 +832,7 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="settings-item" onclick="openModal('modal-auto-backup')"><span class="si-label">🗄️ پشتیبان خودکار روزانه</span><span class="si-val" id="autoBackupStatus">←</span></div>
     <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel"></span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
+    <div class="settings-item" onclick="startTour()"><span class="si-label">📖 راهنمای اپ</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="openSmsGuide()"><span class="si-label">📲 راهنمای خواندن خودکار پیامک‌ها</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="requestPersistentStorage(true)"><span class="si-label">🛡️ ماندگاری داده‌ها</span><span class="si-val" id="persistStatus">…</span></div>
     <div class="settings-item" onclick="document.getElementById('smsImportFile').click()"><span class="si-label">🏦 ورود پیامک بانک (فایل)</span><span class="si-val">←</span></div>
@@ -879,6 +897,22 @@ html { height:100%; height:-webkit-fill-available; }
   </button>
 </nav>
 <div id="updateFab" onclick="doUpdate()" style="display:none;position:fixed;bottom:calc(var(--nav-h) + var(--safe-bottom) + 14px);left:50%;transform:translateX(-50%);z-index:300;height:34px;padding:0 16px;background:#27AE60;border-radius:99px;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:12px;font-weight:700;color:white;box-shadow:0 4px 14px rgba(39,174,96,0.45);animation:pulse-green 2s infinite;font-family:'Vazirmatn',sans-serif;white-space:nowrap;">🔄 نسخه جدید — به‌روزرسانی</div>
+<!-- v1.33.0: راهنمای اپ (تور) -->
+<div id="tour" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="tourTitle">
+  <div class="tour-block" onclick="tourNudge()"></div>
+  <div class="tour-hole" id="tourHole"></div>
+  <div class="tour-card" id="tourCard">
+    <div class="tour-step" id="tourStep"></div>
+    <div class="tour-title" id="tourTitle"></div>
+    <div class="tour-text" id="tourText"></div>
+    <div class="tour-btns">
+      <button class="tour-skip" id="tourSkip" onclick="endTour()">رد شدن</button>
+      <span style="flex:1;"></span>
+      <button class="tour-prev" id="tourPrev" onclick="tourGo(-1)">قبلی</button>
+      <button class="tour-next" id="tourNext" onclick="tourGo(1)">بعدی</button>
+    </div>
+  </div>
+</div>
 </div><!-- end appShell -->
 
 <!-- ═══ MODALS ═══ -->
@@ -1882,6 +1916,7 @@ function hideLock() {
   setTimeout(function(){ fxMaybeAutoUpdate(false); }, 1500);   // v1.23.0
   // v1.20.0: پیامکی که در اندروید به PFM اشتراک‌گذاری شده؛ «تازه‌ها» به بار بعد می‌ماند
   if (pendingSharedSMS) setTimeout(handleSharedSMS, 300);
+  else if (tourShouldAuto()) { setTimeout(maybeShowWhatsNew, 0); setTimeout(startTour, 500); }   // v1.33.0: نصب تازه
   else setTimeout(maybeShowWhatsNew, 400);   // v1.14.0
 }
 
@@ -8588,13 +8623,16 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.32.1';
+var CURRENT_VERSION = '1.33.0';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.33.0', items:[
+    'راهنمای اپ اضافه شد: کاربر تازه بار اول، روی همین صفحه‌ها و قدم‌به‌قدم، با کارهای اصلی اپ آشنا می‌شود. شما هم هر وقت خواستید آن را از تنظیمات ← «📖 راهنمای اپ» ببینید.'
+  ]},
   { v:'1.32.0', items:[
     'محاسبه‌گر زکات در «دستیار سین» (دکمه‌ی ✨ بالای صفحه): دو روش جدا — نظر اکثریت اهل سنت و فتاوای آیت‌الله سیستانی. این ابزار با صندوق‌های تخصیصی شما کاری ندارد.',
     'روش اهل سنت: موجودی حساب‌ها (ارزی با نرخ روز)، «طلاهای من»، طلب‌ها و سایر دارایی‌ها جمع و بدهی‌های ۱۲ ماه آینده کم می‌شود؛ اگر خالص به نصاب (۸۵ گرم طلا یا ۵۹۵ گرم نقره) برسد، ۲٫۵٪ آن زکات است. زیور شخصی را می‌توانید معاف علامت بزنید.',
@@ -8732,6 +8770,92 @@ var WHATS_NEW = [
     'از این به بعد، بعد از هر به‌روزرسانی، خلاصه‌ی تغییرات نسخه‌ی جدید در همین پنجره نمایش داده می‌شود.'
   ]}
 ];
+// ═══════════════════════════════════════
+// TOUR (v1.33.0) — راهنمای اپ روی صفحه‌ی واقعی
+// ═══════════════════════════════════════
+// خودکار فقط برای نصب تازه (بدون حساب و تراکنش) و فقط یک بار (کلید دستگاهی pfm_tour_done)؛
+// کاربر قدیمی از «تازه‌ها» با آن آشنا می‌شود و از تنظیمات ← «📖 راهنمای اپ» هر وقت بخواهد می‌بیند.
+// چیزی در داده‌ها تغییر نمی‌دهد. هدف هر قدم یک عنصر واقعی داشبورد/هدر/نوار پایین است (بدون هدف = وسط صفحه).
+var TOUR_KEY = 'pfm_tour_done';
+function tourNav(i) { return function(){ return document.querySelectorAll('#bottomNav .nav-item')[i]; }; }
+var TOUR_STEPS = [
+  { t: '👋 به «سین» خوش آمدید', x: 'این راهنمای کوتاه کارهای اصلی اپ را قدم‌به‌قدم نشان می‌دهد. همه‌ی اطلاعات شما فقط روی همین گوشی ذخیره می‌شود و به هیچ سروری فرستاده نمی‌شود.' },
+  { t: '🏦 اول حساب‌هایتان را بسازید', x: 'برای هر حساب بانکی یا کارت، یک حساب با موجودی فعلی‌اش بسازید (ریالی، دلاری یا درهمی). صندوق‌های تخصیصی و «طلاهای من» هم در همین صفحه هستند.', el: tourNav(1) },
+  { t: '💰 خالص دارایی', x: 'جمع موجودی حساب‌ها به‌علاوه‌ی طلب‌ها و منهای بدهی‌ها، همیشه به‌روز. اگر حساب ارزی یا طلا دارید، معادل ریالی آن با نرخ روز هم نمایش داده می‌شود.', el: function(){ return document.querySelector('#page-dashboard .net-worth-card'); } },
+  { t: '➕ دریافت، انتقال و پرداخت', x: 'هر دریافت و پرداخت را با این دکمه‌ها ثبت کنید. «دریافت» و «پرداخت» حالت‌های دیگری هم دارند: پرداخت از صندوق، قرض دادن یا گرفتن، و قسط وام.', el: function(){ return document.getElementById('nwActions'); } },
+  { t: '📋 پیامک‌های بانک', x: 'به‌جای ثبت دستی، پیامک‌های بانک را اینجا بچسبانید تا به تراکنش تبدیل شوند. راه خودکارش در تنظیمات ← «📲 راهنمای خواندن خودکار پیامک‌ها» آمده است.', el: function(){ return document.getElementById('smsCard'); }, scroll: true },
+  { t: '🧾 تراکنش‌ها', x: 'فهرست همه‌ی تراکنش‌ها با جستجو، فیلتر و بازه‌ی تاریخ. برای ویرایش یا حذف، روی هر تراکنش بزنید.', el: tourNav(2) },
+  { t: '🤝 قروض، وام و چک', x: 'قرض‌های شخصی، وام‌های بانکی با جدول اقساط، و چک‌های صادره و دریافتی. سررسیدهای نزدیک روی داشبورد یادآوری می‌شوند.', el: tourNav(3) },
+  { t: '📊 گزارش‌ها', x: 'گزارش ماه یا هر بازه‌ی دلخواه: هزینه به تفکیک دسته، مقایسه با ماه قبل و پارسال، نرخ پس‌انداز و کارنامه‌ی سال، با خروجی PDF و Excel.', el: tourNav(4) },
+  { t: '✨ دستیار سین', x: 'ابزارهای کمکی: محاسبه‌گر وام بانکی، خرید و فروش طلا، و زکات. این ابزارها چیزی در حساب‌های شما ثبت نمی‌کنند، مگر خودتان بخواهید.', el: function(){ return document.querySelector('.top-actions .export-fab'); } },
+  { t: '⚙️ تنظیمات و پشتیبان', x: 'دسته‌بندی‌ها، رمز و Face ID، و پشتیبان‌گیری. چون اطلاعات فقط روی همین گوشی است، از «📤 خروجی» مرتب فایل پشتیبان بگیرید و جای امنی نگه دارید. این راهنما را هم هر وقت خواستید از تنظیمات ← «📖 راهنمای اپ» دوباره ببینید.', el: tourNav(5) }
+];
+var tourIdx = -1;
+function tourDone() { try { return localStorage.getItem(TOUR_KEY) === '1'; } catch (e) { return true; } }
+function tourShouldAuto() { return !tourDone() && !(DB.accounts || []).length && !(DB.transactions || []).length; }
+function startTour() {
+  var dash = document.querySelectorAll('#bottomNav .nav-item')[0];
+  if (dash && !document.getElementById('page-dashboard').classList.contains('active')) navigate('dashboard', dash);
+  var sa = document.getElementById('scrollArea'); if (sa) sa.scrollTop = 0;
+  document.getElementById('tour').style.display = 'block';
+  tourIdx = 0; tourShow();
+  window.addEventListener('resize', tourPlace);
+  document.addEventListener('keydown', tourKey);
+}
+function endTour() {
+  try { localStorage.setItem(TOUR_KEY, '1'); } catch (e) {}
+  document.getElementById('tour').style.display = 'none';
+  window.removeEventListener('resize', tourPlace);
+  document.removeEventListener('keydown', tourKey);
+  tourIdx = -1;
+  var sa = document.getElementById('scrollArea'); if (sa) sa.scrollTop = 0;
+}
+function tourKey(e) { if (e.key === 'Escape') endTour(); else if (e.key === 'ArrowLeft') tourGo(1); else if (e.key === 'ArrowRight') tourGo(-1); }
+function tourGo(d) { var n = tourIdx + d; if (n >= TOUR_STEPS.length) { endTour(); return; } if (n < 0) return; tourIdx = n; tourShow(); }
+function tourNudge() { var c = document.getElementById('tourCard'); c.classList.remove('nudge'); void c.offsetWidth; c.classList.add('nudge'); }
+function tourShow() {
+  var st = TOUR_STEPS[tourIdx], last = tourIdx === TOUR_STEPS.length - 1;
+  document.getElementById('tourStep').textContent = toFa(tourIdx + 1) + ' از ' + toFa(TOUR_STEPS.length);
+  document.getElementById('tourTitle').textContent = st.t;
+  document.getElementById('tourText').textContent = st.x;
+  document.getElementById('tourPrev').style.visibility = tourIdx ? 'visible' : 'hidden';
+  document.getElementById('tourNext').textContent = last ? 'شروع کنید' : (tourIdx ? 'بعدی' : 'شروع راهنما');
+  document.getElementById('tourSkip').style.visibility = last ? 'hidden' : 'visible';
+  // عنصر داخل ناحیه‌ی اسکرول: با scrollTop خود #scrollArea (نه scrollIntoView)
+  var sa = document.getElementById('scrollArea'), el = st.el ? st.el() : null;
+  if (sa) {
+    if (el && st.scroll && sa.contains(el)) {
+      var r = el.getBoundingClientRect(), sr = sa.getBoundingClientRect();
+      sa.scrollTop += r.top - sr.top - 12;
+    } else if (!st.scroll) sa.scrollTop = 0;
+  }
+  tourPlace();
+  document.getElementById('tourNext').focus({ preventScroll: true });
+}
+function tourPlace() {
+  if (tourIdx < 0) return;
+  var st = TOUR_STEPS[tourIdx], el = st.el ? st.el() : null;
+  var hole = document.getElementById('tourHole'), card = document.getElementById('tourCard');
+  var vh = window.innerHeight, vw = window.innerWidth, pad = 5;
+  card.style.top = ''; card.style.bottom = '';
+  var r = el ? el.getBoundingClientRect() : null;
+  if (!r || !r.width) {
+    hole.className = 'tour-hole none';
+    hole.style.left = (vw / 2) + 'px'; hole.style.top = (vh / 2) + 'px'; hole.style.width = '0px'; hole.style.height = '0px';
+    card.style.top = Math.max(20, (vh - card.offsetHeight) / 2) + 'px';
+    return;
+  }
+  hole.className = 'tour-hole';
+  var top = Math.max(2, r.top - pad), bot = Math.min(vh - 2, r.bottom + pad);
+  hole.style.left = Math.max(2, r.left - pad) + 'px'; hole.style.top = top + 'px';
+  hole.style.width = (Math.min(vw - 2, r.right + pad) - Math.max(2, r.left - pad)) + 'px';
+  hole.style.height = (bot - top) + 'px';
+  var ch = card.offsetHeight, gap = 12;
+  if (vh - bot - gap >= ch + 8) card.style.top = (bot + gap) + 'px';            // زیر هدف
+  else if (top - gap >= ch + 8) card.style.top = (top - gap - ch) + 'px';      // بالای هدف
+  else card.style.top = Math.max(8, (vh - ch) / 2) + 'px';
+}
+
 var WN_KEY = 'pfm_seen_version';
 function cmpVer(a, b) {
   var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number);

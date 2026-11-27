@@ -1,6 +1,6 @@
 // PFM Service Worker — پشتیبانی آفلاین
 // Copyright (c) 2026 Seyed Sadegh Majedi. All rights reserved. See LICENSE.
-var CACHE_NAME = 'pfm-cache-v1.32.1';
+var CACHE_NAME = 'pfm-cache-v1.33.0';
 var SHARE_CACHE = 'pfm-share';   // v1.20.0: متن اشتراک‌گذاری‌شده (اندروید) تا صفحه آن را بخواند
 var CACHE_FILES = [
   './',
