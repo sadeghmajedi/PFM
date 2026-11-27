@@ -60,7 +60,14 @@ if os.path.exists(path):
         old = json.load(open(path, encoding='utf-8'))
     except Exception:
         old = {}
-if old.get('usd') == res['usd'] and old.get('aed') == res['aed'] and old.get('src') == res['src']:
+# نرخ ثابت (تعطیلی بازار): هر ۱۲ ساعت یک بار زمان فایل تازه می‌شود تا اپ آن را «کهنه» نشان ندهد
+def age_hours(ts):
+    try:
+        t = datetime.datetime.strptime(ts, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=datetime.timezone.utc)
+        return (datetime.datetime.now(datetime.timezone.utc) - t).total_seconds() / 3600
+    except Exception:
+        return 1e9
+if old.get('usd') == res['usd'] and old.get('aed') == res['aed'] and old.get('src') == res['src'] and age_hours(old.get('updated', '')) < 12:
     print('unchanged', res)
     sys.exit(0)
 
