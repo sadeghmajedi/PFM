@@ -852,7 +852,7 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="hint-box" style="line-height:1.8;">نرخ خرید بازار آزاد برای نشان دادن «کل دارایی با نرخ روز» در داشبورد. گزارش‌ها و جمع‌های ماهانه مثل قبل هر ارز را جدا نگه می‌دارند.</div>
     <div class="form-group"><label class="form-label">نرخ خرید دلار (تومان)</label><input type="text" inputmode="numeric" class="form-input" id="fx-usd" placeholder="مثلاً 95,000" oninput="sanitizeNumberInput(this)"><div class="fx-meta" id="fx-usd-meta"></div></div>
     <div class="form-group"><label class="form-label">نرخ خرید درهم (تومان)</label><input type="text" inputmode="numeric" class="form-input" id="fx-aed" placeholder="مثلاً 26,000" oninput="sanitizeNumberInput(this)"><div class="fx-meta" id="fx-aed-meta"></div></div>
-    <label class="settings-item" for="fx-auto" style="margin-bottom:4px;"><span class="si-label">🔄 به‌روزرسانی خودکار، روزی یک بار وقتی آنلاین هستید</span><input type="checkbox" class="tgl" id="fx-auto" onchange="setFxAuto(this.checked)"></label>
+    <label class="settings-item" for="fx-auto" style="margin-bottom:4px;"><span class="si-label">🔄 به‌روزرسانی خودکار هر بار که اپ را باز می‌کنید (حداکثر هر ۳ ساعت)</span><input type="checkbox" class="tgl" id="fx-auto" onchange="setFxAuto(this.checked)"></label>
     <div class="fx-meta" id="fx-status" style="margin-bottom:12px;"></div>
     <button class="btn-primary" onclick="saveFxManual()">ذخیره‌ی نرخ دستی</button>
     <button class="btn-secondary" id="fx-now" onclick="fxUpdateNow()">🔄 به‌روزرسانی الان</button>
@@ -4004,12 +4004,14 @@ function saveFxManual() {
   closeModal('modal-fx');
   renderDashboard(); renderFxSettingsRow();
 }
-// بار اول هر روز (وقتی آنلاین و خودکار روشن و حساب ارزی هست)؛ force = دکمه‌ی «به‌روزرسانی الان»
+// v1.25.1: هر بار باز شدن/برگشتن به اپ اگر از آخرین خواندن موفق ≥ FX_REFRESH_MS گذشته (هم‌آهنگ با cron سه‌ساعته‌ی rates.yml)؛
+// قبلاً روزی یک بار. (وقتی آنلاین و خودکار روشن و حساب ارزی هست)؛ force = دکمه‌ی «به‌روزرسانی الان»
+var FX_REFRESH_MS = 3 * 3600e3;
 function fxMaybeAutoUpdate(force) {
   var o = getFx(), now = Date.now();
   if (!force) {
     if (!o.auto || !hasForeignAccounts()) return Promise.resolve(null);
-    if (o.lastOk && fxSameDay(o.lastOk, now)) return Promise.resolve(null);
+    if (o.lastOk && now - o.lastOk < FX_REFRESH_MS) return Promise.resolve(null);
     if (o.lastTry && now - o.lastTry < 10 * 60000) return Promise.resolve(null);
   }
   if (navigator.onLine === false) {
@@ -6810,13 +6812,16 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.25.0';
+var CURRENT_VERSION = '1.25.1';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.25.1', items:[
+    'نرخ دلار، درهم و طلا حالا هر بار که اپ را باز می‌کنید تازه می‌شود، اگر از آخرین به‌روزرسانی بیش از ۳ ساعت گذشته باشد؛ قبلاً روزی یک بار بود.'
+  ]},
   { v:'1.25.0', items:[
     'در «✨ دستیار سین»، «محاسبه‌گر خرید و فروش طلا» اضافه شد.',
     'هنگام خرید: وزن، قیمت هر گرم، اجرت، سود فروشنده و مالیات را وارد کنید تا ریز فاکتور و مبلغ نهایی را ببینید. اگر مبلغ فاکتور طلافروش را هم وارد کنید، اپ می‌گوید با محاسبه می‌خواند یا نه و اختلاف احتمالاً از کجاست؛ مثلاً مالیات روی کل فاکتور یا اجرت بیشتر.',
