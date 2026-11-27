@@ -469,6 +469,8 @@ html { height:100%; height:-webkit-fill-available; }
       <div class="card-title">📋 چسباندن پیامک بانک</div>
       <textarea id="smsPasteBox" class="form-input" rows="4" placeholder="یک یا چند پیامک بانک را اینجا paste کنید..." style="resize:vertical;font-size:13px;line-height:1.8;"></textarea>
       <button class="btn-primary" onclick="processPastedSMS()" style="margin-top:8px;">تبدیل به تراکنش</button>
+      <button class="btn-secondary" onclick="document.getElementById('smsImportFile').click()" style="margin-top:8px;">📂 خواندن فایل پیامک‌ها</button>
+      <div style="font-size:10px;color:var(--text-sub);margin-top:6px;line-height:1.7;">فایلی که Shortcut آیفون پیامک‌های بانک را در آن جمع می‌کند (مثلاً iCloud Drive ← Shortcuts ← pfm-sms.txt). پیامک‌هایی که قبلاً ثبت شده‌اند دوباره ثبت نمی‌شوند.</div>
     </div>
   </div>
 </div>
@@ -566,12 +568,12 @@ html { height:100%; height:-webkit-fill-available; }
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">داده‌ها</div>
     <input type="file" id="importFile" accept=".json,.gz,.json.gz" style="display:none" onchange="importData(event)">
-    <input type="file" id="smsImportFile" accept=".csv,.txt" style="display:none" onchange="importBankSMS(event)">
+    <input type="file" id="smsImportFile" accept=".csv,.txt,text/plain,text/csv" style="display:none" onchange="importBankSMS(event)">
     <div class="settings-item" onclick="openModal('modal-export')"><span class="si-label">📤 خروجی</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="openModal('modal-auto-backup')"><span class="si-label">🗄️ پشتیبان خودکار روزانه</span><span class="si-val" id="autoBackupStatus">←</span></div>
     <div class="settings-item" onclick="manualUpdateCheck()"><span class="si-label">🔄 بررسی به‌روزرسانی</span><span class="si-val" id="versionLabel"></span></div>
     <div class="settings-item" onclick="document.getElementById('importFile').click()"><span class="si-label">📥 ورودی JSON (بازیابی)</span><span class="si-val">←</span></div>
-    <div class="settings-item" onclick="document.getElementById('smsImportFile').click()"><span class="si-label">🏦 ورود پیامک بانک (CSV)</span><span class="si-val">←</span></div>
+    <div class="settings-item" onclick="document.getElementById('smsImportFile').click()"><span class="si-label">🏦 ورود پیامک بانک (فایل)</span><span class="si-val">←</span></div>
     <div class="settings-item" onclick="confirmClear()"><span class="si-label" style="color:var(--danger)">🗑️ پاک کردن همه داده‌ها</span><span class="si-val">←</span></div>
   </div></div>
   <!-- v1.12.0: درباره اپلیکیشن -->
@@ -4489,6 +4491,7 @@ function exportPDF() {
 // لایه‌ی دفاعی: پیام‌های رمز/OTP و پیام‌های بدون «مانده» رد می‌شوند
 // ═══════════════════════════════════════
 var pendingSMSRows = [];
+var smsShowSureDups = false;   // v1.18.0: نمایش پیامک‌هایی که قطعاً قبلاً ثبت شده‌اند
 
 function normalizeDigits(s) {
   if (!s) return '';
@@ -5131,13 +5134,27 @@ function processSMSContent(content) {
     return row;
   });
 
-  detectTransferPairs(pendingSMSRows);
+  // v1.18.0: پیامکی که دو بار در همان متن/فایل آمده (مثلاً Shortcut دو بار اجرا شده) فقط یک بار حساب می‌شود
+  var seenKeys = {};
+  pendingSMSRows.forEach(function(r){
+    var k = smsKeyOf(r); if (!k) return;
+    k = r.accNum + '#' + k;
+    if (seenKeys[k]) { r.dup = true; r.dupSure = true; r.include = false; r.dupBatch = true; }
+    else seenKeys[k] = true;
+  });
+  detectTransferPairs(pendingSMSRows.filter(function(r){ return !r.dupSure; }));
   markDuplicateTransfers(pendingSMSRows);
   computeBankSuggestions(pendingSMSRows);   // v1.17.0
+  smsShowSureDups = false;
+  var freshCount = pendingSMSRows.filter(function(r){ return !r.dupSure; }).length;
+  if (pendingSMSRows.length && !freshCount) {
+    alert('همه‌ی ' + toFa(pendingSMSRows.length) + ' پیامکِ این متن یا فایل قبلاً ثبت شده‌اند. پیامک تازه‌ای نیست.');
+    return;
+  }
   // پیش‌فرض هوشمند: اگر تازه‌ترین پیامک هم بیش از ۳ روز قدیمی است، این یک ثبت تاریخچه است
   var newest = 0;
   pendingSMSRows.forEach(function(r){
-    if (!r.dateOK) return;
+    if (!r.dateOK || r.dupSure) return;
     var t = new Date(r.dateISO).getTime();
     if (!isNaN(t) && t > newest) newest = t;
   });
@@ -5149,18 +5166,36 @@ function processSMSContent(content) {
 }
 
 // حساب یک ردیف پیامکی را تعیین و وضعیت تکراری/قبل از مبنا/تیک را بازمحاسبه کن
+// v1.18.0: اثر انگشت پیامک = نوع + مبلغ + مانده‌ی بانک + روز. روی تراکنشِ ساخته‌شده از پیامک ذخیره می‌شود
+// (smsKey؛ برای انتقال smsKey مبدأ و smsKey2 مقصد) تا خواندن دوباره‌ی همان فایل پیامک‌ها تکراری‌ها را مطمئن بشناسد.
+function smsKeyOf(r) {
+  if (!r || !r.dateOK || r.balance == null || isNaN(r.balance)) return null;
+  return r.type + '|' + r.amount + '|' + r.balance + '|' + r.dateISO.split('T')[0];
+}
+function txHasSmsKey(t, key, accId) {
+  return (t.smsKey === key || t.smsKey2 === key) &&
+         (t.accountId === accId || t.fromAccountId === accId || t.toAccountId === accId);
+}
 function applySMSRowAccount(row, acc) {
   row.account = acc || null;
-  // تشخیص تکراری: همان حساب + مبلغ + نوع + تاریخ (روز)
-  var dup = false;
+  var dup = false, sure = false;
   if (acc) {
-    var dayStr = row.dateISO.split('T')[0];
-    dup = DB.transactions.some(function(t){
-      return t.accountId===acc.id && t.amount===row.amount &&
-             ((row.type==='income' && t.type==='income') || (row.type==='expense' && t.type==='expense')) &&
-             (t.date||'').split('T')[0] === dayStr;
-    });
+    var key = smsKeyOf(row);
+    // ۱) قطعی: همین پیامک (همان مانده) قبلاً ثبت شده — حتی اگر بعداً به قسط وام یا نوع دیگری تبدیل شده باشد
+    sure = !!key && DB.transactions.some(function(t){ return txHasSmsKey(t, key, acc.id); });
+    // ۲) احتمالی (قاعده‌ی قبلی): همان حساب + مبلغ + نوع + روز، فقط در برابر تراکنش‌هایی که اثر انگشت ندارند
+    //    (دستی یا ثبت‌شده پیش از v1.18.0). تراکنشی که اثر انگشت دیگری دارد پیامک دیگری است، پس تکراری نیست.
+    if (!sure) {
+      var dayStr = row.dateISO.split('T')[0];
+      dup = DB.transactions.some(function(t){
+        return !t.smsKey && t.accountId===acc.id && t.amount===row.amount &&
+               ((row.type==='income' && t.type==='income') || (row.type==='expense' && t.type==='expense')) &&
+               (t.date||'').split('T')[0] === dayStr;
+      });
+    }
   }
+  row.dupSure = sure;
+  dup = dup || sure;
   row.dup = dup;
   row.preSeed = !!acc && row.dateOK && isBeforeSeed(acc, row.dateISO);
   row.include = !!acc && !dup;   // پیش‌فرض: فقط اگر حساب پیدا شد و تکراری نبود
@@ -5179,7 +5214,7 @@ function setSMSRowAccount(idx, accId) {
     applySMSRowAccount(r, acc);
   });
   // با حساب تازه ممکن است جفت انتقال تازه‌ای پیدا شود (ردیف‌هایی که کاربر جدا کرده کنار می‌مانند)
-  detectTransferPairs(pendingSMSRows.filter(function(r){ return !r.pair && !r.noPair; }));
+  detectTransferPairs(pendingSMSRows.filter(function(r){ return !r.pair && !r.noPair && !r.dupSure; }));
   markDuplicateTransfers(pendingSMSRows);
   computeBankSuggestions(pendingSMSRows);
   var listEl = document.getElementById('sms-import-list');
@@ -5195,8 +5230,14 @@ function markDuplicateTransfers(rows) {
     if (!r.pair || r.pair.role !== 'from') return;
     var p = r.pair;
     var dayStr = p.dateISO.split('T')[0];
+    var other = rows.find(function(x){ return x.idx === p.otherIdx; }) || pendingSMSRows.find(function(x){ return x.idx === p.otherIdx; });
+    var k1 = smsKeyOf(r), k2 = other ? smsKeyOf(other) : null;
+    var sure = !!(k1 && k2) && DB.transactions.some(function(t){
+      return t.type === 'transfer' && t.smsKey === k1 && t.smsKey2 === k2;
+    });
+    if (sure) { r.dup = true; r.dupSure = true; r.include = false; if (other) other.dupSure = true; return; }
     var exists = DB.transactions.some(function(t){
-      return t.type === 'transfer' &&
+      return t.type === 'transfer' && !t.smsKey &&
              t.fromAccountId === p.fromAcc.id &&
              t.toAccountId === p.toAcc.id &&
              Math.round(t.amount) === Math.round(p.amount) &&
@@ -5217,16 +5258,24 @@ function renderSMSImportReview() {
       : '🆕 این تراکنش‌ها به موجودی فعلی اعمال می‌شوند — یعنی موجودی حساب کم یا زیاد خواهد شد.';
   }
   var matched = pendingSMSRows.filter(function(r){ return r.account; }).length;
-  var dups = pendingSMSRows.filter(function(r){ return r.dup; }).length;
+  var dupsAll = pendingSMSRows.filter(function(r){ return r.dup && r.account; }).length;
+  var dups = pendingSMSRows.filter(function(r){ return r.dup && !r.dupSure; }).length;
+  var sureDups = pendingSMSRows.filter(function(r){ return r.dupSure && !(r.pair && r.pair.role === 'to'); }).length;
   var unmatched = pendingSMSRows.filter(function(r){ return !r.account; }).length;
   var pairs = pendingSMSRows.filter(function(r){ return r.pair && r.pair.role==='from'; }).length;
 
-  sumEl.innerHTML = 'یافت‌شده: <b>' + toFa(pendingSMSRows.length) + '</b> • قابل ثبت: <b style="color:var(--aqua-dark);">' + toFa(matched-dups) + '</b>' +
+  sumEl.innerHTML = 'یافت‌شده: <b>' + toFa(pendingSMSRows.length) + '</b> • قابل ثبت: <b style="color:var(--aqua-dark);">' + toFa(matched-dupsAll) + '</b>' +
     (pairs ? ' • انتقال: <b style="color:var(--aqua-dark);">' + toFa(pairs) + '</b>' : '') +
     (dups ? ' • تکراری: <b style="color:#9a7d0a;">' + toFa(dups) + '</b>' : '') +
-    (unmatched ? ' • حساب نامشخص: <b style="color:var(--danger);">' + toFa(unmatched) + '</b>' : '');
+    (unmatched ? ' • حساب نامشخص: <b style="color:var(--danger);">' + toFa(unmatched) + '</b>' : '') +
+    (sureDups ? '<div style="margin-top:6px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--aqua-pale);border-radius:8px;padding:5px 8px;">' +
+      '<span style="font-size:11px;">✓ ' + toFa(sureDups) + ' پیامک قبلاً ثبت شده' + (smsShowSureDups ? '' : ' و پنهان است') + '</span>' +
+      '<button id="sms-toggle-sure" style="border:none;border-radius:7px;padding:3px 9px;font-size:11px;cursor:pointer;font-family:inherit;background:rgba(0,0,0,0.07);color:var(--text-main);">' + (smsShowSureDups ? 'پنهان کن' : 'نمایش') + '</button></div>' : '');
+  var tg = document.getElementById('sms-toggle-sure');
+  if (tg) tg.onclick = function(){ smsShowSureDups = !smsShowSureDups; renderSMSImportReview(); };
 
   var html = pendingSMSRows.map(function(r) {
+    if (r.dupSure && !smsShowSureDups) return '';   // v1.18.0
     // ردیف واریزِ یک جفت انتقال، داخل ردیف مبدأ نمایش داده می‌شود
     if (r.pair && r.pair.role === 'to') return '';
 
@@ -5318,7 +5367,7 @@ function renderSMSImportReview() {
             '<span style="font-size:12px;font-weight:700;">' + accName + '</span>' +
             '<span style="font-size:13px;font-weight:700;color:' + typeColor + ';direction:ltr;white-space:nowrap;">' + (isInc?'+':'-') + toFa(addCommas(r.amount)) + '</span>' +
           '</div>' +
-          '<div style="font-size:11px;color:var(--text-sub);margin-top:2px;">' + typeLabel + ' • ' + dateLabel + (r.dup?' • <b style="color:#9a7d0a;">تکراری</b>':'') + '</div>' +
+          '<div style="font-size:11px;color:var(--text-sub);margin-top:2px;">' + typeLabel + ' • ' + dateLabel + (r.dup?' • <b style="color:#9a7d0a;">' + (r.dupSure ? 'قبلاً ثبت شده' : 'تکراری') + '</b>':'') + '</div>' +
           validationHtml + accPickHtml + bankSugHtml +
         '</div>' +
       '</div>' +
@@ -5448,6 +5497,7 @@ function confirmBankSMSImport() {
     };
     if (r.type==='income') tx.incCatId = reviewCatInc;
     else tx.catId = reviewCatExp;
+    var sk = smsKeyOf(r); if (sk) tx.smsKey = sk;   // v1.18.0
     DB.transactions.push(tx);
     added++;
     // v1.17.0: اتصال به قسط وام — همین تراکنش به اصل + سود تبدیل می‌شود (جمع مبلغ و اثر روی حساب همان است)
@@ -5462,7 +5512,10 @@ function confirmBankSMSImport() {
   pairsToAdd.forEach(function(r, k){
     var p = r.pair;
     var feeNote = p.fee > 0 ? ' (کارمزد: ' + toFa(addCommas(p.fee)) + ')' : '';
+    var pOther = pendingSMSRows.find(function(x){ return x.idx === p.otherIdx; });
+    var pk1 = smsKeyOf(r), pk2 = pOther ? smsKeyOf(pOther) : null;
     DB.transactions.push({
+      smsKey: pk1 || undefined, smsKey2: pk2 || undefined,
       id: 'tx' + Date.now() + '_tr' + k,
       type: 'transfer',
       amount: p.amount,
@@ -5760,13 +5813,18 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.17.1';
+var CURRENT_VERSION = '1.18.0';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.18.0', items:[
+    'دکمه‌ی «📂 خواندن فایل پیامک‌ها» به پایین داشبورد اضافه شد: فایلی را که میانبر (Shortcut) آیفون پیامک‌های بانک را در آن جمع می‌کند انتخاب کنید تا پیامک‌های تازه به تراکنش تبدیل شوند.',
+    'پیامک‌هایی که قبلاً ثبت شده‌اند با مانده‌ی بانک شناخته می‌شوند و در صفحه‌ی بررسی پنهان می‌مانند؛ پس می‌توانید همان فایل را هر بار دوباره بخوانید.',
+    'دو تراکنش هم‌مبلغ در یک روز (با مانده‌ی متفاوت در پیامک) دیگر به‌اشتباه «تکراری» شناخته نمی‌شوند.'
+  ]},
   { v:'1.17.1', items:[
     '«وام بانکی» به صفحه‌ی «قروض» اضافه شد: مبلغ، نرخ سود و تعداد اقساط را وارد کنید تا مبلغ قسط، سود کل و جدول اقساط محاسبه شود. اگر مبلغ قسط بانک فرق داشت، آن را اصلاح کنید.',
     'روش محاسبه را هم انتخاب کنید: «اقساط مساوی» (رایج) یا «روش ساده‌شده‌ی قدیمی»؛ اگر بانک شما قسط را با روش قدیمی حساب می‌کند، روش ساده‌شده را انتخاب کنید تا سهم اصل و سود هر قسط درست باشد.',
