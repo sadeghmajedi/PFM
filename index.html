@@ -248,6 +248,17 @@ html { height:100%; height:-webkit-fill-available; }
 .lc-note { font-size:10px; color:var(--text-sub); margin-top:4px; line-height:1.7; }
 /* v1.25.0: محاسبه‌گر طلا */
 .gc-sep { border-top:1px dashed var(--border); margin:6px 0; }
+/* v1.27.0: طلاهای من */
+.gi-row { display:flex; align-items:center; gap:10px; padding:11px 2px; border-bottom:1px solid var(--border); cursor:pointer; }
+.gi-row:last-child { border-bottom:none; }
+.gi-ico { width:38px; height:38px; border-radius:11px; background:#FBF3DC; border:1px solid #EEDDAA; display:flex; align-items:center; justify-content:center; font-size:19px; flex-shrink:0; }
+.gi-main { flex:1; min-width:0; }
+.gi-name { font-size:13px; font-weight:700; color:var(--text-main); }
+.gi-sub { font-size:10.5px; color:var(--text-sub); margin-top:2px; }
+.gi-val { text-align:left; flex-shrink:0; }
+.gi-val b { display:block; font-size:12.5px; color:var(--aqua-deep); unicode-bidi:isolate; }
+.gi-val span { font-size:10.5px; unicode-bidi:isolate; }
+.gi-sum { background:var(--aqua-pale); border:1px solid var(--border-aqua); border-radius:12px; padding:10px 12px; margin-bottom:8px; }
 .gc-box { font-size:13.5px !important; line-height:1.85 !important; }
 .gc-box .lc-sum { font-size:13.5px; padding:4px 0; }
 .gc-box .lc-sum > :last-child { white-space:nowrap; }
@@ -543,6 +554,9 @@ html { height:100%; height:-webkit-fill-available; }
   <div id="accountsList"></div>
   <div class="sec-title" style="margin-top:18px;">صندوق‌های تخصیصی<button class="add-btn" onclick="openModal('modal-fund')">+ افزودن</button></div>
   <div id="fundsList"></div>
+  <!-- v1.27.0: طلاهای من -->
+  <div class="sec-title" style="margin-top:18px;">💰 طلاهای من<button class="add-btn" onclick="openGoldItem()">+ افزودن</button></div>
+  <div id="goldList"></div>
 </div>
 
 <!-- PAGE: TRANSACTIONS -->
@@ -637,7 +651,7 @@ html { height:100%; height:-webkit-fill-available; }
   <!-- v1.23.0: نرخ ارز -->
   <div class="card" id="fxSettingsCard"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">نرخ ارز</div>
-    <div class="settings-item" onclick="openFxModal()"><span class="si-label">💱 نرخ خرید دلار و درهم</span><span class="si-val" id="fxSetStatus">←</span></div>
+    <div class="settings-item" onclick="openFxModal()"><span class="si-label">💱 نرخ دلار، درهم و طلا</span><span class="si-val" id="fxSetStatus">←</span></div>
   </div></div>
   <div class="card"><div class="card-bar"></div><div class="card-body">
     <div class="card-title">صدقه روزانه</div>
@@ -853,10 +867,11 @@ html { height:100%; height:-webkit-fill-available; }
 <div class="modal-overlay" id="modal-fx" onclick="closeModalOutside(event,'modal-fx')">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title">💱 نرخ ارز</div>
+    <div class="modal-title">💱 نرخ ارز و طلا</div>
     <div class="hint-box" style="line-height:1.8;">نرخ خرید بازار آزاد برای نشان دادن «کل دارایی با نرخ روز» در داشبورد. گزارش‌ها و جمع‌های ماهانه مثل قبل هر ارز را جدا نگه می‌دارند.</div>
     <div class="form-group"><label class="form-label">نرخ خرید دلار (تومان)</label><input type="text" inputmode="numeric" class="form-input" id="fx-usd" placeholder="مثلاً 95,000" oninput="sanitizeNumberInput(this)"><div class="fx-meta" id="fx-usd-meta"></div></div>
     <div class="form-group"><label class="form-label">نرخ خرید درهم (تومان)</label><input type="text" inputmode="numeric" class="form-input" id="fx-aed" placeholder="مثلاً 26,000" oninput="sanitizeNumberInput(this)"><div class="fx-meta" id="fx-aed-meta"></div></div>
+    <div class="form-group"><label class="form-label">قیمت هر گرم طلای ۱۸ عیار (تومان)</label><input type="text" inputmode="numeric" class="form-input" id="fx-gold18" placeholder="برای «طلاهای من»" oninput="sanitizeNumberInput(this)"><div class="fx-meta" id="fx-gold18-meta"></div></div>
     <label class="settings-item" for="fx-auto" style="margin-bottom:4px;"><span class="si-label">🔄 به‌روزرسانی خودکار هر بار که اپ را باز می‌کنید (حداکثر هر ۳ ساعت)</span><input type="checkbox" class="tgl" id="fx-auto" onchange="setFxAuto(this.checked)"></label>
     <div class="fx-meta" id="fx-status" style="margin-bottom:12px;"></div>
     <button class="btn-primary" onclick="saveFxManual()">ذخیره‌ی نرخ دستی</button>
@@ -940,6 +955,38 @@ html { height:100%; height:-webkit-fill-available; }
     <div class="hint-box" id="bl-calc-note" style="display:none;line-height:1.8;"></div>
     <button class="btn-primary" onclick="submitBankLoan()">ثبت وام</button>
     <button class="btn-secondary" onclick="closeModal('modal-bank-loan')">انصراف</button>
+  </div>
+</div>
+
+<!-- v1.27.0: طلاهای من — افزودن / ویرایش قطعه -->
+<div class="modal-overlay" id="modal-gold-item" onclick="closeModalOutside(event,'modal-gold-item')">
+  <div class="modal-sheet" style="max-height:92vh;">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="gi-title">💍 طلای تازه</div>
+    <div class="form-group"><label class="form-label">نام</label><input type="text" class="form-input" id="gi-name" placeholder="مثلاً النگو، گردنبند، سکه‌ی پارسیان"></div>
+    <div style="display:flex;gap:8px;">
+      <div class="form-group" style="flex:1;"><label class="form-label">وزن (گرم)</label><input type="text" inputmode="decimal" class="form-input" id="gi-w" placeholder="مثلاً 4.35"></div>
+      <div class="form-group" style="flex:1.3;"><label class="form-label">عیار</label>
+        <select class="form-select" id="gi-k" onchange="document.getElementById('gi-k-custom').style.display=this.value==='custom'?'':'none'">
+          <option value="750">۱۸ عیار (۷۵۰)</option><option value="705">۱۷ عیار (۷۰۵)</option><option value="875">۲۱ عیار (۸۷۵)</option>
+          <option value="916">۲۲ عیار (۹۱۶)</option><option value="995">۲۴ عیار (۹۹۵)</option><option value="custom">عیار دیگر…</option>
+        </select>
+        <input type="text" inputmode="decimal" class="form-input" id="gi-k-custom" placeholder="مثلاً 585" style="display:none;margin-top:6px;">
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">قیمت هر گرم ۱۸ عیار در روز خرید (تومان، اختیاری)</label><input type="text" inputmode="numeric" class="form-input" id="gi-p0" placeholder="از فاکتور خرید" oninput="sanitizeNumberInput(this)"></div>
+    <div class="form-group"><label class="form-label">مبلغ کلی که پرداخت کردید (تومان، اختیاری)</label><input type="text" inputmode="numeric" class="form-input" id="gi-paid" placeholder="مبلغ نهایی فاکتور" oninput="sanitizeNumberInput(this)"></div>
+    <div class="form-group"><label class="form-label">تاریخ خرید (اختیاری)</label>
+      <div style="display:flex;gap:6px;">
+        <select class="form-select" id="gi-d-d" style="flex:0.8;min-width:0;"></select>
+        <select class="form-select" id="gi-d-m" style="flex:1.3;min-width:0;"></select>
+        <select class="form-select" id="gi-d-y" style="flex:1;min-width:0;"></select>
+      </div>
+    </div>
+    <div class="lc-note" style="margin:-6px 0 12px;">ارزش هر روز با قیمت روز طلای ۱۸ عیار حساب می‌شود. سود و زیان نسبت به مبلغ پرداختی است، و اگر آن را ندارید نسبت به ارزش طلا در روز خرید.</div>
+    <button class="btn-primary" onclick="saveGoldItem()">ذخیره</button>
+    <button class="btn-secondary" id="gi-del" onclick="deleteGoldItem()" style="color:var(--danger);display:none;">🗑️ حذف</button>
+    <button class="btn-secondary" onclick="closeModal('modal-gold-item')">بستن</button>
   </div>
 </div>
 
@@ -2736,6 +2783,124 @@ function openAssistant() {
   var sa = document.getElementById('scrollArea'); if (sa) sa.scrollTop = 0;
 }
 
+// ─── طلاهای من (v1.27.0، درخواست صادق) ───
+// DB.golds = [{id, name, w (گرم), k (عیار از ۱۰۰۰), p0 (ریال/گرم ۱۸ در روز خرید، اختیاری), paid (ریال، اختیاری), date ('YYYY-MM-DD'، اختیاری)}]
+// داخل pfm_db_v3 است، پس در پشتیبان JSON می‌آید؛ تراکنشی نمی‌سازد. ارزش = w × GOLD18 × k/750.
+// احتساب در «کل دارایی با نرخ روز» با کلید دستگاهی pfm_gold_nw ('0' = خاموش؛ پیش‌فرض روشن).
+var GI_EDIT = null;
+function goldItems() { return DB.golds || []; }
+function goldIncludeInNW() { try { return localStorage.getItem('pfm_gold_nw') !== '0'; } catch (e) { return true; } }
+function setGoldIncludeInNW(on) { try { localStorage.setItem('pfm_gold_nw', on ? '1' : '0'); } catch (e) {} renderDashboard(); renderGolds(); renderSettings(); }
+function goldEq18Weight() { return goldItems().reduce(function(s, g){ return s + (g.w || 0) * (g.k || 750) / 750; }, 0); }
+function goldItemCalc(g, rate) {
+  var f = (g.k || 750) / 750, val = rate ? g.w * rate * f : null;
+  var cost = g.paid || (g.p0 ? g.w * g.p0 * f : null);
+  return { val: val, cost: cost, pl: (val != null && cost) ? val - cost : null, costIsPaid: !!g.paid };
+}
+function renderGolds() {
+  var el = document.getElementById('goldList'); if (!el) return;
+  var items = goldItems();
+  if (!items.length) {
+    el.innerHTML = '<div class="empty"><div class="ei">💍</div><p>طلایی ثبت نشده</p><div style="font-size:11px;color:var(--text-sub);margin-top:4px;line-height:1.8;">زیورآلات، سکه یا طلای آب‌شده را با وزن و عیار ثبت کنید تا ارزش امروزش را ببینید.</div></div>';
+    return;
+  }
+  var r = fxRateOf(getFx(), 'GOLD18'), rate = r ? r.rate : 0;
+  var tv = 0, tc = 0, tcAll = true;
+  var rows = items.map(function(g){
+    var c = goldItemCalc(g, rate);
+    if (c.val != null) tv += c.val;
+    if (c.cost) tc += c.cost; else tcAll = false;
+    var sub = gcFa(g.w, 3) + ' گرم • عیار ' + gcKLabel(g.k || 750) + (g.date ? ' • ' + jLabel(g.date) : '');
+    var right = c.val != null ? '<b>' + gcFa(c.val / 10) + ' تومان</b>' : '<b>—</b>';
+    if (c.pl != null) right += '<span style="color:' + (c.pl >= 0 ? 'var(--success)' : 'var(--danger)') + ';">' + (c.pl >= 0 ? 'سود ' : 'زیان ') + lcPct(Math.abs(c.pl / c.cost * 100)) + '</span>';
+    return '<div class="gi-row" onclick="openGoldItem(\'' + g.id + '\')"><div class="gi-ico">💍</div><div class="gi-main"><div class="gi-name">' + escHtml(g.name || 'طلا') + '</div><div class="gi-sub">' + sub + '</div></div><div class="gi-val">' + right + '</div></div>';
+  }).join('');
+  var sum = '<div class="gi-sum">';
+  sum += '<div class="lc-sum" style="font-size:12px;"><span>ارزش امروز کل</span><b style="font-size:15px;color:var(--aqua-deep);">' + (rate ? gcFa(tv / 10) + ' تومان' : '—') + '</b></div>';
+  if (rate && tc && tcAll) { var pl = tv - tc; sum += '<div class="lc-sum" style="font-size:12px;"><span>' + (pl >= 0 ? 'سود' : 'زیان') + ' نسبت به خرید</span><b style="color:' + (pl >= 0 ? 'var(--success)' : 'var(--danger)') + ';">' + gcFa(Math.abs(pl) / 10) + ' تومان (' + lcPct(Math.abs(pl / tc * 100)) + ')</b></div>'; }
+  sum += '<div class="lc-sum" style="font-size:12px;"><span>وزن کل (معادل ۱۸ عیار)</span><span style="unicode-bidi:isolate;">' + gcFa(goldEq18Weight(), 3) + ' گرم</span></div>';
+  sum += '<div class="lc-note">' + (r ? 'قیمت گرم ۱۸ عیار: ' + fxToman(r.rate) + ' تومان (' + (r.src === 'manual' ? 'دستی' : FX_SRC_LABEL[r.src] || r.src) + '، ' + fxAgeLabel(r.at) + ')' + (fxIsStale(r) ? ' ⚠️' : '') :
+         '⚠️ قیمت روز طلا هنوز دریافت نشده؛ وقتی آنلاین شوید خودکار می‌آید، یا از <a href="#" onclick="openFxModal();return false;" style="color:var(--aqua-deep);font-weight:700;">نرخ ارز و طلا</a> دستی وارد کنید.') +
+         (tcAll ? '' : ' سود کل فقط وقتی نمایش داده می‌شود که قیمت یا مبلغ خرید همه‌ی قطعه‌ها ثبت شده باشد.') + '</div>';
+  sum += '<label class="settings-item" for="gold-nw" style="padding:8px 0 0;border:none;"><span class="si-label" style="font-size:12px;">در «کل دارایی با نرخ روز» داشبورد حساب شود</span><input type="checkbox" class="tgl" id="gold-nw" onchange="setGoldIncludeInNW(this.checked)"' + (goldIncludeInNW() ? ' checked' : '') + '></label>';
+  sum += '</div>';
+  el.innerHTML = '<div class="card"><div class="card-bar"></div><div class="card-body">' + sum + rows + '</div></div>';
+}
+function giFillDateSelects() {
+  var y = document.getElementById('gi-d-y'); if (y.options.length) return;
+  var cy = jPartsOf(todayGregorian()).jy, h = '<option value="">سال</option>';
+  for (var i = cy; i >= cy - 40; i--) h += '<option value="' + i + '">' + toFa(i) + '</option>';
+  y.innerHTML = h;
+  document.getElementById('gi-d-m').innerHTML = '<option value="">ماه</option>' + [1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){ return '<option value="' + m + '">' + J.monthName(m) + '</option>'; }).join('');
+  var dh = '<option value="">روز</option>'; for (var d = 1; d <= 31; d++) dh += '<option value="' + d + '">' + toFa(d) + '</option>';
+  document.getElementById('gi-d-d').innerHTML = dh;
+}
+function giSetKarat(k) {
+  var sel = document.getElementById('gi-k'), known = ['750', '705', '875', '916', '995'].indexOf(String(k)) !== -1;
+  sel.value = known ? String(k) : 'custom';
+  document.getElementById('gi-k-custom').value = known ? '' : String(k);
+  document.getElementById('gi-k-custom').style.display = known ? 'none' : '';
+}
+// prefill: {name, w, k, p0 (تومان), paid (تومان), jy, jm, jd}
+function openGoldItem(id, prefill) {
+  giFillDateSelects();
+  var g = id ? goldItems().filter(function(x){ return x.id === id; })[0] : null;
+  GI_EDIT = g ? g.id : null;
+  var pf = prefill || {};
+  document.getElementById('gi-title').textContent = g ? '💍 ویرایش طلا' : '💍 طلای تازه';
+  document.getElementById('gi-name').value = g ? (g.name || '') : (pf.name || '');
+  document.getElementById('gi-w').value = g ? String(g.w) : (pf.w ? String(pf.w) : '');
+  giSetKarat(g ? (g.k || 750) : (pf.k || 750));
+  document.getElementById('gi-p0').value = g ? (g.p0 ? addCommas(Math.round(g.p0 / 10)) : '') : (pf.p0 ? addCommas(Math.round(pf.p0)) : '');
+  document.getElementById('gi-paid').value = g ? (g.paid ? addCommas(Math.round(g.paid / 10)) : '') : (pf.paid ? addCommas(Math.round(pf.paid)) : '');
+  var jp = g && g.date ? jPartsOf(g.date) : (pf.jy ? { jy: pf.jy, jm: pf.jm, jd: pf.jd } : null);
+  document.getElementById('gi-d-y').value = jp ? String(jp.jy) : '';
+  document.getElementById('gi-d-m').value = jp && jp.jm ? String(jp.jm) : '';
+  document.getElementById('gi-d-d').value = jp && jp.jd ? String(jp.jd) : '';
+  document.getElementById('gi-del').style.display = g ? '' : 'none';
+  openModal('modal-gold-item');
+}
+function saveGoldItem() {
+  var w = faDecimal(document.getElementById('gi-w').value);
+  if (!(w > 0)) { alert('وزن را وارد کنید'); return; }
+  var kv = document.getElementById('gi-k').value, k = kv === 'custom' ? faDecimal(document.getElementById('gi-k-custom').value) : parseFloat(kv);
+  if (!(k > 0 && k <= 1000)) { alert('عیار باید عددی بین ۱ و ۱۰۰۰ باشد'); return; }
+  var jy = parseInt(document.getElementById('gi-d-y').value, 10), date = '';
+  if (jy) {
+    var jm = parseInt(document.getElementById('gi-d-m').value, 10) || 1, jd = parseInt(document.getElementById('gi-d-d').value, 10) || 1;
+    date = jToG(jy, jm, Math.min(jd, jMonthLen(jy, jm))) || '';
+  }
+  var rec = { name: document.getElementById('gi-name').value.trim() || 'طلا', w: w, k: k,
+              p0: (getNumericValue('gi-p0') || 0) * 10 || null, paid: (getNumericValue('gi-paid') || 0) * 10 || null, date: date || null };
+  if (!DB.golds) DB.golds = [];
+  if (GI_EDIT) {
+    var g = DB.golds.filter(function(x){ return x.id === GI_EDIT; })[0];
+    if (g) Object.keys(rec).forEach(function(key){ g[key] = rec[key]; });
+  } else {
+    rec.id = 'gold' + Date.now();
+    DB.golds.push(rec);
+  }
+  saveDB();
+  closeModal('modal-gold-item');
+  renderGolds(); renderDashboard();
+  fxMaybeAutoUpdate(false);
+}
+function deleteGoldItem() {
+  if (!GI_EDIT || !confirm('این طلا از «طلاهای من» حذف شود؟')) return;
+  DB.golds = goldItems().filter(function(x){ return x.id !== GI_EDIT; });
+  saveDB(); closeModal('modal-gold-item'); renderGolds(); renderDashboard();
+}
+// از حالت «ارزش امروز» محاسبه‌گر طلا
+function goldEvalToMyGold() {
+  var jy = parseInt(document.getElementById('gc-d0-y').value, 10) || 0;
+  var pf = { w: faDecimal(document.getElementById('gc-w').value), k: gcKarat(), p0: gcNum('gc-p0'), jy: jy,
+             jm: parseInt(document.getElementById('gc-d0-m').value, 10) || 0, jd: parseInt(document.getElementById('gc-d0-d').value, 10) || 0 };
+  var paid0 = gcNum('gc-paid0'), wt = document.getElementById('gc-wage-type').value, wage = gcPctOrAmt('gc-wage', wt === 'pct');
+  pf.paid = paid0 || (wage > 0 && pf.p0 ? Math.round(goldBuyCalc(pf.w, pf.p0, wage, wt, lcFloat('gc-profit'), lcFloat('gc-vat'), 0, pf.k).total) : 0);
+  closeModal('modal-gold-calc');
+  openGoldItem(null, pf);
+}
+
 // ─── محاسبه‌گر خرید و فروش طلا (v1.25.0) — فقط محاسبه، چیزی ذخیره نمی‌کند ───
 // عرف بازار ایران ۱۴۰۵ (فرمول صادق، با منابع خبری چک شد): G = W×P ، A = اجرت (٪ از G یا تومان هر گرم یا کل)،
 // S = (G+A)×s٪ ، F = حق‌العمل جدا ، T = (A+S+F)×t٪ (اصل طلا معاف) ، مبلغ نهایی = G+A+S+F+T. همه به تومان.
@@ -2920,6 +3085,7 @@ function updateGoldCalc() {
     if (!paid0 && !est) h += '<div class="lc-note">مبلغ پرداختی یا اجرت فاکتور را وارد نکرده‌اید؛ سود فقط نسبت به ارزش طلا در روز خرید است و اجرت، سود فروشنده و مالیاتِ خرید در آن نیامده.</div>';
     else h += '<div class="lc-note">سود و زیان با همه‌ی هزینه‌های خرید (اجرت، سود فروشنده، مالیات) و بدون کسری فروش حساب شده است.</div>';
     h += '</div>';
+    h += '<button class="btn-primary" style="margin-bottom:10px;" onclick="goldEvalToMyGold()">➕ افزودن به «طلاهای من»</button>';
   } else {
     var dt = document.getElementById('gc-ded-type').value, d = gcPctOrAmt('gc-ded', dt === 'pct');
     var offer = gcNum('gc-offer'), paid = gcNum('gc-paid');
@@ -4057,25 +4223,29 @@ function fxSameDay(a, b) { var x = new Date(a), y = new Date(b); return x.toDate
 function renderFxNetWorth(totalRial, totals) {
   var box = document.getElementById('nwFx'); if (!box) return null;
   var need = FX_CURS.filter(function(c){ return Math.abs(totals[c] || 0) >= 0.005; });
+  // v1.27.0: طلاهای من (اگر «احتساب در کل دارایی» روشن است) مثل یک «ارز» دیگر با قیمت GOLD18
+  var gW = goldIncludeInNW() ? goldEq18Weight() : 0;
+  if (gW > 0) need.push('GOLD18');
   if (!need.length) { box.style.display = 'none'; return { sum: totalRial, missing: [], need: 0 }; }
   var o = getFx(), sum = totalRial, missing = [], stale = false, oldest = Infinity, parts = [];
   need.forEach(function(c){
     var r = fxRateOf(o, c);
     if (!r) { missing.push(c); return; }
-    sum += totals[c] * r.rate;
+    sum += (c === 'GOLD18' ? gW : totals[c]) * r.rate;
     if (fxIsStale(r)) stale = true;
     oldest = Math.min(oldest, r.at);
-    parts.push((c === 'USD' ? 'دلار ' : 'درهم ') + fxToman(r.rate));
+    parts.push(c === 'GOLD18' ? 'طلا ' + gcFa(gW, 2) + ' گرم × ' + fxToman(r.rate) : FX_NAME[c] + ' ' + fxToman(r.rate));
   });
   box.style.display = '';
+  var what = need.some(function(c){ return c !== 'GOLD18'; }) ? (gW > 0 ? 'ارز و طلا' : 'ارزها') : 'طلا';
   if (missing.length) {
     box.innerHTML = '<div class="nw-label" style="margin:0;">کل دارایی با نرخ روز</div><div class="nw-fx-sub">💱 برای دیدن معادل ریالی، نرخ ' +
-      missing.map(function(c){ return c === 'USD' ? 'دلار' : 'درهم'; }).join(' و ') + ' را وارد کنید ←</div>';
+      missing.map(function(c){ return FX_NAME[c]; }).join(' و ') + ' را وارد کنید ←</div>';
     return { sum: sum, missing: missing, need: need.length };
   }
-  box.innerHTML = '<div class="nw-label" style="margin:0;">کل دارایی با نرخ روز (ریال + معادل ارزها)</div>' +
+  box.innerHTML = '<div class="nw-label" style="margin:0;">کل دارایی با نرخ روز (ریال + معادل ' + what + ')</div>' +
     '<div class="nw-fx-val">' + toFa(addCommas(Math.round(sum))) + ' ریال</div>' +
-    '<div class="nw-fx-sub">' + (stale ? '⚠️ ' : '') + 'نرخ خرید: ' + parts.join(' • ') + ' تومان • ' + fxAgeLabel(oldest) + '</div>';
+    '<div class="nw-fx-sub">' + (stale ? '⚠️ ' : '') + (gW > 0 ? 'نرخ روز: ' : 'نرخ خرید: ') + parts.join(' • ') + ' تومان • ' + fxAgeLabel(oldest) + '</div>';
   return { sum: sum, missing: [], need: need.length };
 }
 function renderFxSettingsRow() {
@@ -4089,7 +4259,7 @@ function openFxModal() {
 }
 function renderFxModal(fillInputs) {
   var o = getFx();
-  FX_CURS.forEach(function(c){
+  FX_MANUAL.forEach(function(c){
     var k = c.toLowerCase(), r = fxRateOf(o, c);
     if (fillInputs) document.getElementById('fx-' + k).value = r ? addCommas(Math.round(r.rate / 10)) : '';
     document.getElementById('fx-' + k + '-meta').textContent = r
@@ -4109,20 +4279,22 @@ function setFxAuto(on) {
   renderFxModal(false); renderFxSettingsRow();
   if (on) fxMaybeAutoUpdate(false);
 }
+var FX_MANUAL = ['USD', 'AED', 'GOLD18'];   // v1.27.0: قیمت گرم ۱۸ عیار هم دستی قابل ثبت است
+var FX_NAME = { USD: 'دلار', AED: 'درهم', GOLD18: 'طلا' };
 function saveFxManual() {
   var o = getFx(), changed = 0, now = Date.now();
-  for (var i = 0; i < FX_CURS.length; i++) {
-    var c = FX_CURS[i], k = c.toLowerCase(), r = fxRateOf(o, c);
+  for (var i = 0; i < FX_MANUAL.length; i++) {
+    var c = FX_MANUAL[i], k = c.toLowerCase(), r = fxRateOf(o, c);
     var raw = document.getElementById('fx-' + k).value.trim();
     var t = getNumericValue('fx-' + k);
     if (!raw) continue;
-    if (!(t > 0)) { alert('نرخ ' + (c === 'USD' ? 'دلار' : 'درهم') + ' را درست وارد کنید'); return; }
+    if (!(t > 0)) { alert('نرخ ' + FX_NAME[c] + ' را درست وارد کنید'); return; }
     if (r && Math.round(r.rate / 10) === t) continue;   // دست نخورده
     o[c] = { rate: t * 10, at: now, src: 'manual', kind: 'buy' }; changed++;
   }
   saveFx(o);
   closeModal('modal-fx');
-  renderDashboard(); renderFxSettingsRow();
+  renderDashboard(); renderFxSettingsRow(); renderGolds();
 }
 // v1.25.1: هر بار باز شدن/برگشتن به اپ اگر از آخرین خواندن موفق ≥ FX_REFRESH_MS گذشته (هم‌آهنگ با cron سه‌ساعته‌ی rates.yml)؛
 // قبلاً روزی یک بار. (وقتی آنلاین و خودکار روشن و حساب ارزی هست)؛ force = دکمه‌ی «به‌روزرسانی الان»
@@ -4130,7 +4302,7 @@ var FX_REFRESH_MS = 3 * 3600e3;
 function fxMaybeAutoUpdate(force) {
   var o = getFx(), now = Date.now();
   if (!force) {
-    if (!o.auto || !hasForeignAccounts()) return Promise.resolve(null);
+    if (!o.auto || !(hasForeignAccounts() || goldItems().length)) return Promise.resolve(null);
     if (o.lastOk && now - o.lastOk < FX_REFRESH_MS) return Promise.resolve(null);
     if (o.lastTry && now - o.lastTry < 10 * 60000) return Promise.resolve(null);
   }
@@ -4154,9 +4326,10 @@ function fxMaybeAutoUpdate(force) {
       if (cur && cur.src === 'manual' && cur.at > at) return;
       o2[c] = { rate: v, at: at, src: j.src || 'auto', kind: j.kind || 'buy' };
     });
-    if (j.gold18 > 0) o2.GOLD18 = { rate: j.gold18, at: at, src: j.goldSrc || j.src || 'auto' };   // v1.25.0 (ریال)
+    if (j.gold18 > 0 && !(o2.GOLD18 && o2.GOLD18.src === 'manual' && o2.GOLD18.at > at))
+      o2.GOLD18 = { rate: j.gold18, at: at, src: j.goldSrc || j.src || 'auto', kind: 'market' };   // v1.25.0 (ریال)
     o2.lastOk = Date.now(); o2.lastErr = ''; saveFx(o2);
-    renderDashboard(); renderFxSettingsRow();
+    renderDashboard(); renderFxSettingsRow(); renderGolds();
     if (document.getElementById('modal-fx').classList.contains('open')) renderFxModal(true);
     return true;
   }).catch(function(e){
@@ -4178,7 +4351,7 @@ window.addEventListener('online', function(){ if (document.getElementById('mainA
 // ═══════════════════════════════════════
 // RENDER
 // ═══════════════════════════════════════
-function renderAll() { renderDashboard(); renderLoans(); renderAccounts(); renderTransactions(); renderReports(); renderSettings(); }
+function renderAll() { renderDashboard(); renderLoans(); renderAccounts(); renderGolds(); renderTransactions(); renderReports(); renderSettings(); }
 
 // ── v1.13.0: تنظیمات صدقه روزانه — کلید جدا (pfm_sadaqah)، شکل pfm_db_v3 دست نمی‌خورد ──
 var SADAQAH_KEY = 'pfm_sadaqah';
@@ -5027,8 +5200,9 @@ function renderSettings() {
     document.getElementById('sadaqahPctLabel').textContent = sq.basis === 'total' ? 'درصد از کل دارایی' : 'درصد از خالص دارایی ریالی';
     var note = '';
     if (sq.enabled && sq.basis === 'total') {
-      var fo = getFx(), lack = DB.accounts.some(function(a){ return a.currency && a.currency !== 'IRR' && !fxRateOf(fo, a.currency); });
-      note = lack ? '⚠️ تا نرخ ارز ثبت نشود، صدقه از خالص دارایی ریالی حساب می‌شود.' : 'خالص ریالی + معادل ریالی دلار و درهم با نرخ خرید روز (همان «کل دارایی با نرخ روز» داشبورد).';
+      var fo = getFx(), lack = DB.accounts.some(function(a){ return a.currency && a.currency !== 'IRR' && !fxRateOf(fo, a.currency); }) ||
+                (goldIncludeInNW() && goldItems().length && !fxRateOf(fo, 'GOLD18'));
+      note = lack ? '⚠️ تا نرخ ارز یا طلا ثبت نشود، صدقه از خالص دارایی ریالی حساب می‌شود.' : 'خالص ریالی + معادل ریالی دلار و درهم' + (goldIncludeInNW() && goldItems().length ? ' و «طلاهای من»' : '') + ' با نرخ روز (همان «کل دارایی با نرخ روز» داشبورد).';
     }
     sbNote.textContent = note; sbNote.style.display = note ? '' : 'none';
   }
@@ -6932,13 +7106,18 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.26.0';
+var CURRENT_VERSION = '1.27.0';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.27.0', items:[
+    'بخش «💰 طلاهای من» در صفحه‌ی حساب‌ها اضافه شد: زیورآلات، سکه یا طلای آب‌شده را با وزن، عیار و اطلاعات فاکتور خرید ثبت کنید تا ارزش امروز و سود یا زیان هر قطعه و کل طلاها را ببینید.',
+    'ارزش طلاها با قیمت روز خودکار به‌روز می‌شود و اگر بخواهید در «کل دارایی با نرخ روز» داشبورد هم حساب می‌شود.',
+    'در محاسبه‌گر طلا، حالت «ارزش امروز طلای قبلی» دکمه‌ی «افزودن به طلاهای من» دارد. قیمت طلا را در پنجره‌ی «نرخ ارز» دستی هم می‌توانید وارد کنید.'
+  ]},
   { v:'1.26.0', items:[
     'در محاسبه‌گر طلا حالت «📈 ارزش امروز طلای قبلی» اضافه شد: وزن، عیار، قیمت هر گرم در روز خرید و مبلغ پرداختی را از فاکتور وارد کنید تا ارزش امروز و سود یا زیان را ببینید.',
     'اگر تاریخ خرید را هم وارد کنید، مدت نگه‌داری، بازده سالانه‌ی خریدتان و رشد سالانه‌ی قیمت طلا در همان مدت نمایش داده می‌شود.'
