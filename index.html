@@ -7897,6 +7897,39 @@ function importBankSMS(e) {
   reader.readAsText(file);
 }
 
+// v1.35.0 (گزارش صادق): Shortcut آیفون گاهی برای دو پیامکی که هم‌زمان می‌رسند فقط یک بار اجرا می‌شود و یکی در فایل نمی‌آید.
+// برای هر حساب (شماره‌ی پیامک)، پیامک‌ها به ترتیب زمان (هم‌زمان‌ها به ترتیب فایل) زنجیر می‌شوند:
+// مانده‌ی قبل از پیامک b = b.balance ∓ b.amount؛ اگر با مانده‌ی پیامک قبلی a نخواند، اختلاف = یک «پیامک جاافتاده»
+// (واریز اگر مثبت، برداشت اگر منفی) با مانده‌ی همان مانده‌ی ضمنی و زمان a، درست بعد از a درج می‌شود (gap:true).
+// پیش‌فرض تیک‌نخورده؛ اثر انگشتش (smsKeyOf) همان پیامک واقعی است، پس اگر بعداً پیامک واقعی بیاید تکراری شناخته می‌شود.
+// تکرارهای داخل همان متن (همان شماره + اثر انگشت) پیش از زنجیر کنار گذاشته می‌شوند.
+function smsGapKey(r) { return r.type + '|' + r.amount + '|' + r.balance + '|' + r.jy + '/' + r.jm + '/' + r.jd + '|' + (r.hh || '') + ':' + (r.mn || ''); }
+function smsFillGaps(parsed) {
+  var byAcc = {}, seen = {};
+  parsed.forEach(function(r, i) {
+    if (!r || !r.accNum || r.balance == null || isNaN(r.balance) || !(r.amount > 0) || !(r.jy && r.jm && r.jd)) return;
+    var k = r.accNum + '#' + smsGapKey(r); if (seen[k]) return; seen[k] = true;
+    (byAcc[r.accNum] = byAcc[r.accNum] || []).push({ r: r, i: i, t: (r.jy * 10000 + r.jm * 100 + r.jd) * 10000 + (parseInt(r.hh, 10) || 0) * 100 + (parseInt(r.mn, 10) || 0) });
+  });
+  var after = {};   // اندیس a → ردیف‌های جاافتاده‌ای که بعد از آن می‌آیند
+  Object.keys(byAcc).forEach(function(acc) {
+    var list = byAcc[acc].sort(function(x, y){ return x.t - y.t || x.i - y.i; });
+    for (var j = 1; j < list.length; j++) {
+      var a = list[j - 1].r, b = list[j].r;
+      var before = b.type === 'income' ? b.balance - b.amount : b.balance + b.amount;
+      var diff = Math.round(before - a.balance);
+      if (Math.abs(diff) < 1) continue;
+      var g = { accNum: a.accNum, type: diff > 0 ? 'income' : 'expense', amount: Math.abs(diff), balance: before,
+                jy: a.jy, jm: a.jm, jd: a.jd, hh: a.hh, mn: a.mn, note: 'پیامک جاافتاده — بازسازی از مانده', gap: true };
+      (after[list[j - 1].i] = after[list[j - 1].i] || []).push(g);
+    }
+  });
+  if (!Object.keys(after).length) return parsed;
+  var out = [];
+  parsed.forEach(function(r, i){ out.push(r); if (after[i]) after[i].forEach(function(g){ out.push(g); }); });
+  return out;
+}
+
 function processSMSContent(content) {
   var parsed = [];
   var lines = content.split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean);
@@ -7928,6 +7961,8 @@ function processSMSContent(content) {
     blocks.forEach(function(b){ var r = parseSMSBlock(b); if (r) parsed.push(r); });
   }
 
+  if (parsed.length) parsed = smsFillGaps(parsed);   // v1.35.0: پیامک جاافتاده از روی مانده
+
   if (!parsed.length) {
     alert('هیچ تراکنش معتبری در فایل پیدا نشد.\nمطمئن شوید فایل شامل پیامک‌های تراکنش (برداشت/واریز با مانده) است.');
     return;
@@ -7948,7 +7983,8 @@ function processSMSContent(content) {
     }
     var row = {
       idx: idx, accNum: r.accNum, account: acc, accMatch: accMatch, type: r.type, label: r.label || null, note: r.note || null,
-      amount: r.amount, balance: r.balance, dateISO: dateISO, dateOK: dateOK
+      amount: r.amount, balance: r.balance, dateISO: dateISO, dateOK: dateOK,
+      gap: !!r.gap, noPair: !!r.gap
     };
     applySMSRowAccount(row, acc);
     return row;
@@ -7962,7 +7998,7 @@ function processSMSContent(content) {
     if (seenKeys[k]) { r.dup = true; r.dupSure = true; r.include = false; r.dupBatch = true; }
     else seenKeys[k] = true;
   });
-  detectTransferPairs(pendingSMSRows.filter(function(r){ return !r.dupSure; }));
+  detectTransferPairs(pendingSMSRows.filter(function(r){ return !r.dupSure && !r.gap; }));
   markDuplicateTransfers(pendingSMSRows);
   computeBankSuggestions(pendingSMSRows);   // v1.17.0
   smsShowSureDups = false;
@@ -8018,7 +8054,7 @@ function applySMSRowAccount(row, acc) {
   dup = dup || sure;
   row.dup = dup;
   row.preSeed = !!acc && row.dateOK && isBeforeSeed(acc, row.dateISO);
-  row.include = !!acc && !dup;   // پیش‌فرض: فقط اگر حساب پیدا شد و تکراری نبود
+  row.include = !!acc && !dup && !row.gap;   // پیش‌فرض: فقط اگر حساب پیدا شد و تکراری نبود؛ ردیف بازسازی‌شده (v1.35.0) فقط با تیک کاربر
 }
 
 // انتخاب دستی حساب برای ردیفی که خودکار تطبیق نخورد (v1.16.0)؛
@@ -8188,6 +8224,7 @@ function renderSMSImportReview() {
             '<span style="font-size:13px;font-weight:700;color:' + typeColor + ';direction:ltr;white-space:nowrap;">' + (isInc?'+':'-') + toFa(addCommas(r.amount)) + '</span>' +
           '</div>' +
           '<div style="font-size:11px;color:var(--text-sub);margin-top:2px;">' + typeLabel + ' • ' + dateLabel + (r.dup?' • <b style="color:#9a7d0a;">' + (r.dupSure ? 'قبلاً ثبت شده' : 'تکراری') + '</b>':'') + '</div>' +
+          (r.gap ? '<div style="font-size:10px;color:#9a7d0a;margin-top:3px;line-height:1.7;">🧩 این پیامک در متن یا فایل نبود؛ مبلغش از اختلاف مانده‌ی پیامک قبل و بعدِ همین حساب حساب شده. اگر درست است تیک بزنید و بعد دسته‌بندی‌اش را در «تراکنش‌ها» انتخاب کنید. ممکن است جمع چند تراکنش کوچک بی‌پیامک (مثل کارمزد) باشد. زمانش = زمان پیامک قبلی.</div>' : '') +
           validationHtml + accPickHtml + bankSugHtml +
         '</div>' +
       '</div>' +
@@ -8641,13 +8678,16 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.34.1';
+var CURRENT_VERSION = '1.35.0';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.35.0', items:[
+    'پیامک جاافتاده: اگر Shortcut آیفون یکی از پیامک‌های بانک را در فایل ننوشته باشد (مثلاً دو پیامک در یک دقیقه)، اپ از اختلاف مانده‌ی پیامک‌های قبل و بعد آن را پیدا می‌کند و با علامت 🧩 در صفحه‌ی بررسی پیشنهاد می‌دهد؛ اگر درست است، تیکش را بزنید.'
+  ]},
   { v:'1.34.0', items:[
     'حالت نمایشی: از تنظیمات ← «🧪 حالت نمایشی» اپ را با داده‌های ساختگی (حساب، تراکنش، گزارش، وام، چک و طلا) ببینید و امتحان کنید. داده‌های واقعی شما دست نمی‌خورد و هر چه در این حالت ثبت شود ذخیره نمی‌شود؛ با «خروج» در نوار بالا یا بستن اپ همه‌چیز به حالت قبل برمی‌گردد.'
   ]},
