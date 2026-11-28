@@ -957,6 +957,7 @@ body.demo-on .top-bar { padding-top:12px; }   /* v1.34.1: فاصله‌ی امن
     <div class="form-group"><label class="form-label">نوع دریافت</label><div class="chips" id="inc-mode">
       <span class="chip sel" data-mode="normal" onclick="setIncMode('normal')">💵 دریافت عادی</span>
       <span class="chip" data-mode="loan" onclick="setIncMode('loan')">📒 قرض و وام</span>
+      <span class="chip" data-mode="refund" onclick="setIncMode('refund')">↩️ برگشت هزینه</span>
     </div></div>
     <div id="inc-mode-panel" style="display:none;margin-bottom:12px;"></div>
     <div class="form-group"><label class="form-label">مبلغ (ریال)</label><input type="text" inputmode="numeric" class="form-input" id="inc-amount" placeholder="مثال: 50,000,000" oninput="sanitizeNumberInput(this);updateAllocPreview()"></div>
@@ -969,6 +970,25 @@ body.demo-on .top-bar { padding-top:12px; }   /* v1.34.1: فاصله‌ی امن
     <label class="rc-chk" id="inc-recur-wrap"><input type="checkbox" id="inc-recur"> 🔁 هر ماه تکرار شود (یادآور روی داشبورد)</label>
     <button class="btn-primary" id="inc-submit" onclick="submitIncome()">ثبت دریافت</button>
     <button class="btn-secondary" onclick="closeModal('modal-income')">انصراف</button>
+  </div>
+</div>
+
+<!-- Refund Modal (v1.36.0) — برگشت هزینه -->
+<div class="modal-overlay" id="modal-refund" onclick="closeModalOutside(event,'modal-refund')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="rf-title">↩️ ثبت برگشت هزینه</div>
+    <div class="hint-box" style="margin-bottom:12px;">برای پولی که بابت هزینه‌ای که قبلاً کرده‌اید برمی‌گردد — مثل خسارت بیمه‌ی درمان، پس گرفتن پول یک خرید یا سهم دیگران از پرداختی که شما کرده‌اید. به موجودی حساب اضافه می‌شود ولی درآمد نیست؛ از هزینه‌ی دسته‌ای که انتخاب می‌کنید کم می‌شود.</div>
+    <div class="hint-box" id="rf-from-note" style="display:none;margin-bottom:12px;">این دریافت از «درآمد» بیرون می‌آید و برگشت هزینه می‌شود. اگر از آن به صندوق‌های تخصیصی سهم رفته بود، آن سهم‌ها برداشته می‌شوند.</div>
+    <input type="hidden" id="rf-edit-id"><input type="hidden" id="rf-from-id">
+    <div class="form-group"><label class="form-label" id="rf-amount-lbl">مبلغ (ریال)</label><input type="text" inputmode="numeric" class="form-input" id="rf-amount" placeholder="مثال: 12,000,000" oninput="sanitizeNumberInput(this);rfUpdate()"></div>
+    <div class="form-group"><label class="form-label">تاریخ دریافت</label><input type="date" class="form-input" id="rf-date" onchange="rfUpdate()"></div>
+    <div class="form-group"><label class="form-label">واریز به حساب</label><select class="form-select" id="rf-account" onchange="rfUpdate()"></select></div>
+    <div class="form-group"><label class="form-label">هزینه‌ی کدام دسته برگشته؟</label><div class="chips" id="rf-cats"></div></div>
+    <div class="form-group"><label class="form-label">توضیحات</label><input type="text" class="form-input" id="rf-desc" placeholder="مثال: خسارت بیمه تکمیلی" autocomplete="off"></div>
+    <div id="rf-preview" class="hint-box" style="display:none;margin-bottom:12px;"></div>
+    <button class="btn-primary" id="rf-submit" onclick="submitRefund()">ثبت برگشت هزینه</button>
+    <button class="btn-secondary" onclick="closeModal('modal-refund')">انصراف</button>
   </div>
 </div>
 
@@ -1603,6 +1623,7 @@ var DB = { accounts:[], funds:[], transactions:[], categories:[
 var DB_DEFAULT_JSON = JSON.stringify(DB);   // v1.34.0: نسخه‌ی خالیِ پیش‌فرض (برای حالت نمایشی و خروج از آن)
 
 function saveDB() {
+  refundInvalidate();   // v1.36.0
   try {
     localStorage.setItem('pfm_db_v3', JSON.stringify(DB));
     // Auto-backup reminder every 10 transactions
@@ -1659,7 +1680,7 @@ function getAccountBalance(accId) {
       var tt = new Date(t.date).getTime();
       if (!isNaN(tt) && tt < cutoff) return;
     }
-    if (t.type==='income' && t.accountId===accId) txSum += t.amount;
+    if ((t.type==='income'||t.type==='refund') && t.accountId===accId) txSum += t.amount;   // v1.36.0: برگشت هزینه
     else if ((t.type==='expense'||t.type==='fund-out') && t.accountId===accId) txSum -= t.amount;
     else if ((t.type==='loan-given'||t.type==='loan-repaid') && t.accountId===accId) txSum -= t.amount;
     else if ((t.type==='loan-taken'||t.type==='loan-collected') && t.accountId===accId) txSum += t.amount;
@@ -1671,6 +1692,7 @@ function getAccountBalance(accId) {
   return seed + txSum;
 }
 function loadDB() {
+  refundInvalidate();
   try {
     var raw = localStorage.getItem('pfm_db_v3');
     if (raw) DB = JSON.parse(raw);
@@ -2656,16 +2678,7 @@ function deleteCheque() {
 }
 // حذف تراکنش با برگرداندن اثرش روی صندوق‌ها (همان منطق deleteTx؛ برای درآمد، fund-inهای تخصیص هم برداشته می‌شوند)
 function removeTxWithEffects(tx) {
-  if (tx.type === 'income' && tx.allocations && tx.allocations.length) {
-    var allocs = tx.allocations.slice();
-    allocs.forEach(function(al){ var f = DB.funds.find(function(x){ return x.id === al.fundId; }); if (f) f.totalIn = Math.max(0, (f.totalIn || 0) - al.amount); });
-    DB.transactions = DB.transactions.filter(function(t){
-      if (t.type !== 'fund-in' || t.date !== tx.date) return true;
-      var i = allocs.findIndex(function(al){ return al.fundId === t.fundId && al.amount === t.amount; });
-      if (i !== -1) { allocs.splice(i, 1); return false; }
-      return true;
-    });
-  }
+  stripIncomeAllocations(tx);   // v1.36.0: همان منطق قبلی، جدا شد تا «تبدیل به برگشت هزینه» هم از آن استفاده کند
   DB.transactions = DB.transactions.filter(function(t){ return t.id !== tx.id; });
 }
 
@@ -3152,11 +3165,11 @@ function expGroupOf(t) {
 // ── v1.15.1: مشترک بین خروجی‌ها (Excel/PDF ماه و کامل) ──
 // قبلاً نوع‌های قرض با کد انگلیسی (loan-given …) و بدون واحد ارز خروجی می‌شدند
 var EXPORT_TYPE_MAP = { income:'درآمد', expense:'هزینه', 'fund-in':'واریز صندوق', 'fund-out':'برداشت صندوق', transfer:'انتقال',
-  'loan-given':'قرض دادن', 'loan-taken':'قرض گرفتن', 'loan-collected':'دریافت قرض', 'loan-repaid':'بازپرداخت بدهی' };
+  'loan-given':'قرض دادن', 'loan-taken':'قرض گرفتن', 'loan-collected':'دریافت قرض', 'loan-repaid':'بازپرداخت بدهی', refund:'برگشت هزینه' };
 function exportTypeLabel(t) { return EXPORT_TYPE_MAP[t.type] || t.type; }
 // جهت پول برای علامت +/− در خروجی؛ انتقال و نوع ناشناخته بی‌علامت
 function txFlow(t) {
-  if (t.type === 'income' || t.type === 'fund-in' || t.type === 'loan-taken' || t.type === 'loan-collected') return 1;
+  if (t.type === 'income' || t.type === 'fund-in' || t.type === 'loan-taken' || t.type === 'loan-collected' || t.type === 'refund') return 1;
   if (t.type === 'expense' || t.type === 'fund-out' || t.type === 'loan-given' || t.type === 'loan-repaid') return -1;
   return 0;
 }
@@ -4570,6 +4583,12 @@ function setIncMode(mode) {
   document.getElementById('inc-submit').style.display = mode === 'normal' ? '' : 'none';
   document.getElementById('inc-recur-wrap').style.display = mode === 'normal' && !pendingLink ? '' : 'none';   // v1.31.0
   if (mode === 'normal') { panel.style.display = 'none'; panel.innerHTML = ''; return; }
+  if (mode === 'refund') {   // v1.36.0
+    panel.innerHTML = '<button class="exp-choice-btn" style="width:100%;" onclick="incToRefund()">' +
+      '<span class="exp-choice-icon">↩️</span><div><span class="exp-choice-title">برگشت بخشی از یک هزینه</span>' +
+      '<span class="exp-choice-sub">مثل خسارت بیمه‌ی درمان؛ از هزینه‌ی همان دسته کم می‌شود و درآمد حساب نمی‌شود</span></div></button>';
+    panel.style.display = 'block'; return;
+  }
   var h = '<button class="exp-choice-btn" style="width:100%;margin-bottom:8px;" onclick="incToLoanTaken()">' +
       '<span class="exp-choice-icon">🤝</span><div><span class="exp-choice-title">قرض گرفتن (بدهی جدید)</span>' +
       '<span class="exp-choice-sub">به حساب اضافه می‌شود ولی جزو درآمدها نیست</span></div></button>' +
@@ -4732,7 +4751,7 @@ function computeBudgetAlerts() {
   // جمع هزینه‌ی هر گروه به تفکیک ماه
   // structure: groups[groupKey][ 'jy-jm' ] = sum
   var groups = {};
-  DB.transactions.forEach(function(t) {
+  repAllTxs().forEach(function(t) {
     if (t.type !== 'expense' && t.type !== 'fund-out') return;
     if (!isRialTx(t)) return;   // v1.31.0: قبلاً مبلغ ارزی با ریال جمع می‌شد
     var gk = groupKeyForTx(t); if (!gk) return;
@@ -5388,7 +5407,7 @@ window.addEventListener('online', function(){ if (document.getElementById('mainA
 // ═══════════════════════════════════════
 // RENDER
 // ═══════════════════════════════════════
-function renderAll() { renderDashboard(); renderLoans(); renderAccounts(); renderGolds(); renderTransactions(); renderReports(); renderSettings(); }
+function renderAll() { refundInvalidate(); renderDashboard(); renderLoans(); renderAccounts(); renderGolds(); renderTransactions(); renderReports(); renderSettings(); }
 
 // ── v1.13.0: تنظیمات صدقه روزانه — کلید جدا (pfm_sadaqah)، شکل pfm_db_v3 دست نمی‌خورد ──
 var SADAQAH_KEY = 'pfm_sadaqah';
@@ -5560,8 +5579,9 @@ function renderDashboard() {
     else if (t.type==='loan-repaid') { icon=loanTxIcon(t); cls=''; amCls='expense'; prefix='-'; }
     else if (t.type==='loan-taken') { icon=loanTxIcon(t); cls='inc-icon'; amCls='income'; prefix='+'; }
     else if (t.type==='loan-collected') { icon='🤝'; cls='inc-icon'; amCls='income'; prefix='+'; }
+    else if (t.type==='refund') { icon='↩️'; cls='inc-icon'; amCls='income'; prefix='+'; }
     else { icon='💰'; cls=''; amCls=''; prefix=''; }
-    var canEdit = (t.type==='income'||t.type==='expense'||t.type==='transfer'||t.type==='fund-out');
+    var canEdit = (t.type==='income'||t.type==='expense'||t.type==='transfer'||t.type==='fund-out'||t.type==='refund');
     var feeSubLine = (t.type==='transfer'&&t.fee>0) ? '<div style="font-size:10px;color:var(--danger);">کارمزد: '+toFa(addCommas(Math.round(t.fee)))+'</div>' : '';
     rHtml += '<div class="tx-item">' +
       '<div class="tx-icon ' + cls + '">' + icon + '</div>' +
@@ -5641,16 +5661,17 @@ function renderTxSum(txs) {
   if (!txs.length) { el.innerHTML = ''; return; }
   var by = {};
   txs.forEach(function(t) {
-    var isIn = t.type === 'income', isOut = t.type === 'expense' || t.type === 'fund-out';
-    if (!isIn && !isOut) return;
+    var isIn = t.type === 'income', isOut = t.type === 'expense' || t.type === 'fund-out', isRf = t.type === 'refund';
+    if (!isIn && !isOut && !isRf) return;
     var cur = txCur(t);
-    by[cur] = by[cur] || { inc: 0, pay: 0 };
-    if (isIn) by[cur].inc += t.amount; else by[cur].pay += t.amount;
+    by[cur] = by[cur] || { inc: 0, pay: 0, rf: 0 };
+    if (isIn) by[cur].inc += t.amount; else if (isRf) by[cur].rf += t.amount; else by[cur].pay += t.amount;
   });
   var html = '<span>مجموع ' + toFa(txs.length) + ' تراکنش</span>';
   Object.keys(by).sort(curSort).forEach(function(cur) {
     if (by[cur].inc) html += '<span>دریافت: <b class="in">+' + fmtCur(by[cur].inc, cur) + '</b></span>';
     if (by[cur].pay) html += '<span>پرداخت: <b class="out">−' + fmtCur(by[cur].pay, cur) + '</b></span>';
+    if (by[cur].rf) html += '<span>برگشت هزینه: <b class="in">+' + fmtCur(by[cur].rf, cur) + '</b></span>';
   });
   el.innerHTML = html;
 }
@@ -5673,7 +5694,7 @@ function renderTransactions() {
 
   var txs = DB.transactions.slice().sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
   if (txFilter === 'fund') txs = txs.filter(function(t){ return t.type==='fund-in'||t.type==='fund-out'; });
-  else if (txFilter !== 'all') txs = txs.filter(function(t){ return t.type===txFilter; });
+  else if (txFilter !== 'all') txs = txs.filter(function(t){ return t.type===txFilter || (txFilter==='expense' && t.type==='refund'); });   // v1.36.0: برگشت هزینه کنار پرداخت‌ها
   if (txAccountFilter && txAccountFilter !== 'all') txs = txs.filter(function(t){
     // انتقال‌ها accountId ندارند — باید از هر دو سر (مبدأ و مقصد) تطبیق داده شوند
     return t.accountId===txAccountFilter || t.fromAccountId===txAccountFilter || t.toAccountId===txAccountFilter;
@@ -5715,8 +5736,9 @@ function renderTransactions() {
     var fund = t.fundId ? DB.funds.find(function(f){ return f.id===t.fundId; }) : null;
     var icon, label, amCls, prefix;
     var dirAmount = t.amount;   // مبلغ نمایشی (برای انتقال، بسته به جهت فرق می‌کند)
-    var canEdit = (t.type==='income' || t.type==='expense' || t.type==='transfer' || t.type==='fund-out');
-    if (t.type==='income') { var incCat = t.incCatId ? (DB.incomeCategories||[]).find(function(c){ return c.id===t.incCatId; }) : null; icon=incCat?incCat.icon:'💵'; amCls='income'; prefix='+'; label=t.desc; }
+    var canEdit = (t.type==='income' || t.type==='expense' || t.type==='transfer' || t.type==='fund-out' || t.type==='refund');
+    if (t.type==='refund') { icon='↩️'; amCls='income'; prefix='+'; label=t.desc || 'برگشت هزینه'; }   // v1.36.0
+    else if (t.type==='income') { var incCat = t.incCatId ? (DB.incomeCategories||[]).find(function(c){ return c.id===t.incCatId; }) : null; icon=incCat?incCat.icon:'💵'; amCls='income'; prefix='+'; label=t.desc; }
     else if (t.type==='expense') { icon=cat?cat.icon:'💸'; amCls='expense'; prefix='-'; label=t.desc; }
     else if (t.type==='transfer') {
       icon='⇔️'; amCls=''; prefix=''; label=t.desc;
@@ -5742,13 +5764,14 @@ function renderTransactions() {
     else if (t.type==='loan-taken') { icon=loanTxIcon(t); amCls='income'; prefix='+'; label=t.desc; }
     else if (t.type==='loan-collected') { icon='🤝'; amCls='income'; prefix='+'; label=t.desc; }
     else { icon=fund?fund.icon:'💰'; amCls='expense'; prefix='-'; label='پرداخت از '+(fund?fund.name:'')+': '+t.desc; }
-    var cls = (t.type==='income'||t.type==='fund-in'||t.type==='loan-taken'||t.type==='loan-collected'||(t.type==='transfer'&&amCls==='income')) ? 'inc-icon' : '';
+    var cls = (t.type==='income'||t.type==='refund'||t.type==='fund-in'||t.type==='loan-taken'||t.type==='loan-collected'||(t.type==='transfer'&&amCls==='income')) ? 'inc-icon' : '';
     // کارمزد فقط برای مبدأ (یا نمای کلی) معنا دارد — در حساب مقصد کارمزدی کسر نشده
     var showFee = (t.type==='transfer' && t.fee > 0 && t.toAccountId !== txAccountFilter);
     var feeSubLine = showFee ? '<div style="font-size:10px;color:var(--danger);margin-top:1px;">کارمزد: ' + toFa(addCommas(Math.round(t.fee))) + '</div>' : '';
     if (t.type==='expense' && fund) {
       feeSubLine += '<div style="font-size:10px;color:var(--aqua-dark);margin-top:1px;">' + fund.icon + ' کسر از صندوق ' + fund.name + '</div>';
     }
+    if (t.type === 'refund') feeSubLine += '<div style="font-size:10px;color:var(--aqua-dark);margin-top:1px;">↩️ برگشت هزینه · ' + (cat ? cat.icon + ' ' + escHtml(cat.name) : '⭐ سایر') + (refundAllocText(t) ? ' · ' + refundAllocText(t) : '') + '</div>';
     if (t.splitId) feeSubLine += '<div style="font-size:10px;color:var(--text-sub);margin-top:1px;">✂️ بخشی از پرداخت تقسیم‌شده · ' + (cat ? cat.icon + ' ' + cat.name : 'سایر') + '</div>';   // v1.31.0
     html += '<div class="card" style="margin-bottom:7px;"><div class="card-body" style="padding:10px;">' +
       '<div class="tx-item" style="padding:0;border:none;">' +
@@ -5846,7 +5869,7 @@ function renderReports() {
       var max = Math.max.apply(null, rows.map(function(r){ return r.sum; }).concat([1]));
       if (cur !== 'IRR' || curs.length > 1) cHtml += '<div class="cc-cur"' + (cur === 'IRR' && cHtml === '' ? ' style="border-top:none;margin-top:0;padding-top:0;"' : '') + '>' + (cur === 'IRR' ? 'ریالی' : curLabel(cur) + 'ی') + '</div>';
       rows.forEach(function(r) {
-        cHtml += '<div class="bar-row tap" data-ck="' + escHtml(r.key) + '" data-cur="' + cur + '"><div class="bar-label">' + r.label + '</div><div class="bar-wrap"><div class="bar-fill" style="width:' + (r.sum/max*100).toFixed(1) + '%"></div></div><div class="bar-val">' + (cur === 'IRR' ? toFa(addCommas(Math.round(r.sum))) : toCurrency(r.sum, cur)) + '</div></div>';
+        cHtml += '<div class="bar-row tap" data-ck="' + escHtml(r.key) + '" data-cur="' + cur + '"><div class="bar-label">' + r.label + '</div><div class="bar-wrap"><div class="bar-fill" style="width:' + Math.max(0, r.sum/max*100).toFixed(1) + '%"></div></div><div class="bar-val">' + (cur === 'IRR' ? toFa(addCommas(Math.round(r.sum))) : toCurrency(r.sum, cur)) + '</div></div>';
       });
     });
     chart.innerHTML = cHtml;
@@ -5982,8 +6005,164 @@ function computeManualBudgetAlerts() {
   return out;
 }
 
+// ═══════════════════════════════════════
+// REFUND — برگشت هزینه (v1.36.0، درخواست صادق: خسارت بیمه‌ی تکمیلی)
+// ═══════════════════════════════════════
+// تراکنش {type:'refund', amount, accountId, catId, desc, date}: به موجودی حساب اضافه می‌شود ولی درآمد نیست؛
+// از هزینه‌ی دسته‌ی catId کم می‌شود. قاعده‌ی صادق برای «کدام ماه»: اول ماهِ (مالیِ) دریافت، اگر هزینه‌ی همان دسته
+// (همان ارز) در آن ماه منفی نشود؛ وگرنه نزدیک‌ترین ماه قبلی که کل مبلغ در آن جا شود. اگر هیچ ماهی به‌تنهایی جا نداشت:
+// از ماه دریافت به عقب، هر ماه تا هزینه‌اش؛ باقی‌مانده (اگر کل هزینه‌ی ثبت‌شده کمتر بود) در ماه دریافت می‌ماند (منفی، با هشدار).
+// تخصیص ذخیره نمی‌شود: refundAllocate هر بار از تراکنش‌ها می‌سازد (کش در refundData). برگشت‌ها به ترتیب تاریخ ظرفیت را مصرف می‌کنند.
+// خروجی = ردیف‌های مجازی {type:'expense', amount:-x, refundAdj:true} که فقط گزارش‌ها می‌بینند (repAllTxs و repTxsIn)؛
+// موجودی، صندوق‌ها، فهرست تراکنش‌ها و پشتیبان فقط خود تراکنش refund را دارند.
+var RF_REV = 0, RF_CACHE = null;
+function refundInvalidate() { RF_REV++; }
+function finIdxOf(day) { var j = finYM(day); return j.jy * 12 + j.jm - 1; }
+function refundGroupKey(t) { return expGroupOf({ type: 'expense', catId: t.catId }).key + '|' + txCur(t); }
+function refundAllocate(list) {
+  var out = { adj: [], alloc: {} };
+  var refunds = list.filter(function(t){ return t.type === 'refund' && t.amount > 0; });
+  if (!refunds.length) return out;
+  refunds.sort(function(a, b){ var x = String(a.date), y = String(b.date); return x < y ? -1 : (x > y ? 1 : (String(a.id) < String(b.id) ? -1 : 1)); });
+  var spend = {}, minIdx = {}, used = {};
+  list.forEach(function(t) {
+    if (!isPayTx(t) || t.refundAdj) return;
+    var k = expGroupOf(t).key + '|' + txCur(t), mi = finIdxOf(txDay(t));
+    spend[k] = spend[k] || {}; spend[k][mi] = (spend[k][mi] || 0) + t.amount;
+    if (minIdx[k] === undefined || mi < minIdx[k]) minIdx[k] = mi;
+  });
+  refunds.forEach(function(r) {
+    var k = refundGroupKey(r), m0 = finIdxOf(txDay(r)), sp = spend[k] || {}, u = used[k] = used[k] || {};
+    var lo = minIdx[k] === undefined ? m0 : Math.min(minIdx[k], m0);
+    var cap = function(mi){ return (sp[mi] || 0) - (u[mi] || 0); };
+    var parts = [], rest = r.amount, mi;
+    for (mi = m0; mi >= lo; mi--) if (cap(mi) >= rest - 0.001) { parts.push({ mi: mi, amount: rest }); rest = 0; break; }
+    for (mi = m0; rest > 0.001 && mi >= lo; mi--) { var c = cap(mi); if (c <= 0) continue; var x = Math.min(c, rest); parts.push({ mi: mi, amount: x }); rest -= x; }
+    if (rest > 0.001) {
+      var p0 = parts.find(function(p){ return p.mi === m0; });
+      if (p0) { p0.amount += rest; p0.over = rest; } else parts.push({ mi: m0, amount: rest, over: rest });
+    }
+    parts.forEach(function(p) {
+      p.before = cap(p.mi); u[p.mi] = (u[p.mi] || 0) + p.amount;
+      p.jy = Math.floor(p.mi / 12); p.jm = p.mi % 12 + 1; p.recv = p.mi === m0;
+      out.adj.push({ id: 'rfa_' + r.id + '_' + p.mi, type: 'expense', amount: -p.amount, catId: r.catId, accountId: r.accountId,
+        date: p.recv ? r.date : finMonthBounds(p.jy, p.jm).to + 'T23:59:00',
+        desc: '↩️ ' + (String(r.desc || '').trim() || 'برگشت هزینه'), refundAdj: true, refundId: r.id, refundDate: r.date });
+    });
+    parts.sort(function(a, b){ return b.mi - a.mi; });
+    out.alloc[r.id] = parts;
+  });
+  return out;
+}
+function refundData() {
+  var ms = monthStartDay(), C = RF_CACHE;
+  if (!C || C.db !== DB || C.arr !== DB.transactions || C.n !== DB.transactions.length || C.rev !== RF_REV || C.ms !== ms)
+    C = RF_CACHE = { db: DB, arr: DB.transactions, n: DB.transactions.length, rev: RF_REV, ms: ms, d: refundAllocate(DB.transactions) };
+  return C.d;
+}
+// همه‌ی تراکنش‌ها + ردیف‌های مجازی برگشت هزینه — فقط برای گزارش‌ها و هشدار بودجه
+function repAllTxs() { var a = refundData().adj; return a.length ? DB.transactions.concat(a) : DB.transactions; }
+function rfMonthName(p) { return J.monthName(p.jm) + ' ' + toFa(String(p.jy)); }
+// متن کوتاه برای فهرست تراکنش‌ها: «کسر از هزینه‌ی آبان ۱۴۰۵»
+function refundAllocText(t) {
+  var parts = refundData().alloc[t.id]; if (!parts || !parts.length) return '';
+  var cur = txCur(t);
+  return 'کسر از هزینه‌ی ' + parts.map(function(p){ return rfMonthName(p) + (parts.length > 1 ? ' (' + fmtCur(p.amount, cur) + ')' : ''); }).join('، ') +
+    (parts.some(function(p){ return p.over; }) ? ' ⚠️' : '');
+}
+function stripIncomeAllocations(tx) {
+  if (tx.type !== 'income' || !tx.allocations || !tx.allocations.length) return;
+  var allocs = tx.allocations.slice();
+  allocs.forEach(function(al){ var f = DB.funds.find(function(x){ return x.id === al.fundId; }); if (f) f.totalIn = Math.max(0, (f.totalIn || 0) - al.amount); });
+  DB.transactions = DB.transactions.filter(function(t){
+    if (t.type !== 'fund-in' || t.date !== tx.date) return true;
+    var i = allocs.findIndex(function(al){ return al.fundId === t.fundId && al.amount === t.amount; });
+    if (i !== -1) { allocs.splice(i, 1); return false; }
+    return true;
+  });
+  tx.allocations = [];
+}
+// o: {editId} ویرایش برگشت موجود | {fromId} تبدیل یک دریافت | {amount, date, desc, accountId} از پنجره‌ی دریافت
+function openRefund(o) {
+  o = o || {};
+  var srcId = o.editId || o.fromId || '';
+  var tx = srcId ? DB.transactions.find(function(t){ return t.id === srcId; }) : null;
+  if (srcId && !tx) return;
+  document.getElementById('rf-edit-id').value = o.editId || '';
+  document.getElementById('rf-from-id').value = o.fromId || '';
+  document.getElementById('rf-title').textContent = o.editId ? '↩️ ویرایش برگشت هزینه' : '↩️ ثبت برگشت هزینه';
+  document.getElementById('rf-submit').textContent = o.editId ? 'ذخیره' : (o.fromId ? 'تبدیل به برگشت هزینه' : 'ثبت برگشت هزینه');
+  document.getElementById('rf-from-note').style.display = o.fromId ? '' : 'none';
+  var accId = tx ? tx.accountId : o.accountId;
+  document.getElementById('rf-account').innerHTML = DB.accounts.length
+    ? DB.accounts.map(function(a){ return '<option value="' + a.id + '"' + (a.id === accId ? ' selected' : '') + '>' + escHtml(a.name) + ' (' + curLabel(a.currency) + ')</option>'; }).join('')
+    : '<option value="">-- بدون حساب --</option>';
+  var catId = tx && tx.type === 'refund' ? tx.catId : null;
+  document.getElementById('rf-cats').innerHTML = DB.categories.map(function(c){
+    return '<span class="chip' + (c.id === catId ? ' sel' : '') + '" data-id="' + c.id + '" onclick="selChip(this,\'rf-cats\');rfUpdate()">' + c.icon + ' ' + escHtml(c.name) + '</span>';
+  }).join('');
+  document.getElementById('rf-amount').value = tx ? addCommas(tx.amount) : (o.amount || '');
+  document.getElementById('rf-date').value = tx ? txDay(tx) : (o.date || todayGregorian());
+  var d = tx ? String(tx.desc || '') : String(o.desc || '');
+  document.getElementById('rf-desc').value = d === 'دریافت' ? '' : d;
+  populateDescSuggestions('refund', 'rf-desc-suggestions');
+  openModal('modal-refund');
+  rfUpdate();
+}
+function rfRead() {
+  var chip = document.querySelector('#rf-cats .chip.sel');
+  return { amount: getNumericValue('rf-amount'), accountId: document.getElementById('rf-account').value, catId: chip ? chip.dataset.id : null,
+    date: document.getElementById('rf-date').value || todayGregorian(), desc: document.getElementById('rf-desc').value.trim(),
+    editId: document.getElementById('rf-edit-id').value, fromId: document.getElementById('rf-from-id').value };
+}
+function rfUpdate() {
+  var f = rfRead(), el = document.getElementById('rf-preview');
+  var acc = DB.accounts.find(function(a){ return a.id === f.accountId; }), cur = acc ? acc.currency : 'IRR';
+  document.getElementById('rf-amount-lbl').textContent = 'مبلغ (' + curLabel(cur) + ')';
+  if (!f.amount || f.amount <= 0 || !f.catId || !acc) { el.style.display = 'none'; return; }
+  var tmp = { id: '~rf', type: 'refund', amount: f.amount, accountId: f.accountId, catId: f.catId, date: f.date + 'T23:59:59' };
+  var base = DB.transactions.filter(function(t){ return t.id !== f.editId && t.id !== f.fromId; });
+  var parts = refundAllocate(base.concat([tmp])).alloc['~rf'] || [];
+  var lbl = '«' + expGroupOf({ type: 'expense', catId: f.catId }).label + '»';
+  var m0 = parts.filter(function(p){ return p.recv; })[0], h;
+  var line = function(p){ return rfMonthName(p) + ': هزینه‌ی این دسته از ' + fmtCur(p.before, cur) + ' به ' + fmtCur(p.before - p.amount, cur) + ' می‌رسد'; };
+  if (parts.length === 1 && parts[0].recv && !parts[0].over) h = 'از هزینه‌ی ' + lbl + ' در همان ماه دریافت کم می‌شود.<br>' + line(parts[0]) + '.';
+  else if (parts.length === 1 && !parts[0].over) h = 'هزینه‌ی ' + lbl + ' در ماه دریافت کمتر از این مبلغ است، پس از نزدیک‌ترین ماه قبلی که منفی نشود کم می‌شود.<br>' + line(parts[0]) + '.';
+  else h = 'هیچ ماهی به‌تنهایی این‌قدر هزینه در ' + lbl + ' ندارد؛ از ماه دریافت به قبل، هر ماه تا اندازه‌ی هزینه‌اش کم می‌شود:<br>' +
+    parts.map(function(p){ return '• ' + fmtCur(p.amount, cur) + ' — ' + line(p); }).join('<br>');
+  var over = parts.filter(function(p){ return p.over; })[0];
+  if (over) h += '<br><span style="color:var(--danger);">⚠️ جمع هزینه‌ی ثبت‌شده‌ی این دسته (تا ماه دریافت) کمتر از مبلغ برگشتی است؛ ' + fmtCur(over.over, cur) +
+    ' در ماه دریافت می‌ماند و هزینه‌ی آن ماه منفی دیده می‌شود. دسته را دوباره بررسی کنید.</span>';
+  h += '<div style="margin-top:6px;font-size:11px;color:var(--text-sub);">به موجودی حساب اضافه می‌شود ولی در «درآمد» گزارش‌ها نیست. اگر بعداً در همین ماه‌ها هزینه‌ای از این دسته ثبت یا حذف کنید، این تقسیم دوباره حساب می‌شود.</div>';
+  el.innerHTML = h; el.style.display = 'block';
+}
+function submitRefund() {
+  var f = rfRead();
+  if (!f.amount || f.amount <= 0) { alert('مبلغ را وارد کنید'); return; }
+  if (!f.accountId) { alert('ابتدا یک حساب بسازید'); return; }
+  if (!f.catId) { alert('دسته‌ی هزینه‌ای را که برگشته انتخاب کنید'); return; }
+  var srcId = f.editId || f.fromId;
+  var tx = srcId ? DB.transactions.find(function(t){ return t.id === srcId; }) : null;
+  if (srcId && !tx) { alert('تراکنش پیدا نشد'); closeModal('modal-refund'); return; }
+  if (tx && tx.loanId) { alert('تراکنش‌های قرض از بخش «دفتر قروض» مدیریت می‌شوند'); return; }
+  var dateISO = tx && txDay(tx) === f.date ? tx.date : f.date + 'T' + new Date().toTimeString().split(' ')[0];
+  if (f.fromId) { stripIncomeAllocations(tx); delete tx.incCatId; delete tx.group; delete tx.allocations; }
+  if (!tx) { tx = { id: 'tx' + Date.now() }; DB.transactions.push(tx); }
+  tx.type = 'refund'; tx.amount = f.amount; tx.accountId = f.accountId; tx.catId = f.catId; tx.desc = f.desc || 'برگشت هزینه'; tx.date = dateISO;
+  saveDB(); closeModal('modal-refund'); renderAll();
+}
+function incToRefund() {
+  var d = readIncomeDraft(); closeModal('modal-income'); clearIncomeForm();
+  openRefund({ amount: d.amount, date: d.date, desc: d.desc, accountId: d.accountId });
+}
+function editToRefund() {
+  var id = document.getElementById('edit-tx-id').value;
+  closeModal('modal-edit-tx');
+  openRefund({ fromId: id });
+}
+
 function txDay(t) { return String(t.date || '').slice(0, 10); }
-function repTxsIn(a, b) { return DB.transactions.filter(function(t){ var d = txDay(t); return d >= a && d <= b; }); }
+function repTxsIn(a, b) { return repAllTxs().filter(function(t){ var d = txDay(t); return d >= a && d <= b; }); }
 function isPayTx(t) { return t.type === 'expense' || t.type === 'fund-out'; }
 function rialSums(txs) {
   var r = { inc: 0, pay: 0, byKey: {}, labels: {} };
@@ -6122,7 +6301,7 @@ function renderRepCompare(P, S) {
 function renderRepTop(txs, P) {
   var el = document.getElementById('repTop'); if (!el) return;
   document.getElementById('repTopLabel').textContent = '(' + P.label + ')';
-  var pays = txs.filter(isPayTx);
+  var pays = txs.filter(function(t){ return isPayTx(t) && !t.refundAdj; });
   var rial = pays.filter(isRialTx).sort(function(a, b){ return b.amount - a.amount; });
   if (!pays.length) { el.innerHTML = '<div class="empty" style="padding:12px;"><p style="font-size:12px;">پرداختی ثبت نشده</p></div>'; return; }
   var total = rial.reduce(function(s, t){ return s + t.amount; }, 0);
@@ -6157,7 +6336,7 @@ function renderSaveTrend(jy) {
   var el = document.getElementById('saveTrend'); if (!el) return;
   document.getElementById('saveTrendLabel').textContent = '(' + toFa(String(jy)) + (hasForeignAccounts() ? '، ریالی' : '') + ')';
   var inc = {}, pay = {}, ti = 0, tp = 0;
-  DB.transactions.forEach(function(t) {
+  repAllTxs().forEach(function(t) {
     if (!isRialTx(t) || (t.type !== 'income' && !isPayTx(t))) return;
     var j = finYM(txDay(t)); if (j.jy !== jy) return;
     if (t.type === 'income') { inc[j.jm] = (inc[j.jm] || 0) + t.amount; ti += t.amount; }
@@ -6182,7 +6361,7 @@ function renderCatTrend(jy) {
   if (!el || !sel) return;
   document.getElementById('catTrendLabel').textContent = '(' + toFa(String(jy)) + (hasForeignAccounts() ? '، ریالی' : '') + ')';
   var by = {}, tot = {}, labels = {};
-  DB.transactions.forEach(function(t) {
+  repAllTxs().forEach(function(t) {
     if (!isPayTx(t) || !isRialTx(t)) return;
     var j = finYM(txDay(t)); if (j.jy !== jy) return;
     var g = expGroupOf(t);
@@ -6201,7 +6380,7 @@ function renderCatTrend(jy) {
   var html = '';
   for (var mm = 1; mm <= lastM; mm++) {
     var val = d[mm] || 0;
-    html += '<div class="bar-row"><div class="bar-label">' + J.monthName(mm) + '</div><div class="bar-wrap"><div class="bar-fill" style="width:' + (val / max * 100).toFixed(1) + '%"></div></div><div class="bar-val">' + toFa(addCommas(Math.round(val))) + '</div></div>';
+    html += '<div class="bar-row"><div class="bar-label">' + J.monthName(mm) + '</div><div class="bar-wrap"><div class="bar-fill" style="width:' + Math.max(0, val / max * 100).toFixed(1) + '%"></div></div><div class="bar-val">' + toFa(addCommas(Math.round(val))) + '</div></div>';
   }
   var sum = tot[catTrendKey];
   el.innerHTML = html + '<div class="cmp-note" style="margin:8px 0 0;">جمع سال: <b>' + rialStr(sum) + ' ریال</b>' +
@@ -6245,6 +6424,7 @@ function yearReportData(jy) {
     var row = months[finYM(txDay(t)).jm - 1];
     if (t.type === 'income') { if (row) row.inc += t.amount; return; }
     if (row) row.pay += t.amount;
+    if (t.refundAdj) return;
     if (!big || t.amount > big.amount) big = t;
     if (t.catId === LOAN_INT_CAT_ID) loanInt += t.amount;
   });
@@ -6257,7 +6437,7 @@ function yearReportData(jy) {
     if (!lo || r.pay < lo.pay) lo = r;
   });
   return { jy: jy, partial: partial, today: today, S: S, PS: PS, months: months, cats: cats, big: big, loanInt: loanInt, fx: fx, hi: hi, lo: lo,
-    count: txs.length, hasPrev: !!(PS.inc || PS.pay) };
+    count: txs.filter(function(t){ return !t.refundAdj; }).length, hasPrev: !!(PS.inc || PS.pay) };
 }
 function renderYearCard(jy) {
   var el = document.getElementById('yearCard'); if (!el) return;
@@ -6372,20 +6552,21 @@ function openCatBreakdown(key, cur) {
   order.sort(function(a, b){ if (!a !== !b) return a ? -1 : 1; return groups[b].sum - groups[a].sum; });   // «بدون توضیح» آخر
 
   var fmt = function(n){ return cur === 'IRR' ? toFa(addCommas(Math.round(n))) : toCurrency(n, cur); };
+  var gross = order.reduce(function(s, k){ return s + Math.max(0, groups[k].sum); }, 0);
   var multiAcc = txs.some(function(t){ return t.accountId !== txs[0].accountId; });
   document.getElementById('cb-title').textContent = expGroupOf(txs[0]).label + ' — ' + repSel.label + (cur !== 'IRR' ? ' (' + curLabel(cur) + ')' : '');
   cbLast = { key: key, label: expGroupOf(txs[0]).label };
   document.getElementById('cb-trend').style.display = cur === 'IRR' ? '' : 'none';
   document.getElementById('cb-summary').innerHTML = '<span>جمع ' + repSel.unit + ' · ' + toFa(txs.length) + ' تراکنش</span><b>' + fmtCur(total, cur) + '</b>';
   document.getElementById('cb-list').innerHTML = order.map(function(k) {
-    var g = groups[k], pct = total ? g.sum / total * 100 : 0;
+    var g = groups[k], pct = gross > 0 && g.sum > 0 ? g.sum / gross * 100 : 0;   // v1.36.0: درصد از جمع پرداخت‌ها، نه جمعِ پس از برگشت هزینه
     var rows = g.txs.map(function(t) {
       var acc = multiAcc ? DB.accounts.find(function(a){ return a.id === t.accountId; }) : null;
-      return '<div class="cb-tx"><span>' + J.format(t.date) + (acc ? ' · ' + escHtml(acc.name) : '') + '</span><span>' + fmt(t.amount) + '</span></div>';
+      return '<div class="cb-tx"><span>' + (t.refundAdj ? '↩️ دریافت ' + J.format(t.refundDate) : J.format(t.date)) + (acc ? ' · ' + escHtml(acc.name) : '') + '</span><span>' + fmt(t.amount) + '</span></div>';
     }).join('');
     return '<div class="cb-item"><button type="button" class="cb-row">' +
       '<div class="cb-top"><span class="cb-name' + (k ? '' : ' none') + '">' + (k ? escHtml(g.name) : 'بدون توضیح') + '</span><span class="cb-amt">' + fmt(g.sum) + '</span></div>' +
-      '<div class="cb-meta"><div class="cb-bar"><span style="width:' + pct.toFixed(1) + '%"></span></div><span class="cb-pct">' + faPct(pct) + '</span><span class="cb-cnt">' + toFa(g.txs.length) + ' بار</span></div>' +
+      '<div class="cb-meta"><div class="cb-bar"><span style="width:' + Math.max(0, pct).toFixed(1) + '%"></span></div><span class="cb-pct">' + (g.sum < 0 ? 'برگشت' : faPct(pct)) + '</span><span class="cb-cnt">' + toFa(g.txs.length) + ' بار</span></div>' +
       '</button><div class="cb-txs">' + rows + '</div></div>';
   }).join('');
   openModal('modal-cat-break');
@@ -6432,7 +6613,7 @@ function renderAvgStats(selYear) {
   if (lbl) lbl.textContent = '(کل سال ' + toFa(String(selYear)) + (hasForeignAccounts() ? '، ریالی' : '') + ')';
 
   // تراکنش‌های درآمد/هزینه‌ی سال (قرض‌ها مستثنی — چون income/expense/fund-out صریح چک می‌شود)
-  var yearTxs = DB.transactions.filter(function(t) {
+  var yearTxs = repAllTxs().filter(function(t) {
     if (!(t.type==='income' || t.type==='expense' || t.type==='fund-out')) return false;
     if (!isRialTx(t)) return false;   // v1.15.0: فقط ریالی
     return finYM(txDay(t)).jy === selYear;   // v1.31.0: ماه مالی
@@ -6513,7 +6694,7 @@ function renderTrendChart(selYear) {
 
   // جمع درآمد و هزینه به تفکیک ماه (۱..۱۲) — v1.15.0: فقط ریالی
   var incByMonth = {}, expByMonth = {};
-  DB.transactions.forEach(function(t) {
+  repAllTxs().forEach(function(t) {
     if (t.type!=='income' && t.type!=='expense' && t.type!=='fund-out') return;
     if (!isRialTx(t)) return;
     var j = finYM(txDay(t));   // v1.31.0
@@ -6587,7 +6768,7 @@ function renderExpensePie(selYear) {
   if (yearLabel) yearLabel.textContent = '(' + toFa(String(selYear)) + (hasForeignAccounts() ? '، ریالی' : '') + ')';
 
   // Gather all expense + fund-out for the selected year, grouped like catChart
-  var yearTxs = DB.transactions.filter(function(t) {
+  var yearTxs = repAllTxs().filter(function(t) {
     if (!isRialTx(t)) return false;   // v1.15.0: فقط ریالی
     return finYM(txDay(t)).jy === selYear;   // v1.31.0
   });
@@ -6609,7 +6790,7 @@ function renderExpensePie(selYear) {
     totals[k] = (totals[k]||0) + t.amount;
   });
 
-  var entries = Object.entries(totals).sort(function(a,b){ return b[1]-a[1]; });
+  var entries = Object.entries(totals).filter(function(e){ return e[1] > 0.5; }).sort(function(a,b){ return b[1]-a[1]; });   // v1.36.0: دسته‌ی صفر/منفی (برگشت هزینه) در نمودار دایره‌ای نیست
   var grandTotal = entries.reduce(function(s,e){ return s+e[1]; }, 0);
 
   if (!entries.length || grandTotal <= 0) {
@@ -6869,7 +7050,9 @@ function openEditTx(id) {
   var tx = DB.transactions.find(function(t){ return t.id===id; });
   if (!tx || tx.type==='fund-in') { alert('این نوع تراکنش قابل ویرایش نیست'); return; }
   if (tx.loanId) { alert('تراکنش‌های قرض از بخش «دفتر قروض» مدیریت می‌شوند'); return; }
+  if (tx.type === 'refund') { openRefund({ editId: id }); return; }   // v1.36.0
   document.getElementById('edit-tx-id').value = id;
+  document.getElementById('edit-refund-wrap').style.display = tx.type === 'income' ? 'block' : 'none';
   document.getElementById('edit-tx-type').value = tx.type;
   splitReset('edit');   // v1.31.0
   document.getElementById('edit-split-btn').style.display = tx.type === 'expense' ? '' : 'none';
@@ -7102,6 +7285,7 @@ function exportReportExcel() {
 
   // v1.15.1: ستون «ارز» (ارز حساب تراکنش)، برچسب فارسی قرض‌ها، و حساب مبدأ ← مقصد برای انتقال
   var rows = [['تاریخ','نوع','مبلغ','ارز','توضیحات','دسته‌بندی','حساب']];
+  monthTxs = monthTxs.filter(function(t){ return !t.refundAdj; });   // v1.36.0: ردیف‌های مجازی برگشت هزینه نه؛ خود برگشت با نوع «برگشت هزینه» می‌آید
   monthTxs.sort(function(a,b){return new Date(b.date)-new Date(a.date);}).forEach(function(t) {
     var cat = t.catId ? DB.categories.find(function(c){return c.id===t.catId;}) : null;
     var fund = t.fundId ? DB.funds.find(function(f){return f.id===t.fundId;}) : null;
@@ -8045,7 +8229,7 @@ function applySMSRowAccount(row, acc) {
       var dayStr = row.dateISO.split('T')[0];
       dup = DB.transactions.some(function(t){
         return !t.smsKey && t.accountId===acc.id && t.amount===row.amount &&
-               ((row.type==='income' && t.type==='income') || (row.type==='expense' && t.type==='expense')) &&
+               ((row.type==='income' && (t.type==='income' || t.type==='refund')) || (row.type==='expense' && t.type==='expense')) &&
                (t.date||'').split('T')[0] === dayStr;
       });
     }
@@ -8274,7 +8458,7 @@ function computeBalanceUpTo(accId, dateISO, excludeSMSIdx) {
     var tt = new Date(t.date).getTime();
     if (tt > cutoff) return;
     if (seedCut !== null && !isNaN(tt) && tt < seedCut) return;
-    if (t.type==='income' && t.accountId===accId) sum += t.amount;
+    if ((t.type==='income'||t.type==='refund') && t.accountId===accId) sum += t.amount;
     else if ((t.type==='expense'||t.type==='fund-out') && t.accountId===accId) sum -= t.amount;
     else if ((t.type==='loan-given'||t.type==='loan-repaid') && t.accountId===accId) sum -= t.amount;
     else if ((t.type==='loan-taken'||t.type==='loan-collected') && t.accountId===accId) sum += t.amount;
@@ -8678,13 +8862,18 @@ function updateDateHeader() {
 // ═══════════════════════════════════════
 var VERSION_URL = 'https://sadeghmajedi.github.io/PFM/version.json';
 var UPDATE_URL  = 'https://sadeghmajedi.github.io/PFM/';
-var CURRENT_VERSION = '1.35.0';
+var CURRENT_VERSION = '1.36.0';
 
 // ── تازه‌های نسخه (v1.14.0، همان الگوی Shakhes Planner v1.17.0) ──
 // با هر بالا رفتن نسخه، یک ورودی با همان شماره‌ی CURRENT_VERSION به ابتدای این آرایه اضافه کن؛
 // هر مورد یک جمله‌ی کوتاه فارسی برای کاربر، نه توضیح فنی. نسخه‌ی بدون ورودی پنجره‌ای باز نمی‌کند.
 // بعد از باز شدن قفل، ورودی‌های جدیدتر از pfm_seen_version یک بار نمایش داده می‌شوند.
 var WHATS_NEW = [
+  { v:'1.36.0', items:[
+    'برگشت هزینه: برای پولی که بابت یک هزینه‌ی قبلی برمی‌گردد (مثل خسارت بیمه‌ی تکمیلی درمان)، در پنجره‌ی «دریافت» گزینه‌ی «↩️ برگشت هزینه» را انتخاب کنید. مبلغ به حساب اضافه می‌شود ولی درآمد حساب نمی‌شود و از هزینه‌ی همان دسته کم می‌شود.',
+    'مبلغ برگشتی اول از هزینه‌ی ماه دریافت کم می‌شود؛ اگر هزینه‌ی آن دسته در آن ماه منفی می‌شد، از نزدیک‌ترین ماه قبلی که منفی نشود. پیش از ثبت، ماه انتخاب‌شده را در همان پنجره می‌بینید.',
+    'دریافتی که قبلاً به‌عنوان درآمد ثبت کرده‌اید (مثلاً از پیامک بانک) را می‌توانید از ✏️ ویرایش تراکنش ← «تبدیل به برگشت هزینه» اصلاح کنید.'
+  ]},
   { v:'1.35.0', items:[
     'پیامک جاافتاده: اگر Shortcut آیفون یکی از پیامک‌های بانک را در فایل ننوشته باشد (مثلاً دو پیامک در یک دقیقه)، اپ از اختلاف مانده‌ی پیامک‌های قبل و بعد آن را پیدا می‌کند و با علامت 🧩 در صفحه‌ی بررسی پیشنهاد می‌دهد؛ اگر درست است، تیکش را بزنید.'
   ]},
@@ -9036,6 +9225,7 @@ function buildDemoDB() {
     if (b - 5 >= start && b - 5 <= 0) pay(b - 5, 4 * M, 'cat7', 'اینترنت');
   }
   pay(-70, 27 * M, 'cat3', 'داروخانه');
+  T.push({ id: id('tx'), type: 'refund', amount: 18 * M, catId: 'cat3', accountId: 'demo_a1', desc: 'خسارت بیمه تکمیلی', date: iso(-40, '11:30') });   // v1.36.0
   pay(-52, 64 * M, 'cat4', 'پوشاک زمستانی');
   pay(-33, 45 * M, 'cat8', 'کلاس زبان');
   pay(-9, 18 * M, 'cat9', 'هدیه‌ی تولد');
@@ -9330,6 +9520,10 @@ setTimeout(function() {
       <label class="form-label">این تراکنش در واقع انتقال بین‌حسابی است؟</label>
       <button class="btn-secondary" onclick="findTransferCandidates()" style="margin-top:0;">⇔️ پیدا کردن تراکنش متناظر</button>
       <div id="edit-convert-list" style="margin-top:8px;"></div>
+    </div>
+    <div class="form-group" id="edit-refund-wrap" style="display:none;">
+      <label class="form-label">این دریافت درآمد نیست و پولِ یک هزینه‌ی قبلی است که برگشته (مثل خسارت بیمه)؟</label>
+      <button class="btn-secondary" onclick="editToRefund()" style="margin-top:0;">↩️ تبدیل به برگشت هزینه</button>
     </div>
     <div class="form-group" id="edit-loan-wrap" style="display:none;">
       <label class="form-label">اتصال به دفتر قروض</label>
